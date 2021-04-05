@@ -1,0 +1,705 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>CeMS</title>
+		
+		<style>
+
+@import "/css/var.css";
+@import "/css/fa.css";
+
+body {
+    font : 10pt "맑은 고딕", Arial, Tahoma;
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    padding: 0; margin: 0;
+    display: flex; flex-direction: column;
+    user-select: none;
+    background-color: var(--var-color-bg);
+}
+
+header {
+    background-color: #1e1f26;
+    flex: none;
+    display: flex; justify-content: space-between;
+    padding: 1em;
+    color: #ffffff;
+    font-weight: bold;
+    z-index: 2;
+}
+
+header b {
+    color: #7f7f7f;
+}
+
+nav span {
+    position: relative;
+    cursor: pointer;
+    overflow: visible;
+}
+
+nav span ul {
+    position: absolute; top: 0; left: 0;
+    list-style: none;
+    margin: 0; padding: 0.5em;
+    background-color: #1e1f26;
+    transition: top 0.5s;
+    display: none;
+}
+
+nav span:hover ul {
+    top: 100%;
+    display: flex;
+}
+
+nav span li {
+    white-space: nowrap;
+    padding: 0.5em;
+    font-size: 10pt;
+}
+
+nav span>a,
+nav b {
+    font: 20px "Font Awesome 5 Free";
+}
+
+nav >span:hover>a {
+    /*display: inline-block;
+    transform: translateY(-2px);*/
+}
+
+nav >span:active>a {
+    color: #0084ff;
+    transform: translateY(0);
+}
+
+article {
+    flex: 1;
+    display: flex;
+}
+
+aside {
+    flex: none;
+    position: relative;
+    z-index: 1;
+}
+
+main {
+    flex: 1;
+    position: relative;
+}
+
+iframe {
+    border: none;
+    width: 100%; height: 100%;
+}
+
+#dialog {
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	padding: 0; margin: 0;
+    z-index: 3;
+}
+
+#status {
+    width: 400px;
+    transition: transform 0.5s linear;
+}
+
+#tab {
+    position: absolute; top: 40%; right: 0;
+    width: 1em; height: 2em;
+    cursor: pointer;
+}
+
+body.status #tab {
+    border-radius: 1em 0 0 1em;
+    background-color: #dddddd;
+}
+
+body:not(.status) #tab {
+    border-radius: 0 1em 1em 0;
+    background-color: #ff0000;
+    transform: translateX(100%);
+}
+
+body:not(.status) aside {
+    width: 0;
+}
+
+body:not(.status) #status {
+    transform: translateX(-100%);
+}
+
+footer {
+    position: absolute; inset: auto 0 0 auto;
+    display: flex; flex-direction: column;
+    padding: 1em;
+    font-weight: bold;
+    color: #fff;
+    cursor: pointer;
+}
+
+footer >div {
+    margin: 0.5em;
+    align-self: flex-end;
+}
+
+footer >div::before,
+footer >div::after {
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+footer >div::before {
+    content: attr(data-elapse);
+    padding: 5px 1em;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.5);
+    color: #424242;
+}
+
+footer >div::after {
+    content: attr(data-message);
+    padding: 0.5em 1em;
+    background-color: #ffa500;
+    border: 1px solid #c46c00;
+    border-radius: 1em 0 0 1em;
+    margin-left: 1em;
+}
+
+a:link,
+a:visited {
+    color: inherit;
+    text-decoration: inherit;
+}
+
+body:not(.authorized) header {
+    pointer-events: none;
+    color: #7f7f7f;
+}
+
+/** account **/
+details {
+    position: relative;
+    display: inline-block;
+}
+
+details[open] summary::before {
+    content: "";
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    background-color: transparent;
+}
+
+summary {
+    outline: none;
+}
+
+summary::marker {
+    content: "";
+    display: none;
+}
+
+.popup {
+    position: absolute; top: 100%; right: 0;
+    border-radius: 3px;
+    border: 1px solid rgba(27,31,35,.15);
+    box-shadow: 0 1px 15px rgba(27,31,35,.15);
+    width: 160px;
+    padding: 1em 0;
+    margin-top: 8px;
+    background-color: #ffffff;
+    color: #24292e;
+    z-index: 1;
+    list-style: none;
+    padding: 1em; margin: 0;
+}
+
+.popup::after {
+    position: absolute; top: -14px; right: 10px; left: auto;
+    display: inline-block;
+    content: "";
+    border: 7px solid transparent;
+    border-bottom-color: #fff;
+}
+
+.popup li {
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.popup li:hover {
+    background-color: #0366d6;
+    color: #ffffff;
+}
+
+.popup a {
+    display: block;
+}
+/** account **/
+
+body:not(.authorized) aside,
+body:not(.event) footer,
+body:not(.dialog) #dialog,
+body:not(.root) nav ul {
+    display: none;
+}
+
+        </style>
+        <script>
+
+function Commander() {
+    this.initialize(arguments);
+}
+
+{
+    function getAccount(msg, account) {
+        new BroadcastChannel(msg.channel).postMessage(account);
+    }
+
+    Commander.prototype = {
+        initialize: function (args) {
+            this.account = args[0];
+            this.map = {
+                get: {
+                    account: getAccount
+                }
+            };
+        },
+        execute: function (msg) {
+            this.map[msg.command][msg.target](msg, this.account);
+        }
+    };
+}
+
+function signIn(account) {
+    $.request = new Request();
+
+    window.account = account;
+
+    if (account.level === 0) {
+        document.body.classList.add("root");
+    }
+
+    document.title = $.request.agent;
+
+    document.getElementById("user").textContent = account.id;
+    document.getElementById("signout").onclick = onSignOut;
+
+    //window.open("/dc.html"); // TODO 데모 끝나면 삭제할것
+    {
+        const commander = new Commander(account);
+
+        new BroadcastChannel("bc_root").onmessage = e => commander.execute(e.data);
+    }
+
+    $.request.execute({
+        command: "get",
+        target: "setting"
+    }, function () {
+        switch (this.status) {
+        case 200:
+            const
+                settingData = JSON.parse(this.responseText);
+            let home = "about:blank";
+
+            if (!("mute" in settingData) || settingData.mute === "false") {
+                $.sound = new Audio("/siren.mp3");
+            }
+
+            $.request.listen(e => {
+                onEvent(e);
+
+                Channel.sendEvent(e);
+            });
+
+            if ("home" in settingData) {
+                switch (settingData.home) {
+                case "1":
+                    home = "/topology.html";
+
+                    break;
+                case "2":
+                    home = "/branch.html";
+
+                    break;
+                case "3":
+                    home = "/dc.html";
+
+                    break;
+                case "4":
+                    home = "/TopTen.html";
+
+                    break;
+                }
+            }
+
+            document.getElementById("main").src = home;
+            document.getElementById("status").src = "/status.html";
+
+            document.body.classList.add("authorized");
+
+            break;
+        default:
+            showMessage(this);
+        }
+    });
+}
+
+function toElapseString(millis) {
+    const elapse = new Date().getTime() - millis;
+
+    if (elapse < 60 *1000) {
+        return `${Math.round(elapse /1000)}초 전`;
+    } else if (elapse < 60 *60 *1000) {
+        return `${Math.round(elapse /60 /1000)}분 전`;
+    } else if (elapse < 24 *60 *60 *1000) {
+        return `${Math.round(elapse /60 /60 /1000)}시간 전`;
+    } else {
+        return `${Math.round(elapse /24 /60 /60 /1000)}일 전`;
+    }
+}
+
+function onEvent(event) {
+    if (event == null) {
+        alert("Error!\n\n"+
+            "리스너 응답 없음.");
+
+        window.location.reload();
+    }
+
+    if (event.level < 0) {
+        alert("Notice.\n\n"+
+            "관리자가 서비스를 종료하였습니다.");
+
+        return signOut();
+    }
+
+    const div = document.createElement("div");
+
+    div.dataset.timestamp = new Date().getTime();
+    div.dataset.elapse = "지금";
+    div.dataset.message = `${event.name || event.ip || ""} ${event.message}`;
+
+    document.body.querySelector("footer").appendChild(div);
+
+    document.body.classList.add("event");
+
+    switch(event.origin) {
+    case "critical":
+    case "status":
+    case "snmp":
+    case "updown":
+        break;
+
+    case "register":
+    case "search":
+    case "system":
+    case "warning":
+        break;
+    }
+
+    if (event.level == 2 && $.sound) {
+        try {
+            $.sound.play();
+        } catch (e) {
+            console.log(e);
+        };
+    }
+}
+
+function showDialog(src, parent) {
+    const dialog = document.getElementById("dialog");
+
+    dialog.onload = function () {
+        $.parent = parent;
+
+		document.body.classList.add("dialog");
+	};
+
+    dialog.src = src;
+}
+
+function closeDialog(reset) {
+    document.body.classList.remove("dialog");
+    
+    if (reset) {
+        resetParent();
+    }
+
+    delete $.parent;
+}
+
+function resetParent() {
+    if ($.parent) {
+        $.parent.location.reload();
+    }
+}
+
+function signOut() {
+    document.body.classList.add("loading");
+
+    $.request.execute({
+        command: "signout"
+    }, function () {
+        window.location.reload();
+    });
+}
+
+function onSignOut() {
+    if (confirm(CONFIRM_SIGNOUT["kr"])) {
+        signOut();
+    }
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    default:
+        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+function onTest(e) {
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        const rows = reader.result.split(/\r?\n/);
+        const locationData = {};
+        let location;
+
+        rows.forEach((row,i) => {
+            const cols = row.split(",");
+            
+            location = {
+                rack: Number(cols[0]),
+                position: Number(cols[1]),
+                maker: cols[2],
+                model: cols[3],
+                name: cols[5] || "",
+            };
+
+            if (cols[6]) {
+                location.ip = cols[6];
+            }
+
+            locationData[String(i +1)] = location;
+        });
+        
+        $.request.execute({
+            command: "test",
+            location: locationData
+        }, function (e) {
+            console.log(this.status);
+        });
+    };
+
+    reader.readAsText(e.target.files[0], "UTF-8");
+}
+        </script>
+    </head>
+    <body class="status">
+        <header>
+            <nav>
+                <b>
+                    &#xf7a5;
+                </b>
+                <span title="토폴로지">
+                    <a href="/topology.html" target="main">
+                        &#xf0e8;
+                    </a>
+                    <ul>
+                        <li>
+                            <a href="/topology.html" target="main">보기</a>
+                        </li>
+                        <li>
+                            <a href="/topology/editor.html" target="main">편집</a>
+                        </li>
+                    </ul>
+                </span>
+                <span title="지도">
+                    <a href="/branch.html" target="main">
+                        &#xf3c5;
+                    </a>
+                </span>
+                <span title="데이터센터">
+                    <a href="/dc.html" target="main">
+                        &#xf64f;
+                    </a>
+                    <ul>
+                        <li>
+                            <a href="/dc.html" target="main">보기</a>
+                        </li>
+                        <li>
+                            <a href="/dc/editor.html" target="main">편집</a>
+                        </li>
+                    </ul>
+                </span>
+                <span title="Top Ten">
+                    <a href="/topTen.html" target="main">
+                        &#xf160;
+                    </a>
+                </span>
+                <b>
+                    &#xf7a5;
+                </b>
+                <span title="이벤트">
+                    <a href="/event.html" target="main">
+                        &#xf783;
+                    </a>
+                </span>
+                <span title="감사">
+                    <a href="/audit.html" target="main">
+                        &#xf1e5;
+                    </a>
+                </span>
+                <b>
+                    &#xf7a5;
+                </b>
+                <span title="노드 목록">
+                    <a href="/node/viewer.html" target="main">
+                        &#xf233;
+                    </a>
+                    <ul>
+                        <li>
+                            <a href="/node/viewer.html" target="main">보기</a>
+                        </li>
+                        <li>
+                            <a href="/node/editor.html" target="main">편집</a>
+                        </li>
+                    </ul>
+                </span>
+                <span title="브랜치 목록">
+                    <a href="/group.html" target="main">
+                        &#xf126;
+                    </a>
+                </span>
+                <span title="회선 목록">
+                    <a href="/link.html" target="main">
+                        &#xf83e;
+                    </a>
+                </span>
+                <span title="사용자 목록">
+                    <a href="/user.html" target="main">
+                        &#xf0c0;
+                    </a>
+                </span>
+                <b>
+                    &#xf7a5;
+                </b>
+                <span title="임계 관리">
+                    <a href="/critical.html" target="main">
+                        &#xf08d;
+                    </a>
+                </span>
+                <span title="아이콘">
+                    <a href="/icon.html" target="main">
+                        &#xf61f;
+                    </a>
+                </span>
+                <span title="설정">
+                    <a href="/setting.html" target="main">
+                        &#xf013;
+                    </a>
+                </span>
+                <b>
+                    &#xf7a5;
+                </b>
+                <span title="Home">
+                    <a href="/">
+                        &#xf015;
+                    </a>
+                </span>
+                <b>
+                    &#xf7a5;
+                </b>
+                <span title="Home">
+                    <a href="/list.html">
+                        &#xf015;
+                    </a>
+                </span>
+                <!--input type="file" onchange="onTest(event)"-->
+            </nav>
+            <div class="account">
+                <details>
+                    <summary id="user"></summary>
+                    <ul class="popup">
+                        <li id="password">Password</li>
+                        <li id="signout">Sign out</li>
+                    </ul>
+                </details>
+            </div>
+        </header>
+        <article>
+            <aside>
+                <iframe name="status" id="status"></iframe>
+                <div id="tab"></div>
+            </aside>
+            <main>
+                <iframe name="main" id="main" src="/connect.html"></iframe>
+            </main>
+        </article>
+        <footer></footer>
+        <iframe id="dialog" name="dialog"></iframe>
+
+        <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+        <script src="/js/channel.js"></script>
+        <script>
+
+const $ = {
+        event: document.getElementById("event"),
+        popups: []
+    };
+
+((open) => {
+    window.open = (url, name) => {
+        if (name) {
+            open(url, name);
+        } else {
+            $.popups.push(open(url,
+                "_blank",
+                `left=${window.innerWidth /4},top=${window.innerHeight /4},width=${window.innerWidth /2},height=${window.innerHeight /2}`));
+        }
+    };
+})(window.open);
+
+window.onunload = e => $.popups.forEach(wnd => wnd.close());
+
+document.getElementById("tab").onclick = function (e) {
+    document.body.classList.toggle("status");
+};
+
+document.querySelector("footer").onclick = function (e) {
+    for (let event; event = this.firstChild; ) {
+        this.removeChild(event);
+    }
+    
+    document.body.classList.remove("event");
+
+    document.getElementById("main").src = "/event.html";
+};
+
+document.getElementById("password").onclick = e => {
+    document.querySelector("div.account details").open = false;
+    
+    showDialog("/dialog/password.html");
+}
+
+function refreshEvent() {
+    Array
+        .from(document.querySelector("footer").children)
+        .forEach(event => (event.dataset.elapse = toElapseString(event.dataset.timestamp)));
+    
+    setTimeout(() => window.requestAnimationFrame(refreshEvent), 1000);
+}
+
+refreshEvent();
+
+        </script>
+        
+    </body>
+</html>
