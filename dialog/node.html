@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="no-cache">
+		
+		<title>dialog</title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/dialog.css";
+@import "/css/fa.css";
+
+#profile:hover {
+	cursor: default;
+	text-decoration: underline;
+}
+
+u {
+	cursor: default;
+}
+
+.container {
+    position: relative;
+}
+
+body:not(.edit) .option {
+	display: none;
+}
+
+body.loading {
+	pointer-events: none; 
+}
+
+optgroup::before {
+    content: attr(label);
+    display: block;
+}
+
+		</style>
+		
+		<script>
+		// static function
+function isIPv4(s) {
+    return s.length > 0;
+    //return s.match(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/)? true: false;
+}
+
+function isTCP(s) {
+    if (s.indexOf(":") === -1) {
+        return false;
+    }
+
+    const addrs = s.split(":");
+
+    if (addrs.length !== 2) {
+        return false;
+    }
+
+    if (!isIPv4(addrs[0])) {
+        return false;
+    }
+
+    const tcp = Number(addrs[1]);
+
+    return !isNaN(tcp) && tcp > 0 && tcp < 65535;
+}
+
+function trimLabel(labels) {
+	var array = labels.split(","),
+		label, result = [];
+	
+	for (var i=0, _i=array.length; i<_i; i++) {
+		label = array[i].replace(/\s+/g, "");
+		
+		if (label) {
+			result[result.length] = label;
+		}
+	}
+	
+	return result.join(",");
+}
+
+function onSubmit(e) {
+    e.preventDefault();
+    
+    const
+        request = {
+            target: "node",
+            node: {
+                group: "node"
+            }
+        };
+
+    if (this.elements["name"].value) {
+        request.node.name = this.elements["name"].value;
+    }
+
+    if (this.elements["ip"].value) {
+        request.node.ip = this.elements["ip"].value;
+    }
+
+    if (this.elements["type"].value) {
+        request.node.type = this.elements["type"].value;
+    }
+
+    if (this.elements["label"].value) {
+        request.node.label = trimLabel(this.elements["label"].value);
+    }
+
+    if (Object.keys($.customInputMap).length > 0) {
+        const extra = {};
+        let value;
+
+        for (var name in $.customInputMap) {
+            value = $.customInputMap[name].value;
+
+            if (value) {
+                extra[name] = value;
+            }
+        }
+
+        if (Object.keys(extra).length > 0) {
+            request.node.extra = JSON.stringify(extra);
+        }
+    }
+
+    document.body.classList.add("loading");
+
+    if ($.id) {
+        request.command = "set";
+        request.id = $.id;
+    }
+    else {
+        request.command = "add";
+    }
+
+    $.request.execute(request, function () {
+        switch (this.status) {
+        case 200:
+            top.resetParent();
+
+            window.location.replace(`${window.location.pathname}?id=${$.id || JSON.parse(this.responseText).id}`);
+            
+            break;
+        case 409:
+            alert("Error!\n\n이미 사용중인 IP 주소 입니다.");
+
+            $.form.elements["ip"].select();
+
+            break;
+        default:
+            throw showMessage(this);
+        }
+
+        document.body.classList.remove("loading");
+    });
+}
+
+function onReset(e) {
+    e.preventDefault();
+
+    if (!confirm("Warning!\n\n노드를 삭제하겠습니까?")) {
+        return;
+    }
+
+    document.body.classList.add("loading");
+    
+    $.request.execute({
+        command: "remove",
+        target: "node",
+        id: $.id
+    }, function () {
+        switch (this.status) {
+            case 200:
+                top.closeDialog(true);
+
+                break;
+            case 409:
+
+            default:
+                showMessage(this);
+        }
+    });
+}
+
+function onSetManager(e) {
+    if (!confirm("Confirm.\n\n관리자를 변경하겠습니까?")) {
+        this.value = $.manager;
+
+        return;
+    }
+
+    document.body.classList.add("loading");
+
+    $.request.execute({
+        command: "set",
+        target: "manager",
+        node: $.id,
+        user: this.value
+    }, function () {
+        switch (this.status) {
+            case 200:
+                break;
+            default:
+                throw showMessage(this);
+        }
+
+        alert("Notice.\n\n요청을 정상 처리 하였습니다.");
+
+        top.closeDialog(true);
+    });
+}
+
+function onSetMonitor (e) {
+    if (!confirm("Confirm.\n\n모니터 방식을 변경하겠습니까?")) {
+        this.value = $.protocol;
+
+        return;
+    }
+    
+    document.body.classList.add("loading");
+
+    const request = {
+        command: "set",
+        target: "monitor",
+        id: $.id,
+        ip: $.form.elements["ip"].value
+    };
+
+    if (this.value) {
+        request.protocol = this.value;
+    }
+
+    this.disabled = true;
+
+    $.request.execute(request, function () {
+        switch (this.status) {
+            case 200:
+                alert("Notice.\n\n모니터 요청 정상.");
+
+                top.closeDialog(true);
+                //document.body.classList.remove("loading");
+                
+                break;
+            default:
+                showMessage(this);
+        }
+    });
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert(`Notice!\n\n세션 만료.`);
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+		</script>
+	</head>
+	
+	<body class="loading">
+	
+		<main>
+			<h2>
+                <span  id="close" title="대화창 닫기">&#xf00d;</span>
+				장비 정보
+            </h2>
+            <form>
+                <table>
+                    <tbody>
+                        <colgroup>
+                            <col width="120">
+                        </colgroup>
+                        <tr class="ip">
+                            <th>ip 주소</th>
+                            <td>
+                                <input type="text" name="ip" autofocus>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>이름</th>
+                            <td>
+                                <input type="text" name="name" placeholder="장비 이름">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>타입</th>
+                            <td>
+                                <select name="type" required></select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th title="콤마(,)로 구분하며 공백을 허용하지 않습니다."><i>*라벨</i></th>
+                            <td>
+                                <input type="text" name="label" placeholder="라벨1 [,라벨2 ...]">
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody id="custom"></tbody>
+                    <tbody class="option">
+                        <tr class="monitor">
+                            <th>모니터링</th>
+                            <td>
+                                <select name="monitor">
+                                    <option value="" selected  class="protocol" disabled>없음</option>
+                                    <optgroup label="SNMP" class="protocol ip" disabled>
+                                        <option value="snmp">auto</option>
+                                    </optgroup>
+                                    <option value="icmp"  class="protocol ip" disabled>ICMP</option>
+                                    <option value="tcp"  class="protocol ip tcp" disabled>TCP</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>관리자</th>
+                            <td>
+                                <select name="manager"></select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <footer>
+                    <input type="reset" value="&#xf1f8; Remove">
+                    <input type="submit" value="&#xf0c7; Save">
+                </footer>
+
+                <div class="loading mask"></div>
+			</form>
+		</main>
+        <script src="/js/ITAhM.js"></script>
+        <script src="/js/request.js"></script>
+        <script src="/js/icon.js"></script>
+        <script src="/js/channel.js"></script>
+        <script src="/js/dialog.js"></script>
+		<script>
+
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request(),
+        id: Number(search.get("id")) || undefined,
+        form: document.querySelector("form"),
+        customInputMap: {}
+    };
+
+if (top.account.level === 0) {
+    $.form.onsubmit = onSubmit;
+    $.form.onreset = onReset;
+    
+    document.body.classList.add("root");
+}
+
+$.form.elements["manager"].onchange = onSetManager;
+$.form.elements["manager"].onclick = function (e) {
+    $.manager = this.value;
+};
+
+$.form.elements["monitor"].onchange = onSetMonitor;
+$.form.elements["monitor"].onclick = function (e) {
+    $.protocol = this.value;
+};
+
+function initProfile(e) {
+    switch(this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    const
+        profileData = JSON.parse(this.responseText),
+        df = document.createDocumentFragment();
+
+    for (let name in profileData) {
+        df.appendChild(document.createElement("option")).text = name;
+    }
+
+    document.querySelector("optgroup").appendChild(df);
+
+    $.request.execute({
+        command: "get",
+        target: "icon"
+    }, buildType);
+}
+
+function buildType() {
+    switch (this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    };
+
+    const
+        iconData = ITAhM.iconData,
+        customData = JSON.parse(this.responseText),
+        df = document.createDocumentFragment(),
+        group = {};
+    let 
+        groupName, optgroup, icon, type;
+
+    for (let type in customData) {
+        iconData[type] = customData[type];
+    }
+
+    for (let type in iconData) {
+        icon = iconData[type];
+
+        groupName = icon.group;
+
+        if (groupName === "branch") {
+            continue;
+        }
+
+        optgroup = group[groupName];
+        
+        if (!optgroup) {
+            optgroup = document.createElement("optgroup");
+            optgroup.label = groupName;
+            
+            group[groupName] = optgroup;
+            
+            df.appendChild(optgroup);
+        }
+
+        optgroup.appendChild(document.createElement("option")).text = type;
+    }
+
+    $.form.elements["type"].appendChild(df);
+    $.form.elements["type"].selectedIndex = -1;
+
+    if ($.id) {
+        $.request.execute({
+            command: "get",
+            target: "node",
+            id: $.id
+        }, initNode);
+    } else {
+        $.form.elements["type"].value = "unknown";
+
+        document.body.classList.remove("loading");
+    }
+}
+
+function initNode(e) {
+    switch (this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    const node = JSON.parse(this.responseText);
+
+    if (!node.type) {
+        node.type = "unknown";
+    }
+
+    if (node.ip) {
+        const monitor = $.form.elements["monitor"];
+
+        document.body.classList.add("monitor");
+
+        if (node.protocol) {
+            monitor.value = node.profile || node.protocol;
+
+            [].forEach.call(monitor.querySelectorAll(".protocol:not(.ip)"), e => e.disabled = false);
+        } else {
+            if (isIPv4(node.ip)) {
+                [].forEach.call(monitor.querySelectorAll(".protocol.ip:not(.tcp)"), e => e.disabled = false);
+            } else if (isTCP(node.ip)){
+                [].forEach.call(monitor.querySelectorAll(".protocol.tcp"), e => e.disabled = false);
+            }
+        }
+        
+        $.form.elements["ip"].disabled = true;
+        $.form.elements["ip"].value = node.ip;
+    }
+
+    $.form.elements["name"].value = node.name || "";
+    $.form.elements["type"].value = node.type;
+    // 저장할때는 trim으로 다 붙여서 넣지만 보여줄때는 보기 좋게 한칸씩 뗀다.
+    $.form.elements["label"].value = node.label && (node.label.split(",")).join(", ") || "";
+
+    if (node.manager) {
+        $.form.elements["manager"].value = node.manager;
+    }
+    
+    if ("extra" in node) {
+        const extra = JSON.parse(node.extra);
+
+        for (let name in $.customInputMap) {
+            $.customInputMap[name].value = extra[name] || "";
+        }
+    }
+
+    document.body.classList.add("edit");
+    document.body.classList.remove("loading");
+}
+
+function initCustom(customs) {
+    const df = document.createDocumentFragment();
+    var
+        tr,
+        input;
+    
+    customs.forEach(name => {
+        tr = df.appendChild(document.createElement("tr"));
+        tr.appendChild(document.createElement("th")).textContent = name;
+        
+        input = document.createElement("input");
+        input.type = "text";
+        
+        $.customInputMap[name] = input;
+        
+        tr.appendChild(document.createElement("td")).appendChild(input);    
+    });
+    
+    document.getElementById("custom").appendChild(df);
+}
+
+function initSetting(e) {
+    switch(this.status) {
+    case 200:
+        const settingData = JSON.parse(this.responseText);
+
+        if ("custom" in settingData) {
+            initCustom(settingData.custom.split(','));
+        }
+    case 204:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    $.request.execute({
+        command: "get",
+        target: "profile"
+    }, initProfile);
+}
+
+function initUser(e) {
+    switch(this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    const
+        userData = JSON.parse(this.responseText),
+        df = document.createDocumentFragment();
+    let user, option;
+
+    for (let key in userData) {
+        user = userData[key];
+
+        option = document.createElement("option");
+
+        option.value = user.id;
+        option.text = `${user.name}(${user.id})`;
+
+        df.appendChild(option);
+    }
+
+    $.form.elements["manager"].appendChild(df);
+    $.form.elements["manager"].selectedIndex = -1;
+
+    $.request.execute({
+        command: "get",
+        target: "setting",
+        key: "custom"
+    }, initSetting);
+}
+
+$.request.execute({
+    command: "get",
+    target: "user"
+}, initUser);
+
+	</script>
+	
+	</body>
+	
+</html>

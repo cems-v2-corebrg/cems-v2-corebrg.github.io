@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="no-cache">
+		
+		<title>dialog</title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/dialog.css";
+@import "/css/fa.css";
+
+:root {
+    --scale: 0.4;
+    --rack19-width: 482.6px;
+    --guide-width: 15.875px;
+    --unit-height: 44.5px;
+}
+
+main {
+    width: auto;
+    display: flex;
+}
+
+section.rack {
+    flex: none; width: auto;
+    position: relative;
+    display: flex;
+	justify-content: center;
+	align-items: center;
+    background-color: #666666;
+    margin-left: 1em;
+    align-self: flex-end;
+}
+
+section.facility {
+    flex: none; width: 400px;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+}
+
+#location {
+    align-self: end;
+}
+
+ul {
+    padding: 0 calc(var(--guide-width) * var(--scale));
+    background-color: rgba(0, 0, 0, 0.4);
+    list-style: none;
+}
+
+ul >li {
+    width: calc((var(--rack19-width) - calc(var(--guide-width) *2)) * var(--scale));
+    height: calc(var(--unit-height) * var(--scale));
+    background-color: #ffffff;
+    position: relative;
+}
+
+ul >li::before {
+    position: absolute; left:0; bottom: 0;
+    font-size: 0.8em;
+    color: #ffffff;
+    content: attr(data-position);
+    transform: translateX(-100%) translateX(calc(var(--guide-width) * var(--scale) *-1));
+    display: inline-block;
+}
+
+ul >li[data-id] {
+    background-size: cover;
+    background-position: center;
+}
+
+td.unit {
+    padding-right: 2em;
+    position: relative;
+}
+
+td.unit::after {
+    content: attr(data-unit);
+    display: inline-block;
+    position: absolute; top:0; right: 0;
+    transform: translateY(50%);
+}
+
+body.edit select[name=type],
+body.edit input[name=unit] {
+    pointer-events: none;
+}
+
+body.rack .structure,
+body:not(.rack) section.rack,
+body:not(.rack) article.rack,
+body:not(.rack) tr.rack,
+#location:not(.edit) input[type=reset] {
+    display: none;
+}
+
+		</style>
+		
+		<script>
+
+function onSelectSpace() {/*
+    const position = this.dataset.position;
+    var limit = 1;
+
+    for (let i=position; i<$.facility.unit; limit++) {
+        if ($.used.indexOf(++i) !== -1) {
+            break;
+        }
+    }
+*/
+    document.body.querySelector("input[name=position]").value = this.dataset.position;
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+		</script>
+	</head>
+	
+	<body class="loading">
+		<main>
+            <section class="facility">
+                <article>
+                    <h2>
+                        <span  id="close" title="대화창 닫기">&#xf00d;</span>
+                        <span>Facility</span>
+                    </h2>
+                    <form id="facility">
+                        <table>
+                            <colgroup>
+                                <col width="100">
+                            </colgroup>
+                            <tbody>
+                                <tr>
+                                    <th>이름</th>
+                                    <td>
+                                        <input type="text" name="name" required>
+                                    </td>
+                                </tr>
+                                <tr title="생성된 설비의 타입은 변경할 수 없습니다.">
+                                    <th>타입</th>
+                                    <td>
+                                        <select name="type" required>
+                                            <option value="rack" selected>랙</option>
+                                            <option value="structure">구조물</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr class="rack"  title="생성된 랙의 유닛은 변경할 수 없습니다.">
+                                    <th></th>
+                                    <td class="unit" data-unit="U">
+                                        <input type="number" value="42" name="unit">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>종류</th>
+                                    <td class="structure">
+                                        <select name="image">
+                                            <option value="/dc/img/thermohygrostat.png">항온항습기</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>너비</th>
+                                    <td class="unit" data-unit="mm">
+                                        <input type="number" name="width" value="600" required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>높이</th>
+                                    <td class="unit" data-unit="mm">
+                                        <input type="number" name="height" value="2100" required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>길이</th>
+                                    <td class="unit" data-unit="mm">
+                                        <input type="number" name="depth" value="900" required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>회전</th>
+                                    <td class="unit" data-unit="º">
+                                        <select name="rotate">
+                                            <option value="0" selected>0</option>
+                                            <option value="90">90</option>
+                                            <option value="180">180</option>
+                                            <option value="270">270</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <footer>
+                            <input type="reset" value="&#xf1f8; Remove">
+                            <input type="submit" value="&#xf0c7; Save">
+                        </footer>
+        
+                        <div class="loading mask"></div>
+                    </form>
+                </article>
+                <article class="rack">
+                    <h2>
+                        Location
+                    </h2>
+                    <form id="location">
+                        <table>
+                            <colgroup>
+                                <col width="100">
+                            </colgroup>
+                            <tbody>
+                                <tr>
+                                    <th>이름</th>
+                                    <td>
+                                        <input type="text" name="name" required disabled></select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>제조사</th>
+                                    <td>
+                                        <select name="maker" required disabled></select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>모델</th>
+                                    <td>
+                                        <select name="model" required></select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>크기</th>
+                                    <td class="unit" data-unit="U">
+                                        <input name="unit" type="number" disabled>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>위치</th>
+                                    <td class="unit" data-unit="U">
+                                        <select name="position" required></select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <footer>
+                            <input type="reset" value="&#xf1f8; Remove">
+                            <input type="submit" value="&#xf0c7; Save">
+                        </footer>
+                    </form>
+                </article>
+            </section>
+            <section class="rack">
+                <ul></ul>
+            </section>
+		</main>
+        <div class="loading mask"></div>
+        <script src="/js/request.js"></script>
+        <script src="/dc/model.js"></script>
+        <script src="/dc/dialog/rack.js"></script>
+        <script src="/dc/dialog/facility.js"></script>
+        
+		<script>
+
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        id: Number(search.get("facility")),
+        devID: Number(search.get("device")),
+        used: [],
+        location: document.getElementById("location"),
+        request: new Request(),
+        container: document.body.querySelector("section")
+    };
+
+document.addEventListener("keydown", function (e) {
+	switch (e.keyCode) {
+	case 27:
+        top.closeDialog();
+		
+		break;
+	}
+});
+
+document.getElementById("close").onclick = e => top.closeDialog();
+
+if (top.account.level === 0) {
+    document.body.classList.add("root");
+}
+
+function initFacility() {
+    switch (this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    const form = document.getElementById("facility");
+
+    $.facility = JSON.parse(this.responseText);
+    
+    form.elements["name"].value = $.facility.name;
+    form.elements["type"].value = $.facility.type;
+    form.elements["width"].value = $.facility.width;
+    form.elements["height"].value = $.facility.height;
+    form.elements["depth"].value = $.facility.depth;
+    form.elements["rotate"].value = $.facility.rotate;
+
+    if ($.facility.type === "rack") {
+        form.elements["unit"].value = $.facility.unit;
+
+        $.request.execute({
+            command: "get",
+            target: "location",
+            rack: $.id
+        }, initLocation);
+    } else {
+        form.elements["image"].value = $.facility.image;
+
+        document.body.classList.remove("loading");
+    }
+}
+
+function initLocation() {
+    switch (this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    initRack($.facility, JSON.parse(this.responseText));
+    
+    if ($.devID) {
+        const form = document.getElementById("location");
+
+        form.elements["maker"].disabled = false;
+        form.elements["name"].value = search.get("name") || "";
+
+        form.classList.add("add");
+    }
+
+    document.body.classList.add("rack");
+    document.body.classList.remove("loading");
+}
+
+if ($.id) {
+    $.request.execute({
+        command: "get",
+        target: "facility",
+        id: $.id
+    }, initFacility);
+
+    document.body.classList.add("edit");
+} else {
+    document.body.classList.remove("loading");
+}
+	</script>
+	
+	</body>
+	
+</html>

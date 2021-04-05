@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		
+		<title>List @ ITAhM</title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/fa.css";
+
+body {
+	position: fixed; inset: 0 0 0 0;
+	margin: 0; padding: 0;
+    background-color: #424242;
+    display: flex;
+}
+
+nav {
+    position: relative;
+	flex: none; width: 300px;
+    padding: 1em; box-sizing: border-box;
+    display: flex; flex-direction: column;
+}
+
+section {
+    flex: 1;
+    display: flex; flex-direction: column;
+    padding: 1em;
+}
+
+header {
+    flex: none;
+	display: flex;
+	justify-content: space-between;
+}
+
+main {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.sort::after {
+    font-family: "Font Awesome 5 Free";
+    content: "\f0dc";
+	cursor: pointer;
+    position: absolute; right: 3px;
+}
+
+.sort.sorted::after {
+	content: "\f0de";
+}
+
+.sort.ascending::after {
+	content: "\f0dd";
+}
+
+header input,
+header select {
+    font-family: "Font Awesome 5 Free";
+	padding: .5em;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+ul {
+	margin: 0; padding: 0;
+	list-style: none;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+tbody tr {
+    border-bottom: 1px solid #ffffff;
+    background-color: #ffffff;
+}
+
+tbody tr:hover {
+    cursor: pointer;
+}
+
+th {
+    background-color: #34495e;
+    color: #efefef;
+    position: sticky; top: 0;
+}
+
+th:not(:last-of-type) {
+    border-right: 1px solid rgba(52, 73, 94, 0.8);
+}
+
+th,
+td {
+    padding: 1em;
+    box-sizing: border-box;
+	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+thead th:nth-child(2) {
+    overflow: visible;
+}
+
+td:nth-child(4) {
+    padding-left: 3em;
+    background: no-repeat left/2em;
+}
+
+td:nth-child(7) {
+    font-family: "Font Awesome 5 Free";
+    font-weight: bold;
+    text-align: center;
+}
+
+td:nth-child(7):hover {
+    transform: scale(1.2);
+    color: #0084ff;
+}
+
+tr:not(:hover) td:nth-child(7) {
+    opacity: 0;
+}
+
+tr:nth-child(odd) {
+	background-color: #ebebeb;
+}
+
+tr >td:nth-child(2) {
+    text-align: center;
+    color: #efefef;
+    background-color: #28a745;
+}
+
+tr >td:nth-child(2)::before {
+    content: "정상";
+}
+
+tr[data-shutdown] >td:nth-child(2) {
+    background-color: #dc3545;
+}
+
+tr[data-shutdown] >td:nth-child(2)::before {
+    content: "장애";
+}
+
+tr[data-critical] >td:nth-child(2) {
+    background-color: #ffc107;
+}
+
+tr[data-critical] >td:nth-child(2)::before {
+    content: "임계";
+}
+
+tr[data-disabled] >td:nth-child(2) {
+    background-color: #6c757d;
+}
+
+tr[data-disabled] >td:nth-child(2)::before {
+    content: "비활성";
+}
+
+details {
+    position: relative;
+    display: inline-block;
+}
+
+details[open] summary::before {
+    content: "";
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    background-color: transparent;
+}
+
+summary {
+    width: 3em; height: 1em;
+    border: 1px solid #000000;
+} 
+
+summary::marker {
+    content: "";
+    display: none;
+}
+
+#dialog {
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	padding: 0; margin: 0;
+}
+
+iframe {
+    width: 100%; height: 100%;
+    border: none;
+}
+
+#selector {
+    position: absolute; top: 100%; left: 50%;
+    font-weight: normal;
+    transform: translateX(-50%);
+    margin-top: 1em;
+    border: 1px solid rgba(27, 31, 35, 0.15);
+    box-shadow: 0 1px 15px rgba(27, 31, 35, 0.15);
+    background-color: #ffffff;
+    pointer-events: none;
+}
+
+#selector li {
+    width: 5em;
+    padding: 1em;
+    margin: 1px;
+    cursor: pointer;
+    pointer-events: all;
+}
+
+.status {
+    background: linear-gradient(to right, #28a745 25%, #ffc107 25%, #ffc107 50%, #dc3545 50%, #dc3545 75%, #6c757d 75%);
+}
+
+.status.normal {
+    background: #28a745;
+}
+
+.status.shutdown {
+    background: #dc3545;
+}
+
+.status.critical {
+    background: #ffc107;
+}
+
+.status.disabled {
+    background: #6c757d;
+}
+
+tr[data-disabled] {
+	color: #999;
+}
+
+#count {
+	font-size: 30px; font-weight: bold;
+	display: inline-block;
+	margin: 0 30px;
+}
+
+header form input {
+    font-family: "Font Awesome 5 Free";
+}
+
+i {
+    color: #ffffff;
+}
+
+#drag {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+    background-color:#0084ff;
+    color: #ffffff;
+    padding: 1em;
+}
+
+.drag.image {
+    position: absolute; top: 0; right: 0;
+    transform: translateX(100%);
+}
+
+.hidden,
+body:not(.dialog) #dialog,
+body.keyword #list tr:not(.keyword),
+#list.normal tr:not([data-normal]),
+#list.critical tr:not([data-critical]),
+#list.shutdown tr:not([data-shutdown]),
+#list.disabled tr:not([data-disabled]) {
+	display: none;
+}
+
+		</style>
+		
+		<script>
+// static function
+const REGEXP_IPV4 = new RegExp("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+	+ "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+	+ "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+	+ "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+
+function IP2Int(s) {
+	const o = REGEXP_IPV4.exec(s);
+	
+	if(o === null || o.length != 5) return 0xffffffff;
+	
+	var n = 0;
+	for(let i=1; i<5; i++) {
+		n <<= 8;
+		n |= o[i];
+	}
+	
+	return n >>> 0;
+}
+		</script>
+		
+		<script>
+
+//public
+function reload() {
+	window.location.reload();
+}
+
+function onShowStatus() {
+	window.sessionStorage.setItem("node_id", window.selectedID);
+
+    window.location.href = "/resource.html";
+}
+
+/**
+ * @param {string} id
+ * @param {Object} node
+ **/
+function createRow(id, node) {
+	const
+		row = document.createElement("tr"),
+        icon = $.iconData[node.type || "unknown"] || $.iconData["unknown"];
+    let checkbox, type, labels, label, td;
+    
+    checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.onclick = e => {
+        e.stopPropagation();
+
+        document.getElementById("check").checked = false;
+    }
+
+    row.appendChild(document.createElement("td")).appendChild(checkbox); // N.0 선택
+    row.appendChild(document.createElement("td")); // N.1 상태
+	row.appendChild(document.createElement("td")).textContent = node.ip || ""; // N.2 IP주소
+
+    type = row.appendChild(document.createElement("td")); // N.3 타입
+    
+    type.textContent = node.type;
+	type.style.backgroundImage = `url(${icon.src})`;
+	
+	row.appendChild(document.createElement("td")).textContent = (protocol => {
+         if (protocol) {
+            switch (protocol.toUpperCase()) {
+            case "ICMP":
+            case "TCP":
+                return protocol.toUpperCase();
+            default:
+                return "SNMP";
+            }
+         } else {
+             return "";
+         }
+    }) (node.protocol); // N.4 모니터
+	
+    row.appendChild(document.createElement("td")).textContent = node.manager || ""; // N.5 관리자
+    
+    td = document.createElement("td"); // N.5 이력 조회
+
+    if (node.manager) {
+        td.textContent = "\uf141";
+
+        td.onclick = e => {
+            e.stopPropagation();
+
+            window.open(`/manager.html?node=${node.id}`, "manager");
+        };
+    }
+
+    row.appendChild(td);
+
+	if ($.customArray) {
+        const extra = node.extra && JSON.parse(node.extra) || {};
+
+		$.customArray.forEach(function (custom) {
+			row.appendChild(document.createElement("td")).textContent = extra[custom] || "";
+		});
+	};
+	
+	row.appendChild(document.createElement("td")).textContent = node.name; // N.0
+
+	row.dataset.id = id;
+	
+	if (node.label) {
+		labels = node.label.split(",");
+		
+		for (var i=0, length=labels.length; i<length; i++) {
+			label = labels[i];
+			
+			if (!(label in $.labelMap)) {
+				$.labelMap[label] = [];
+			}
+
+			$.labelMap[label].push(row);
+		}
+	}
+	else {
+		$.labelMap[""].push(row);
+	}
+    
+    row.onclick = e => {
+        e.preventDefault();
+
+        top.showDialog(`/dialog/node.html?id=${id}`, this);
+    };
+
+	if (node.protocol) {
+		if ("status" in node && !node.status) {
+			row.dataset.shutdown = true;
+		}
+		else if ("critical" in node && node.critical) {
+			row.dataset.critical = true;
+		}
+		else {
+			row.dataset.normal = true;
+        }
+
+        row.oncontextmenu = e => {
+            e.preventDefault();
+
+            top.showDialog(`/chart.html?id=${id}`);
+        };
+	}
+	else {
+		row.dataset.disabled = true;
+	}
+    
+    row.draggable = true;
+
+	return row;
+}
+
+function initLabel() {
+    var df = document.createDocumentFragment(),
+        select = document.getElementById("label"),
+		option = document.createElement("option");
+
+	for (let label in $.labelMap) {
+		option = document.createElement("option");
+		
+		option.text = label;
+		
+		df.appendChild(option);
+	}
+	
+	select.insertBefore(df, select.firstChild);
+}
+
+function selectStatus(status) {
+    $.list.className = status;
+    $.list.classList.remove("status");
+
+    document.querySelector("summary").className = status;
+
+    document.body.querySelector("details").removeAttribute("open");
+
+	document.getElementById("count").textContent = count();
+}
+
+function onSelectStatus (e) {
+    selectStatus(e.target.className);
+}
+
+function onSort (e) {
+	const
+		reverse = !this.classList.toggle("ascending"),
+		df = document.createDocumentFragment();
+
+    this.classList.add("sorted");
+
+	[].slice.call($.list.children).sort(reverse?
+		function (a, b) {
+			const
+				ipA = a.children[1].textContent,
+				ipB = b.children[1].textContent;
+			
+			if (ipA && ipB) {
+				return IP2Int(ipB) - IP2Int(ipA);
+			}
+			else if (ipB) {
+				return 1;
+			}
+			else if (ipA) {
+				return -1;
+			}
+			else {
+				return 0;
+			}
+		}:
+		function (a, b) {
+			const
+				ipA = a.children[1].textContent,
+				ipB = b.children[1].textContent;
+			
+			if (ipA && ipB) {
+				return IP2Int(ipA) - IP2Int(ipB);
+			}
+			else if (ipB) {
+				return 1;
+			}
+			else if (ipA) {
+				return -1;
+			}
+			else {
+				return 0;
+			}
+		}).forEach(function (e) {
+			df.appendChild(e);
+		});
+
+	$.list.appendChild(df);
+}
+
+function onSearch (e) {
+    e.preventDefault();
+    
+    document.body.classList.add("loading", "keyword");
+
+    const keyword = this.elements["keyword"].value.toLowerCase();
+
+    if (!keyword) {
+        return $.form.reset();
+    }
+
+    const df = document.createDocumentFragment();
+    
+    for (let row, cols; row = $.list.firstElementChild;) {
+        cols = row.children;
+
+        df.appendChild(row);
+
+        for (var i=0, length=cols.length; i<length; i++) {
+            row.classList.remove("keyword");
+
+            if (cols[i].textContent.toLowerCase().indexOf(keyword) !== -1) {
+                row.classList.add("keyword");
+                
+                break;
+            }
+        }
+    }
+    
+    $.list.appendChild(df);
+
+    document.body.classList.remove("loading");
+
+    document.getElementById("count").textContent = count();
+}
+
+function onReset(e) {
+    const df = document.createDocumentFragment();
+
+    document.body.classList.add("loading");
+    
+    for (let row; row = $.list.firstElementChild;) {
+        df.appendChild(row).classList.remove("keyword");
+    }
+
+    document.body.classList.remove("keyword");
+
+    $.list.appendChild(df);
+
+    document.body.classList.remove("loading");
+
+    document.getElementById("count").textContent = count();
+}
+    
+function onSave() {
+    const
+        keys = ["name", "ip", "type", "manager"],
+		rows = [];
+	
+	let node, cols;
+
+	for (let id in $.nodeData) {
+        node = $.nodeData[id];
+        
+        cols = [];
+
+        if (node.protocol) {
+            if ("status" in node && !node.status) {
+                cols.push("장애");
+            }
+            else if ("critical" in node && node.critical) {
+                cols.push("주의");
+            }
+            else {
+                cols.push("정상");
+            }
+        }
+        else {
+            cols.push("");
+        }
+    
+        keys.forEach(key => 
+            cols.push(`"${(node[key] || "").replace(/\"/g, "'")}"`)
+        );
+        
+        $.customArray && $.customArray.forEach(key => {
+            const extra = node.extra && JSON.parse(node.extra) || {};
+
+            cols.push(`"${(extra[key] || "").replace(/\"/g, "'")}"`);
+        });
+
+        rows.push(cols.join(","));
+    }
+
+	ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
+		type: "text/csv;charset=utf-8;"
+	}), "node.csv");
+}
+
+function count() {
+	var count = 0;
+
+	[].forEach.call($.list.children, function (row) {
+		if (row.offsetHeight > 0) {
+			count++;
+		}
+	});
+
+	return count;
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert(NOTICE_SESS_EXPIRE["kr"]);
+
+        break;
+    default:
+        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+		</script>
+		
+	</head>
+	
+	<body class="loading">
+        <nav>
+            <header>
+                <div>
+                    <input type="button" value="&#xf067; Add" id="add_group" title="그룹 추가">
+                    <input type="button" value="&#xf1f8; Remove" id="remove_group" title="그룹 삭제">
+                </div>
+            </header>
+            <iframe></iframe>
+        </nav>
+        <section>
+            <header>
+                <div>
+                    <select id="label">
+                        <optgroup>
+                            <option value="">미분류
+                        </optgroup>
+                        <optgroup>
+                            <option selected>모두 보기
+                        </optgroup>
+                    </select>
+                    <input type="button" value="&#xf067; Add" id="add" title="노드 추가">
+                    <input type="button" value="&#xf019; Export" id="export" title="CSV 내보내기">
+                </div>
+                <i id="count"></i>
+                <form>
+                    <input type="text" name="keyword" placeholder="IP, Type, Name">
+                    <input type="submit" value="&#xf002; Search">
+                    <input type="reset" value="&#xf2f9; Reset">
+                </form>
+            </header>
+            <main>
+                <table>
+                    <colgroup>
+                        <col width="30">
+                        <col width="100">
+                        <col width="200">
+                        <col width="180">
+                        <col width="100">
+                        <col width="180">
+                        <col width="60">
+                    </colgroup>
+                    <thead>
+                        <tr id="header">
+                            <th>
+                                <input type="checkbox" id="check">
+                            </th>
+                            <th>
+                                <details title="상태별">
+                                    <summary class="status"></summary>
+                                    <ul id="selector">
+                                        <li class="status normal">정상</li>
+                                        <li class="status shutdown">장애</li>
+                                        <li class="status critical">주의</il>
+                                        <li class="status disabled">비활성</li>
+                                        <li class="status all">전체</li>
+                                    </ul>
+                                </details>
+                            </th>
+                            <th id="sort" class="sort">주소</th>
+                            <th>종류</th>
+                            <th>모니터</th>
+                            <th colspan="2">관리자</th>
+                            <th>이름</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list"></tbody>
+                </table>
+            </main>
+        </section>
+		<iframe id="dialog"></iframe>
+		<div class="loading mask"></div>
+        <div class="drag image">
+            <div id="drag">Test good</div>
+        </div>
+        <script src="/js/ITAhM.js"></script>
+        <script src="/js/icon.js"></script>
+		<script src="/js/object.js"></script>
+        <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+        <script type="module">
+            import {Resizer} from "/js/module.js"; 
+    
+            new Resizer(document.body.querySelector("nav"));
+        </script>
+		<script>
+
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request(),
+        iconData: ITAhM.iconData,
+        list: document.getElementById("list"),
+        header: document.getElementById("header"),
+        form: document.querySelector("form"),
+        status: search.get("status"),
+        labelMap: {
+            "": []
+        }
+    };
+
+new BroadcastChannel("bc_manager").onmessage = function (e) {
+    const bc = this;
+
+    $.request.execute({
+        "command": "get",
+        "target": "manager",
+        "node": e.data
+    }, function (e) {
+        switch(this.status) {
+        case 200:
+            break;
+        default:
+            throw showMessage(this);
+        }
+
+        bc.postMessage(JSON.parse(this.responseText));
+    });
+};
+
+document.getElementById("add").onclick = e =>
+    top.showDialog("/dialog/node.html", window);
+
+document.getElementById("add_group").onclick = e => {
+    const name = prompt("그룹 이름");
+
+    if(name) {
+        document.body.classList.add("loading");
+
+        $.request.execute({
+            command: "add",
+            target: "group",
+            group: {
+                name: name,
+                parent: $.selected && $.selected.dataset.id
+            }
+        }, function (e) {
+            switch(this.status) {
+            case 200:
+                break;
+            default:
+                throw showMessage(this);
+            }
+
+            const group = JSON.parse(this.responseText);
+
+            $.tree.add(name, $.selected).dataset.id = group.id;
+
+            document.body.classList.remove("loading");
+        });
+    }
+};
+
+document.getElementById("remove_group").onclick = e => {
+    if ($.selected && confirm("Confirm.\n\n선택한 그룹을 삭제합니까?")) {
+        document.body.classList.add("loading");
+
+        $.request.execute({
+            command: "remove",
+            target: "group",
+            id: $.selected.dataset.id
+        }, function (e) {
+            switch(this.status) {
+            case 200:
+                break;
+            default:
+                throw showMessage(this);
+            }
+
+            window.location.reload();
+        });
+    }
+};
+
+document.getElementById("label").onchange = function () {
+	const
+		df = document.createDocumentFragment(),
+		label = this.value;
+	
+	document.body.classList.add("loading");
+	
+	if (this.selectedIndex === this.options.length -1) {
+		for (let row; row = $.list.firstElementChild;) {
+			df.appendChild(row).classList.remove("hidden");
+		}
+	}
+	else {
+		for (let row; row = $.list.firstElementChild;) {
+			df.appendChild(row).classList[$.labelMap[label].indexOf(row) == -1? "add": "remove"]("hidden");
+		}
+	}
+	
+	$.list.appendChild(df);
+
+	document.body.classList.remove("loading");
+
+	document.getElementById("count").textContent = count();
+};
+
+document.getElementById("selector").onclick = onSelectStatus;
+
+document.getElementById("export").onclick = onSave;
+document.getElementById("sort").onclick = onSort;
+
+document.getElementById("list").ondragstart = e => {return e.preventDefault();
+    const
+        image = document.getElementById("drag");
+        checked = document.getElementById("list").querySelectorAll("input:checked"),
+        checkbox = e.target.querySelector("input[type=checkbox");
+
+    document.getElementById("check").checked = false;
+
+    if (checkbox.checked) {
+        const data = [];
+
+        image.textContent = `노드 ${checked.length} 개 이동`;
+
+        [].forEach.call(checked, checkbox => {
+            data.push(checkbox.parentNode.parentNode.dataset.id);
+        });
+
+        e.dataTransfer.setData("text/plain", data.join(","));
+    } else {
+        [].forEach.call(document.getElementById("list").querySelectorAll("input[type=checkbox]"),
+            checkbox => checkbox.checked = false);
+        
+        checkbox.checked = true;
+
+        image.textContent = `노드 1 개 이동`;
+
+        e.dataTransfer.setData("text/plain", e.target.dataset.id);
+    }
+
+    e.dataTransfer.setDragImage(image, 0, 0);
+};
+
+document.getElementById("check").onclick = function (e) {
+    const checked = this.checked;
+
+    [].forEach.call(document.getElementById("list").querySelectorAll("input[type=checkbox]"),
+        checkbox => checkbox.checked = checked);
+};
+
+$.form.onsubmit = onSearch;
+$.form.onreset = onReset;
+
+function initialize(e) {
+    switch(this.status) {
+    case 200:
+        break;
+    default:
+        return showMessage(this);
+    }
+
+    const settingData = JSON.parse(this.responseText);
+
+    if ("custom" in settingData) {
+		var customs = settingData.custom;
+		
+		if (customs) {
+			let df = document.createDocumentFragment();
+			
+			$.customArray = customs.split(",");
+			
+			$.customArray.forEach(function (custom) {
+				df.appendChild(document.createElement("th")).textContent = custom;
+			});
+			
+			$.header.insertBefore(df, $.header.lastElementChild);
+		}
+    }
+    
+    const df = document.createDocumentFragment();
+    
+    var row;
+
+    for (let id in $.nodeData) {
+        row = createRow(id, $.nodeData[id]);
+
+        if (row) {
+		    df.appendChild(row);
+        }
+    }
+	
+	list.appendChild(df);
+    
+    if ($.status) {
+        selectStatus(`status ${$.status}`);
+    }
+    
+	document.body.classList.remove("loading");
+
+	document.getElementById("count").textContent = count();
+
+    initLabel();
+}
+
+function initIcon(e) {
+    switch(this.status) {
+    case 200:        
+        break;
+    default:
+        return showMessage(this);
+    }
+
+    const iconData = JSON.parse(this.responseText);
+
+    for (let type in iconData) {
+        $.iconData[type] = iconData[type];
+    }
+    
+    $.request.execute({
+        "command": "get",
+        "target": "setting"
+    }, initialize);
+}
+
+function initGroup(e) {
+    switch(this.status) {
+    case 200:
+        break;
+    default:
+        return showMessage(this);
+    }
+
+    const
+        groupData = JSON.parse(this.responseText),
+        treeData = {};
+    let group, item;
+
+    for (let id in groupData) {
+        item = $.tree.create(groupData[id].name);
+
+        treeData[id] = item;
+
+        item.dataset.id = id;
+    }
+
+    for (let id in treeData) {
+        $.tree.append(treeData[id], groupData[id].parent && treeData[groupData[id].parent] || undefined);
+    }
+
+    $.request.execute({
+        "command": "get",
+        "target": "icon"
+    }, initIcon);
+}
+
+function initNode(e) {
+    switch(this.status) {
+    case 200:
+        break;
+    default:
+        return showMessage(this);
+    }
+
+    $.nodeData = JSON.parse(this.responseText);
+        
+    $.request.execute({
+        "command": "get",
+        "target": "group"
+    }, initGroup);
+}
+
+{
+    const tree = document.body.querySelector("iframe");
+
+    tree.onload = function (e) {
+        $.tree = this.contentWindow.getInstance({
+            onselect: item => $.selected = item,
+            ondrop: (item, dt) => console.log(dt.getData("text/plain"))
+        });
+
+        $.request.execute({
+            "command": "get",
+            "target": "node"
+        }, initNode);
+    }
+
+    tree.src = "/util/tree2.html";
+}
+        </script>
+	
+	</body>
+	
+</html>

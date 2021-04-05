@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <meta charset="UTF-8">
+        <title>이력 조회</title>
+		<style>
+@import "/css/style.css";
+@import "/css/fa.css";
+
+:root {
+  --ribbon-size: 1em;
+}
+
+body {
+    text-align: center;
+}
+
+div>span {
+    display: inline-block;
+    padding: 1em 5em;
+    background-color: #6fa0cf;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+div>span.node {
+    background-color: #ec6166;
+    border-radius: 1.5em;
+}
+
+div:not(:last-child)::after {
+    font: 2em "Font Awesome 5 Free";
+    display: block;
+    padding: 0.5em 0;
+    content: "\f0ab";
+}
+
+label {
+    display: inline-block;
+    vertical-align: top;
+    color: #ffffff;
+    background-color: #3bde90;
+    padding: 0 var(--ribbon-size);
+    margin: 0 -2em;
+    height: calc(var(--ribbon-size) *2);
+    line-height: calc(var(--ribbon-size) *2);
+    width: max-content;
+    position: relative;
+    text-align: center;
+}
+
+label::after {
+    content: "";
+    position: absolute;
+    display: block;
+    bottom: 0;
+    right: calc(-1.2 * var(--ribbon-size));
+    border: var(--ribbon-size) solid #3bde90;
+    border-right-color: transparent;
+}
+
+		</style>
+		<script>
+function toDateTimeString(millis) {
+    const date = new Date(millis);
+    
+    return [(function () {
+        const
+            yyyy = date.getFullYear(),
+            mm = date.getMonth() +1,
+            dd = date.getDate();
+
+        return `${yyyy}-${(mm > 9? "": "0") + mm}-${(dd > 9? "": "0") + dd}`;
+    })(),
+    (function (millis) {
+        const 
+            hh = date.getHours(),
+            mm = date.getMinutes(),
+            ss = date.getSeconds();
+        
+        return (hh > 9? "": "0") + hh +":"+ (mm > 9? "": "0") + mm +":"+ (ss > 9? "": "0") + ss;
+    })()].join(" ");
+}
+
+
+        </script>
+	</head>
+	
+	<body>
+        <div class="block">
+            <span class="node"></span>
+        </div>
+		<script>
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        node: Number(search.get("node")),
+        bc: new BroadcastChannel("bc_manager")
+    };
+
+$.bc.onmessage = e => {
+    const keys = Object.keys(e.data).sort((a, b) => Number(a) - Number(b));
+    let manager, block;
+
+    keys.forEach(timestamp => {
+        manager = e.data[timestamp];
+
+        if (manager.node) {
+            document.body.querySelector(".node").textContent = manager.node;
+        }
+
+        block = document.createElement("div");
+
+        block.appendChild(document.createElement("span")).textContent = `${manager.id}(${manager.user})`;
+        block.appendChild(document.createElement("label")).textContent = toDateTimeString(Number(timestamp));
+
+        document.body.appendChild(block);
+    });
+};
+
+if ($.node) {
+    $.bc.postMessage($.node);
+}
+
+		</script>
+	
+	</body>
+	
+</html>

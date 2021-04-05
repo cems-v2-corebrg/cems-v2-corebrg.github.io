@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title></title>
+        <style>
+        </style>
+    </head>
+    <body>
+        <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=2d5f1506a806e98b9b51ecb765853bd7&libraries=services"></script>
+        <script>
+function getAddress(address, f) {
+    try {
+        new kakao.maps.services.Geocoder().addressSearch(address, (result, status) => {
+            if (status === kakao.maps.services.Status.OK) {
+                return f({
+                    lat: result[0].y,
+                    lng: result[0].x
+                });
+            }
+
+            f();
+        });
+    } catch (e) {
+        f();
+    }    
+}
+        </script>
+    </body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Event @ ITAhM</title>
+		
+		<style>
+
+@import "/css/style.css";
+@import "/css/fa.css";
+
+body {
+    font: 10pt "맑은 고딕", Arial, Tahoma;
+    margin: 0; padding: 1em;
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    display: flex; flex-direction: column;
+}
+
+main {
+    flex: 1;
+    overflow-y: auto;
+}
+
+input[type=date],
+input[type=text],
+input[type=button],
+input[type=submit],
+.fa {
+	font-family: "Font Awesome 5 Free", "맑은 고딕", arial, tahoma;
+	padding: 0.5em;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    z-index: -1;
+}
+
+thead th {
+    font-family: "Font Awesome 5 Free", "맑은 고딕", arial, tahoma;
+}
+
+main th {
+    background-color: #34495e;
+    color: #efefef;
+    position: sticky; top: 0;
+}
+
+main th,
+main td {
+    padding: 1em;
+}
+
+#list tr {
+    border-bottom: 1px solid #ffffff;
+    cursor: pointer;
+    background-color: #ffffff;
+}
+
+#list tr:nth-child(odd) {
+	background-color: #ebebeb;
+}
+
+header {
+    padding: 0.5em;
+    color: #ffffff;
+    user-select: none;
+}
+
+.button {
+    font: 20px "Font Awesome 5 Free";
+    display: inline-block;
+    cursor: pointer;
+}
+
+
+.button:hover>a {
+    display: inline-block;
+    transform: translateY(-2px);
+}
+
+.button:active>a {
+    color: #0084ff;
+    transform: translateY(0);
+}
+
+.button>a:link,
+.button>a:visited {
+    color: inherit;
+    text-decoration: inherit;
+}
+
+.loading.mask {
+    z-index: 9;
+}
+
+body:not(.root) .root {
+    display: none;
+}
+
+		</style>
+		<script>
+
+function createItem(user) {
+    const tr = document.createElement("tr");
+    
+    tr.appendChild(document.createElement("td")).textContent = user.id;
+    tr.appendChild(document.createElement("td")).textContent = user.level === 0? "관리자": user.level === 1? "사용자": "수신자";
+    tr.appendChild(document.createElement("td")).textContent = user.name || "";
+    tr.appendChild(document.createElement("td")).textContent = user.email || "";
+    tr.appendChild(document.createElement("td")).textContent = user.sms || "";
+
+    tr.onclick = e => top.showDialog(`/dialog/user.html?id=${user.id}`, window);
+
+	return tr;
+}
+
+function onAddUser (e) {
+    top.showDialog("/dialog/user.html", window);
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드: ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+            
+        </script>
+	</head>
+	
+	<body class="loading">
+        <header>
+            <span id="add" class="button root" title="사용자 추가">
+                <a>&#xf234;</a>
+            </span>
+            <span id="export" class="button" title="CSV 내보내기">
+                <a>&#xf019;</a>
+            </span>
+        </header>
+        <main>
+            <table>
+                <colgroup>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                    <col width="160">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>&#xf507; 아이디</th>
+                        <th>&#xf005; 권한</th>
+                        <th>&#xf004; 이름</th>
+                        <th>&#xf0e0; 이메일</th>
+                        <th>&#xf3cd; 모바일</th>
+                    </tr>
+                </thead>
+                <tbody id="list"></tbody>
+            </table>
+        </main>
+        
+		<div class="loading mask"></div>
+        
+        <script src="/js/ITAhM.js"></script>
+        <script src="/js/request.js"></script>
+		<script>
+
+const
+    $ = {
+        list: document.getElementById("list")
+    };
+
+if (top.account.level === 0) {
+    document.body.classList.add("root");
+
+    document.getElementById("add").onclick = onAddUser;
+}
+
+document.getElementById("export").onclick = function (e) {
+    const rows = [];
+	
+	rows[0] = "Index,ID,Level,Name,Email,Mobile";
+
+    {
+        let user, count=0;
+
+        for (let key in $.userData) {
+            user = $.userData[key];
+
+            rows.push([
+                count++,
+                `"${user.id.replace(/\"/g, "'")}"`,
+                user.level === 0? "관리자": user.level === 1? "사용자": "수신자",
+                `"${user.name.replace(/\"/g, "'")}"`,
+                user.email || "",
+                user.sms && user.sms.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/,"$1-$2-$3") || ""
+            ].join(","));    
+        }
+    }
+    
+    ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
+		type: "text/csv;charset=utf-8;"
+	}), $.fileName);
+};
+
+{
+    new Request().execute({
+        command: "get",
+        target: "user"
+    }, function () {
+        switch (this.status) {
+        case 200:
+            $.fileName = "user.csv";
+            $.userData = JSON.parse(this.responseText);
+            
+            const df = document.createDocumentFragment();
+            let item;
+
+            for (let key in $.userData) {
+                if (item = createItem($.userData[key])) {
+                    df.appendChild(item);
+                }
+            }
+            
+            $.list.appendChild(df);
+            
+            document.body.classList.remove("loading");
+    
+            break;
+        default:
+            showMessage(this);
+        }
+    });
+}
+
+		</script>
+	
+	</body>
+	
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+
+@import "/css/style.css";
+@import "/css/fa.css";
+
+body {
+    font : 10pt "맑은 고딕", Arial, Tahoma;
+    position: fixed; inset: 0 0 0 0;
+    padding: 0; margin: 0;
+    /*background-color: rgba(0, 0, 0, 0.5);*/
+    background-color: rgba(250, 250, 250, 0.8);
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.label {
+    font-size: 12px;
+    position: absolute;
+    color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+#close {
+    position: absolute;
+    font: 20px "Font Awesome 5 Free";
+    border-radius: 50%;
+    display: inline-flex; width: 32px; height: 32px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 132, 255, 0.5);
+    color: #000000;
+    border-color: #0084ff;
+    cursor: pointer;
+}
+
+#close:hover {
+    background-color: #0084ff;
+}
+
+            </style>
+            <script>
+const
+    UNIT_SIZE = 44.5,
+    RACK19_WIDTH = 482.6,
+    GUIDE_WIDTH = 15.875,
+    PDU_WIDTH = 25;
+
+function RealDC3D() {
+    this.initialize(arguments);
+}
+
+RealDC3D.prototype = {
+    initialize: function (args) {
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true
+        });
+        this.scene = new THREE.Scene();
+        this.container = new THREE.Group();
+        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 2000);
+        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+        this.screen = document.body.getBoundingClientRect();
+        this.label = document.getElementById("close");
+        this.labels = [];
+        this.status = [];
+
+        this.controls.maxPolarAngle = Math.PI /2;
+        this.controls.minPolarAngle = Math.PI /2;
+
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+
+        document.body.appendChild(this.renderer.domElement);
+
+        this.camera.position.set(0, 0, 80);
+        
+        this.camera.aspect = this.screen.width / this.screen.height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(this.screen.width, this.screen.height);
+
+        this.scene.add(this.camera);
+
+        /*Directional light*/
+        {
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+
+            light.position.set(100, 100, 100);
+            
+            this.scene.add(light);
+        }
+
+        /*Hemisphere light*/
+        {
+            const light = new THREE.HemisphereLight(0xffffff, 0x777777, 1);
+
+            light.position.set(0, 100, 0);
+
+            this.scene.add(light);
+        }
+
+        this.scene.add(this.container);
+
+        this.container.scale.set(0.03, 0.03, 0.03);
+
+        window.addEventListener("resize", e => {
+            this.screen = document.body.getBoundingClientRect();
+        
+            this.camera.aspect = this.screen.width / this.screen.height;
+            this.camera.updateProjectionMatrix();
+            
+            this.renderer.setSize(this.screen.width, this.screen.height);
+        });
+
+        this.set(args[0]);
+    },
+    update: function () {
+        this.controls.update();
+
+        this.renderer.render(this.scene, this.camera);
+
+        if (this.rackObject) {
+            this.move(this.label, new THREE.Vector3(), new THREE.Box3().setFromObject(this.rackObject));
+        }
+
+        this.labels.forEach(label => {
+            const position = new THREE.Vector3();
+
+            label.device.getWorldPosition(position);
+
+            this.move(label.name, position, new THREE.Box3().setFromObject(label.device));
+        });
+        
+        this.status.forEach(
+            status => {
+                status.material.opacity = ((status.material.opacity *100 +5) %100) /100;
+            }
+        );
+
+        window.requestAnimationFrame(this.update.bind(this));
+    },
+    move: function (label, position, box) {
+        position.x += (box.max.x - box.min.x) /2;
+        position.z += (box.max.z - box.min.z) /2;
+        position.y += (box.max.y - box.min.y) /2;
+
+        position.project(this.camera);
+
+        position.x = (position.x +1) * this.screen.width /2;
+        position.y = -(position.y -1) * this.screen.height /2;
+        
+        label.style.left = `${position.x}px`;
+        label.style.top = `${position.y}px`;
+    },
+    set: function (facility) {
+        const
+            width = facility.width,
+            height = facility.height,
+            depth = facility.depth,
+            x = 0,
+            y = 0,
+            vMargin = (height - facility.unit * UNIT_SIZE) /2,
+            hMargin = (width - RACK19_WIDTH) /2 - GUIDE_WIDTH,
+            planeMat = new THREE.MeshPhongMaterial({
+                color: new THREE.Color(0x333333)
+            });
+        
+        this.rackObject = new THREE.Group(),
+        this.rackData = facility;
+
+        new THREE.TextureLoader().load("/dc/img/rack-side.png", texture => {
+            texture.minFilter = THREE.LinearFilter;
+
+            const mat = new THREE.MeshPhongMaterial({
+                    map: texture
+                });
+            let mesh = new THREE.Mesh(new THREE.BoxBufferGeometry(hMargin, height, depth), [mat, mat, planeMat, planeMat, planeMat, planeMat]);
+
+            mesh.position.set((width - hMargin) /2 , 0, 0);
+
+            this.rackObject.add(mesh);
+
+            mesh = mesh.clone();
+            
+            mesh.position.set((width - hMargin) /-2, 0, 0);        
+
+            this.rackObject.add(mesh);
+        });
+
+        new THREE.TextureLoader().load("/dc/img/guide.png", texture => {
+            texture.minFilter = THREE.LinearFilter;
+
+            const mat = new THREE.MeshPhongMaterial({
+                    map: texture
+                });
+            let mesh;
+
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(1, facility.unit);
+            
+            mesh = new THREE.Mesh(new THREE.BoxBufferGeometry(GUIDE_WIDTH, height -2 * vMargin, GUIDE_WIDTH), [planeMat, planeMat, planeMat, planeMat, mat, mat]);
+
+            mesh.position.set((width -GUIDE_WIDTH) /2 - hMargin, 0, depth /2 -GUIDE_WIDTH);
+            
+            this.rackObject.add(mesh);
+
+            mesh = mesh.clone();
+
+            mesh.position.set((width -GUIDE_WIDTH) /-2 + hMargin, 0, depth /2 -GUIDE_WIDTH);
+
+            this.rackObject.add(mesh);
+        });
+
+        new THREE.TextureLoader().load("/dc/img/pdu-unit.png", texture => {
+            texture.minFilter = THREE.LinearFilter;
+
+            const
+                mat = new THREE.MeshPhongMaterial({
+                    map: texture
+                }),
+                geo = new THREE.BoxBufferGeometry(PDU_WIDTH, height -2 * vMargin, GUIDE_WIDTH);
+
+            let pdu;
+
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(1, facility.unit);
+
+            pdu = new THREE.Mesh(geo, [planeMat, planeMat, planeMat, planeMat, planeMat, mat]);
+
+            pdu.position.set((width -PDU_WIDTH) /2 - hMargin, 0, depth /-2 +PDU_WIDTH);
+
+            this.rackObject.add(pdu);
+        });
+
+        {
+            let mesh = new THREE.Mesh(new THREE.BoxBufferGeometry(width - hMargin *2, Math.max(vMargin, 0), depth), planeMat);
+
+            mesh.position.set(0, (height - vMargin) /2, 0);
+
+            this.rackObject.add(mesh);
+
+            mesh = mesh.clone();
+
+            mesh.position.set(0, (height - vMargin) /-2, 0);
+
+            this.rackObject.add(mesh);
+        }
+        
+        this.container.add(this.rackObject);
+    },
+    add: function (id, args) {
+        const
+            device = new THREE.Group(),
+            mesh = args.model? new THREE.Mesh(
+            new THREE.BoxBufferGeometry(RACK19_WIDTH, args.model.unit *UNIT_SIZE, $.realDC.rackData.depth - PDU_WIDTH),
+            [
+                new THREE.MeshBasicMaterial(),
+                new THREE.MeshBasicMaterial(),
+                new THREE.MeshBasicMaterial(),
+                new THREE.MeshBasicMaterial(),
+                new THREE.MeshBasicMaterial({
+                    map: args.model.front
+                }),
+                new THREE.MeshBasicMaterial({
+                    map: args.model.rear
+                })
+            ]):
+            new THREE.Mesh(
+                new THREE.BoxBufferGeometry(RACK19_WIDTH, UNIT_SIZE, $.realDC.rackData.depth - PDU_WIDTH),
+                new THREE.MeshBasicMaterial({
+                    color: new THREE.Color(0xc0c0c0)
+                })
+            );
+        
+        device.position.set(0, UNIT_SIZE * ($.realDC.rackData.unit /-2 + args.model.unit /2 + args.position -1), PDU_WIDTH /2);
+
+        if (args.label) {
+            const name = document.createElement("span");
+
+            name.textContent = args.label;
+            name.className = "label";
+
+            document.body.appendChild(name);
+
+            name.onclick = e => {
+                top.showDialog(`/chart.html?id=${args.id}`);
+            };
+
+            this.labels.push({
+                device: device,
+                name: name
+            });
+        }
+
+        if (args.status) {
+            const status = new THREE.Mesh(new THREE.SphereGeometry(UNIT_SIZE /3, 32, 32 ), new THREE.MeshPhongMaterial({
+                color: args.status === "shutdown"? 0xff0000: args.status === "critical"? 0xffa500: 0x00ff00
+            }))
+
+            status.position.set(RACK19_WIDTH /-2 +UNIT_SIZE, 0, $.realDC.rackData.depth /2);
+
+            device.add(status);
+
+            this.status.push(status);
+        }
+
+        device.add(mesh);
+
+        this.rackObject.add(device);
+    }
+};
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+            </script>
+        </head>
+        
+        <body class="loading">
+            <span id="close" title="닫기">
+                &#xf00d;
+            </span>
+
+            <div class="loading mask"></div>
+            <script src="/js/import/three.js"></script>
+            <script src="/js/import/OrbitControls.js"></script>
+            <script src="/dc/model.js"></script>
+            <script>
+
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+    };
+
+document.getElementById("close").onclick = function (e) {
+    parent.document.body.classList.remove("focus");
+}
+
+function initialize(config) {
+    $.realDC = new RealDC3D(config.facility);
+
+    let location, node, model, status;
+
+    for (let key in config.locationData) {
+        location = config.locationData[key];
+        
+        node = config.nodeData[key];
+
+        if (node && "protocol" in node) {
+            if ("status" in node && !node.status) {
+                status = "shutdown";
+            } else if ("critical" in node && node.critical) {
+                status = "critical";
+            } else {
+                status = "normal";
+            }
+        } else {
+            status = undefined;
+        }
+
+        model = modelData[location.maker][location.model];
+
+        $.realDC.add(key, {
+            position: location.position,
+            model: {
+                unit: model.unit,
+                front: config.modelData[model.front],
+                rear: config.modelData[model.rear]
+            },
+            label: location.node_name || location.node_ip || undefined,
+            id: location.node,
+            status: status
+        });
+    }
+
+    $.realDC.update();
+
+    document.body.classList.remove("loading");
+}
+        </script>
+    </body>
+</html>

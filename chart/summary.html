@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="No-Cache">
+		
+		<title>Status @ ITAhM</title>
+
+		<style>
+@import "/css/style.css";
+@import "/css/fa.css";
+
+body {
+	background-color: #4d525a;
+	color: #fff;
+}
+
+article {
+    page-break-inside: avoid;
+	display: flex;
+	justify-content: space-between;
+	flex-wrap: wrap;
+}
+
+h2 {
+    margin: 0 0 0.5em 0;
+    background-color: #777;
+    border-radius: 5px 5px 0 0;
+    padding: 0.5em;
+	text-align: center;
+    text-shadow: 0 2px 3px #000;
+}
+
+section {
+    position: relative;
+	padding: 5px;
+	background-color: #424242;
+}
+
+section li {
+    position: relative;
+}
+
+#information li,
+#response li,
+#processor li,
+#storage li,
+#memory li {
+    height: 100px;
+}
+
+#response li::after {
+    display: inline-block;
+    position: absolute; top: 100%; left: 50%;
+    transform: translate(-50%, -100%);
+    content: attr(data-response);
+}
+
+#processor,
+#storage {
+    display: flex;
+}
+
+#processor li {
+    width: 120px; 
+}
+
+#processor li::after {
+    display: inline-block;
+    position: absolute; top: 100%; left: 50%;
+    transform: translate(-50%, -100%);
+}
+
+#processor li:nth-child(1)::after {
+    content: "최소";
+}
+
+#processor li:nth-child(2)::after {
+    content: "평균";
+}
+
+#processor li:nth-child(3)::after {
+    content: "최대";
+}
+
+#response li,
+#storage li,
+#memory li {
+    width: 200px;
+}
+
+#portmap li {
+    flex: none; width: 80px;
+}
+
+#information {
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+section.information {
+    flex: 1 0;
+}
+
+section.portmap {
+    flex: none; width: 100%; box-sizing: border-box;
+    position: relative;
+}
+
+.selectable {
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+.selectable:hover {
+    border: 1px dotted #ddd;
+}
+
+.status::after {
+	content: "";
+	position: absolute; top: 1em; left: 1em;
+	display: inline-block;
+	width: 20px; height: 20px;
+	border-radius: 50%;
+	background-color: #0f0;
+}
+
+.status.critical::after {
+	background-color: #ffa500;
+}
+
+.status.shutdown::after {
+	background-color: #ff0000;
+}
+
+.fixed.container {
+    display: flex;
+}
+
+ul {
+	list-style: none;
+	margin: 0; padding: 0;
+}
+
+label.switch {
+    position: absolute; top: 10px; right: 10px;
+    font: 2em 'Font Awesome 5 Free';
+}
+
+label.switch .on {
+    color: #ffffff;
+}
+
+label.switch .off {
+    color: #aaaaaa;
+}
+
+#toggle {
+    display: none;
+}
+
+#portmap {    
+    display: flex;
+    overflow-x: auto;
+}
+
+#toggle:checked ~#portmap {
+    flex-wrap: wrap;
+}
+
+div.tbody {
+	text-align: initial;
+}
+
+.title {
+	padding: 0.5em 0;
+	border-bottom: 1px solid #ddd;
+	margin-bottom: 3px;
+}
+
+.title >li {
+	text-align: center;
+	font-weight: bold;
+	margin: 0.5em 0;
+}
+
+.title >li:not(:last-of-type) {
+	border-right: 1px solid #555;
+}
+
+section.information table {
+	border-collapse: collapse;
+	width: 280px;
+	table-layout: fixed;
+}
+
+section.information th {
+	text-align: right;
+    font-weight: bold;
+	width: 80px;
+}
+
+section.information td { 
+	text-align: left;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+
+section.information th,
+section.information td {
+	padding: 3px 1em;
+}
+
+div.flex {
+	display: flex;
+}
+
+div.flex span {
+	flex: 1;
+}
+
+body:not(.response) section.response,
+body:not(.processor) section.processor,
+body:not(.storage) section.storage,
+body:not(.memory) section.memory,
+body:not(.portmap) section.portmap,
+body.shutdown .status::after,
+#toggle:checked ~label.switch .off,
+#toggle:not(:checked) ~label.switch .on {
+	display: none;
+}
+
+		</style>
+		
+		<script>
+		
+function PortMap() {
+    this.initialize(arguments);
+}
+
+{
+    PortMap.prototype = {
+        initialize: function(args) {
+            this.container = args[0];
+            this.map = {};
+        },
+        add: function (index, indexData) {
+            const container = document.createElement("li");
+            let port, bandwidth, label, ifAdminStatus, ifOperStatus, inBPS, outBPS, inErrs, outErrs,
+                critical = false;
+            
+            bandwidth = indexData[ITAhM.snmp.oid.bandwidth];
+
+            bandwidth = bandwidth && Number(bandwidth.value);
+            
+            if (!bandwidth) {
+                bandwidth = indexData[ITAhM.snmp.oid.ifHighSpeed];
+
+                bandwidth = bandwidth && Number(bandwidth.value) *1000000;
+
+                if (!bandwidth) {
+                    bandwidth = indexData[ITAhM.snmp.oid.ifSpeed];
+
+                    bandwidth = bandwidth && Number(bandwidth.value);
+                }
+
+                if (!bandwidth) {
+                    return;
+                }
+            }
+
+            ifAdminStatus = indexData[ITAhM.snmp.oid.ifAdminStatus];
+
+            if (!ifAdminStatus) {
+                return;
+            }
+
+            ifAdminStatus = Number(ifAdminStatus.value);
+
+            ifOperStatus = indexData[ITAhM.snmp.oid.ifOperStatus];
+
+            if (!ifOperStatus) {
+                return;
+            }
+
+            ifOperStatus = Number(ifOperStatus.value);
+
+            inBPS = indexData[ITAhM.snmp.oid.inBPS];
+
+            if (!inBPS) {
+                return;
+            }
+
+            critical ||= inBPS.critical;
+
+            inBPS = Number(inBPS.value);
+
+            outBPS = indexData[ITAhM.snmp.oid.outBPS];
+
+            if (!outBPS) {
+                return;
+            }
+
+            critical ||= outBPS.critical;
+
+            outBPS = Number(outBPS.value);
+
+            label = indexData[ITAhM.snmp.oid.ifName];
+
+            label = label && label.value;
+
+            if (!label) {
+                label = indexData[ITAhM.snmp.oid.ifDescr];
+
+                label = label && label.value;
+
+                if (!label) {
+                    label = indexData[ITAhM.snmp.oid.ifAlias];
+
+                    label = label && label.value;
+                }
+            }
+            
+            inErrs = indexData[ITAhM.snmp.oid.inErrs];
+
+            inErrs = inErrs && Number(inErrs.value) || 0;
+                        
+            outErrs = indexData[ITAhM.snmp.oid.outErrs];
+
+            outErrs = outErrs && Number(outErrs.value) || 0;
+
+            port = new Ethernet(this.container.appendChild(container), {
+                image: $.loader.map["/canvas/ethernet.png"],
+                bandwidth: bandwidth,
+                status: ifAdminStatus !== 1?
+                    Ethernet.STATUS_DISABLED: ifOperStatus !==1?
+                    Ethernet.STATUS_SHUTDOWN: critical?
+                    Ethernet.STATUS_CRITICAL:
+                    Ethernet.STATUS_NORMAL
+            });
+
+            container.classList.add("selectable");
+            
+            container.onclick = e => onSelectResource("/chart/throughput.html", index);
+
+            this.map[index] = port;
+
+            if (ifAdminStatus == 1 && ifOperStatus == 1) {
+                port.set(inBPS, outBPS);
+            }
+
+            if (label) {
+                port.label(label);
+            }
+
+            //port.link(Math.round(Math.random() *10000000000000), $.loader.map[++i %3 ==0? "/img/svg/router.svg": i %3 ==1? "/img/svg/firewall.svg": "/img/svg/workgroup.svg"]);
+        },
+        set: function (index, indexData) {
+            const port = this.map[index];
+
+            try {
+                const
+                    ifAdminStatus = Number(indexData[ITAhM.snmp.oid.ifAdminStatus].value),
+                    ifOperStatus = Number(indexData[ITAhM.snmp.oid.ifOperStatus].value),
+                    inBPS = indexData[ITAhM.snmp.oid.inBPS],
+                    outBPS = indexData[ITAhM.snmp.oid.outBPS],
+                    status = ifAdminStatus !== 1?
+                        Ethernet.STATUS_DISABLED: ifOperStatus !==1?
+                        Ethernet.STATUS_SHUTDOWN: inBPS.critical || outBPS.critical?
+                        Ethernet.STATUS_CRITICAL:
+                        Ethernet.STATUS_NORMAL;
+
+                if (port.config.status === status) {
+                    if (ifAdminStatus == 1 && ifOperStatus == 1) {
+                       port.set(Number(inBPS.value), Number(outBPS.value));
+                    }
+                } else {
+                    port.status(status);
+
+                    if (ifAdminStatus == 1 && ifOperStatus == 1) {
+                        port.set(Number(inBPS.value), Number(outBPS.value));
+                    } else {
+                        port.set();
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        },
+        update: function (resourceData) {
+            for (let index in this.map) {
+                this.set(index, resourceData[index]);
+            }
+        }
+    };
+}
+
+function Processor() {
+    this.initialize(arguments);
+}
+
+{
+    const options = {
+            cutoutPercentage: 70,
+            circumference: Math.PI,
+            rotation: Math.PI *-1
+        },
+        COLOR_GREEN = "#00897b",
+        COLOR_ORANGE = "#f6bf26",
+        COLOR_RED = "#8e24aa",
+        COLOR_NULL = "transparent",
+        COLOR_GAUGE = "#dddddd";
+
+    Processor.prototype = {
+        initialize: function (args) {
+            container = args[0];
+
+            this.array = [];
+
+            const
+                min = document.createElement("li"),
+                avg = document.createElement("li"),
+                max = document.createElement("li"),
+                df = document.createDocumentFragment();
+            
+            this.min = new Chart(min.appendChild(document.createElement("canvas")), {
+                type: "doughnut",
+                data: {
+                    datasets: [{
+                        data: [70, 20, 10],
+                        backgroundColor: [COLOR_GREEN, COLOR_ORANGE, COLOR_RED]
+                    }]
+                },
+                options: options
+            });
+            
+            this.avg = new Chart(avg.appendChild(document.createElement("canvas")), {
+                type: "doughnut",
+                data: {
+                    datasets: [{
+                        data: [70, 20, 10],
+                        backgroundColor: [COLOR_GREEN, COLOR_ORANGE, COLOR_RED]
+                    }]
+                },
+                options: options
+            });
+
+            this.max = new Chart(max.appendChild(document.createElement("canvas")), {
+                type: "doughnut",
+                data: {
+                    datasets: [{
+                        data: [70, 20, 10],
+                        backgroundColor: [COLOR_GREEN, COLOR_ORANGE, COLOR_RED],
+                        borderWidth: 0
+                    }]
+                },
+                options: options
+            });
+
+            df.appendChild(min);
+            df.appendChild(avg);
+            df.appendChild(max);
+
+            container.appendChild(df);
+        },
+        add: function (index) {
+            this.array.push(index);
+        },
+        set: function (index, value) {
+            const chart = this[index];
+
+            chart.config.data.datasets[1] = {
+                data: [value, 100 - value],
+                backgroundColor: [COLOR_GAUGE, COLOR_NULL]
+            };
+            
+            chart.config.label = `${value.toFixed(2)}%`;
+
+            chart.update();
+        },
+        update: function (resourceData) {
+            if (!this.array.length) {
+                return;
+            }
+            
+            const array = [];
+
+            this.array.forEach(index => {
+                array.push(Number(resourceData[index][ITAhM.snmp.oid.hrProcessorLoad].value));
+            });
+
+            this.set("max", Math.max.apply(undefined, array));
+            this.set("min", Math.min.apply(undefined, array));
+            this.set("avg", array.reduce((a, b) => a + b) / array.length);
+        }
+    };
+}
+
+function Response() {
+    this.initialize(arguments);
+}
+
+{
+    const options = {
+            cutoutPercentage: 0
+        },
+        COLOR_GAUGE = "#4d525a";
+
+    Response.prototype = {
+        initialize: function (args) {
+            const
+                container = args[0],
+                chart = document.createElement("li");
+
+            this.chart = new Chart(chart.appendChild(document.createElement("canvas")), {
+                type: "pie",
+                data: {
+                    datasets: []
+                },
+                options: options
+            });
+
+            container.appendChild(chart);
+        },
+        set: function (value) {
+            this.chart.config.label = `${value}ms`;
+
+            this.chart.config.data.datasets[0] = {
+                data: [100],
+                backgroundColor: [COLOR_GAUGE]
+            };
+
+            this.chart.update();
+        }
+    };
+}
+
+function Storage() {
+    this.initialize(arguments);
+}
+
+{
+    const
+        options = {
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        display: false
+                    },
+                    ticks: {
+                        fontColor: "#ffffff",
+                        callback: value => value.substr(0, 30)
+                    }
+                }],
+                yAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        display: false
+                    },
+                    ticks: {
+                        display: false,
+                        max: 100,
+                        min: 0
+                    }
+                }]
+            },
+            layout: {
+                padding: {
+                    right: 20,
+                    left: 20
+                }
+            }
+        },
+        COLOR_GREEN = "#00897b",
+        COLOR_ORANGE = "#f6bf26",
+        COLOR_RED = "#8e24aa";
+
+    Storage.prototype = {
+        initialize: function (args) {
+            this.container = args[0];
+            this.map = {};
+        },
+        add: function (index, indexData) {
+            const
+                storage = document.createElement("li"),
+                canvas = document.createElement("canvas");
+
+            this.map[index] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: [indexData[ITAhM.snmp.oid.hrStorageDescr] && indexData[ITAhM.snmp.oid.hrStorageDescr].value || ""]
+                },
+                options: options
+            });
+            
+            storage.classList.add("status", "selectable");
+            
+            storage.onclick = e => onSelectResource("/chart/storage.html", index);
+
+            storage.appendChild(canvas);
+
+            this.container.appendChild(storage);
+
+            this.set(index, indexData);
+        },
+        set: function (index, indexData) {
+            const
+                chart = this.map[index],
+                used = Number(indexData[ITAhM.snmp.oid.hrStorageUsed].value), // used
+                size = Number(indexData[ITAhM.snmp.oid.hrStorageSize].value), // size
+                datasets = [{
+                    data: [0],
+                    backgroundColor: COLOR_GREEN
+                }, {
+                    data: [0],
+                    backgroundColor: COLOR_ORANGE
+                }, {
+                    data: [0],
+                    backgroundColor: COLOR_RED
+                }];
+            let value = (used / size *100).toFixed(2);
+
+            if (value > 70) {
+                datasets[0].data[0] = 70;
+
+                if (value > 90) {
+                    datasets[1].data[0] = 20;
+                    datasets[2].data[0] = value -90;
+                } else {
+                    datasets[1].data[0] = value -70;
+                }
+            } else {
+                datasets[0].data[0] = Math.round(value);
+            }
+
+            chart.config.label = `${value}%`;
+            chart.config.data.datasets = datasets;
+
+            chart.update();
+        },
+        update: function (resourceData) {
+            for (let index in this.map) {
+                this.set(index, resourceData[index]);
+            }
+        }
+    };
+}
+
+function initialize(node) {
+    let indexData;
+
+    document.title = node.name || node.ip || "Summary";
+
+    document.getElementById("node").textContent = ((name, ip) =>{
+        if (name) {
+            if (ip) {
+                return `${name} [${ip}]`;
+            } else {
+                return name;
+            }
+        } else if (ip) {
+            return ip;
+        } else {
+            return "기본 정보";
+        }
+    })(node.name, node.ip);
+
+    document.body.classList.add("response");
+
+    for (let index in node.resource) {
+        indexData = node.resource[index];
+
+        //sysName
+        (function(sysName) {
+            if (sysName) {
+                document.getElementById("sys_name").textContent = sysName.value;
+            }
+        })(indexData[ITAhM.snmp.oid.sysName]);
+
+        //sysDescr
+        (function(sysDescr) {
+            if (sysDescr) {
+                document.getElementById("sys_name").title = sysDescr.value;
+            }
+        })(indexData[ITAhM.snmp.oid.sysDescr]);
+
+        //sysObjectID
+        (function(sysObjectID) {
+            if (sysObjectID) {
+                const enterprise = ITAhM.util.enterpriseFromOID(sysObjectID.value);
+
+                document.getElementById("information").title = enterprise? enterprise.name: sysObjectID;
+                
+                if (enterprise) {
+                    document.getElementById("information").style.backgroundImage = `url(${enterprise.logo})`;
+                }
+            }
+        })(indexData[ITAhM.snmp.oid.sysObjectID]);
+
+        //responseTime
+        (function(rtt) {
+            if (rtt) {
+                $.response.set(rtt.value);
+
+                document.getElementById("response").querySelector("li").dataset.response = toElapseString(rtt.timestamp);
+            }
+        })(indexData[ITAhM.snmp.oid.responseTime]);
+        
+        //스토리지, 물리 메모리
+        (function(type, used, size, units, descr) {
+            if (type && used && size && units && Number(size.value) > 0) {
+                switch(type.value) {
+                case ITAhM.snmp.oid.hrStorageRam:
+                    document.body.classList.add("memory");
+
+                    $.memory.add(index, indexData);
+
+                    break;
+                case ITAhM.snmp.oid.hrStorageFixedDisk:
+                    document.body.classList.add("storage");
+
+                    $.storage.add(index, indexData);
+
+                    break;
+                }
+            }
+        })(indexData[ITAhM.snmp.oid.hrStorageType]
+            , indexData[ITAhM.snmp.oid.hrStorageUsed]
+            , indexData[ITAhM.snmp.oid.hrStorageSize]
+            , indexData[ITAhM.snmp.oid.hrStorageAllocationUnits]
+            , indexData[ITAhM.snmp.oid.hrStorageDescr]);
+        
+        // 인터페이스
+        (function(descr, type, bandwidth, ifHighSpeed, ifSpeed, aStatus, oStatus, inOcts, outOcts, inErrs, outErrs, name, alias) {
+            if (inOcts && outOcts && (bandwidth || ifHighSpeed || ifSpeed) && inErrs && outErrs && aStatus && oStatus) {
+                document.body.classList.add("portmap");
+                
+                $.portMap.add(index, indexData);
+            }
+        })(indexData[ITAhM.snmp.oid.ifDescr]
+            , indexData[ITAhM.snmp.oid.ifType]
+            , indexData[ITAhM.snmp.oid.bandwidth]
+            , indexData[ITAhM.snmp.oid.ifHighSpeed]
+            , indexData[ITAhM.snmp.oid.ifSpeed]
+            , indexData[ITAhM.snmp.oid.ifAdminStatus]
+            , indexData[ITAhM.snmp.oid.ifOperStatus]
+            , indexData[ITAhM.snmp.oid.inBPS]
+            , indexData[ITAhM.snmp.oid.outBPS]
+            , indexData[ITAhM.snmp.oid.inErrs]
+            , indexData[ITAhM.snmp.oid.outErrs]
+            , indexData[ITAhM.snmp.oid.ifName]
+            , indexData[ITAhM.snmp.oid.ifAlias]);
+            
+        //CPU
+        (function(load) {
+            if (load) {
+                document.body.classList.add("processor");
+
+                $.processor.add(index, indexData);
+            }
+        })(indexData[ITAhM.snmp.oid.hrProcessorLoad]);
+    }
+	
+    $.processor.update(node.resource);
+
+    [].forEach.call(document.body.querySelectorAll("section"), section => {
+		section.draggable = true;
+		
+		section.addEventListener("dragstart", function (e) {
+			e.stopPropagation();
+			
+			$.draggable = this;
+		});
+		
+		section.addEventListener("dragover", function (e) {
+			e.preventDefault();
+			
+			if ($.draggable === this) {
+				return;
+			}
+			
+			switch ($.draggable) {
+			case this.previousElementSibling:
+				this.parentNode.insertBefore(this, $.draggable);
+				
+				break;
+			default:
+				this.parentNode.insertBefore($.draggable, this);
+			}
+		});
+	});
+    
+	if (!("status" in node) || !node.status) {
+        document.body.classList.add("shutdown");
+    } else {
+        refresh();
+    }
+
+    document.body.classList.remove("loading");
+}
+
+function refresh() {
+    setTimeout(function () {
+        $.request.execute({
+            command: "get",
+            target: "node",
+            id: $.id,
+            resource: true
+        }, function (e) {
+            switch (this.status) {
+            case 200:
+                break;
+            default:
+                throw showMessage(this);
+            }
+
+            window.requestAnimationFrame(t => update(JSON.parse(this.responseText)));
+        })
+    }, INTERVAL);
+}
+
+function update(node) {
+    const resourceData = node.resource;
+
+    if (!resourceData) {
+        return;
+    }
+
+    try {
+        let rt = resourceData["0"][ITAhM.snmp.oid.responseTime];
+        
+        $.response.set(rt.value);
+        
+        document.getElementById("response").querySelector("li").dataset.response = toElapseString(rt.timestamp);
+    } catch (e) {}
+
+    $.processor.update(resourceData);
+    $.storage.update(resourceData);
+    $.memory.update(resourceData);
+    $.portMap.update(resourceData);
+
+    refresh();
+}
+
+function toDateString(millis) {
+	var date = new Date(millis),
+		ar = [date.getFullYear()],
+		mdh = [date.getMonth() +1, date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()];
+	
+	for (let i=0, _i=mdh.length, d; i<_i; i++) {
+		d = mdh[i];
+		
+		ar[ar.length] = (d < 10? "0": "")+ d;
+	}
+	
+	return ar[0] +"-"+ ar[1] +"-"+ ar[2] +" "+ ar[3] +":"+ ar[4] +":"+ ar[5];
+}
+
+function toElapseString(millis) {
+    const elapse = new Date().getTime() - millis;
+
+    if (elapse < 1000) {
+        return "1초 미만";
+    } else if (elapse < 60 *1000) {
+        return `${Math.round(elapse /1000)}초 전`;
+    } else if (elapse < 60 *60 *1000) {
+        return `${Math.round(elapse /60 /1000)}분 전`;
+    } else if (elapse < 24 *60 *60 *1000) {
+        return `${Math.round(elapse /60 /60 /1000)}시간 전`;
+    } else {
+        return `${Math.round(elapse /24 /60 /60 /1000)}일 전`;
+    }
+}
+//private
+function onSelectResource(chart, index) {
+    const date = new Date();
+
+    window.location
+        .replace(`/chart/chart.html?id=${$.id}&name=${chart}&index=${index}&from=${date.setHours(0, 0, 0, 0)}&to=${date.setDate(date.getDate() +1)}`);
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert(NOTICE_SESS_EXPIRE["kr"]);
+
+        break;
+    default:
+        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+		</script>
+	</head>
+
+	<body class="loading">
+		<article>
+			<section class="information">
+                <h2 id="node">기본 정보</h2>
+                <ul id="information">
+                    <li>
+                        <table>
+                            <tr>
+                                <th>장비명</th>
+                                <td id="sys_name"></td>
+                            </tr>
+                        </table>
+                    </li>
+                </ul>
+			</section>
+
+            <section class="response status">
+                <h2>응답 시간</h2>
+                <ul id="response" class="fixed container selectable"></ul>
+                </div>
+            </section>
+
+			<section class="processor status">
+				<h2>프로세서 로드</h2>
+				<ul id="processor" class="fixed container selectable"></ul>
+            </section>
+            
+            <section class="memory">
+                <h2>물리 메모리</h2>
+                <ul id="memory" class="fixed container"></ul>
+            </section>
+
+            <section class="storage">
+                <h2>스토리지</h2>
+                <ul id="storage" class="fixed container"></ul>
+            </section>
+			
+			<section class="portmap">
+				<h2>
+                    포트맵
+                </h2>
+                <div>
+                    <input type="checkbox" id="toggle">
+                    <label class="switch" for="toggle">
+                        <span class="off">
+                            &#xf204;
+                        </span>
+                        <span class="on">
+                            &#xf205;
+                        </span>
+                    </label>
+                    <ul id="portmap"></ul>
+                </div>
+			</section>
+		</article>
+
+		<div class="loading mask"></div>
+	
+		<script src="/js/ITAhM.js"></script>
+        <script src="/js/snmp.js"></script>
+        <script src="/util/gauge.js"></script>
+        <script src="/util/ethernet.js"></script>
+        <script src="/js/import/chart.js"></script>
+        <script>
+Chart.defaults.global.defaultFontFamily = "'맑은 고딕', 'Arial', 'Tahoma'";
+//Chart.defaults.global.defaultFontSize = 20;
+Chart.defaults.global.elements.arc.borderWidth = 0;
+Chart.defaults.global.tooltips.enabled = false;
+Chart.defaults.global.legend.display = false;
+
+Ethernet.fontColor = "#ffffff";
+
+Chart.Chart.pluginService.register({
+    afterDraw: function(chart) {
+        if (chart.config.label) {
+            const
+                width = chart.chart.width,
+                text = chart.config.label,
+                ctx = chart.chart.ctx;
+            let height = chart.chart.height;
+
+            ctx.save();
+            
+            ctx.fillStyle = "#ffffff";
+
+            switch(chart.config.type) {
+            case "doughnut":
+                ctx.textBaseline = "bottom";
+                ctx.font = `16px "맑은 고딕", Tahoma`;
+
+                break;
+            default:
+                ctx.textBaseline = "middle";
+                ctx.font = `20px "맑은 고딕", Tahoma`;
+
+                height /= 2;
+            }
+
+            ctx.fillText(text, Math.round((width - ctx.measureText(text).width) / 2), height);
+
+            ctx.restore();
+        }
+    },
+    beforeDraw: function (chart) {
+        if (chart.config.type === "pie") {
+            const
+                x = chart.chart.width /2,
+                y = chart.chart.height /2,
+                ctx = chart.chart.ctx;
+
+            ctx.save();
+            
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+
+            ctx.beginPath();
+            ctx.arc(x, y, y -1, 0, Math.PI *2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+    }
+});
+        </script>
+        <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+        <script src="/util/loader.js"></script>
+		<script>
+
+const
+    INTERVAL = 10000,
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request(),
+        id: Number(search.get("id")),
+        processorIndexArray: [],
+        memoryIndexArray: [],
+        storageIndexObj: {},
+        response: new Response(document.getElementById("response")),
+        processor: new Processor(document.getElementById("processor")),
+        storage: new Storage(document.getElementById("storage")),
+        memory: new Storage(document.getElementById("memory")),
+        portMap: new PortMap(document.getElementById("portmap")),
+        ethernet: new Image(),
+        loader: new ImageLoader(onImageLoad)
+    };
+
+document.getElementById("processor").onclick = e => onSelectResource("/chart/processor.html", "0");
+document.getElementById("response").onclick = e => onSelectResource("/chart/responseTime.html", "0");
+
+function initNode () {
+    switch (this.status) {
+        case 200:
+            break;
+        default:
+            throw showMessage(this);
+    }
+
+    initialize(JSON.parse(this.responseText));
+}
+
+function onImageLoad() {
+    $.request.execute({
+        command: "get",
+        target: "node",
+        id: $.id,
+        resource: true
+    }, initNode);
+}
+
+if ($.id) {
+    $.loader.load(["/canvas/ethernet.png", "/img/svg/router.svg", "/img/svg/firewall.svg", "/img/svg/workgroup.svg"]);
+}
+
+
+		</script>
+	
+	</body>
+</html>

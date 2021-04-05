@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>dialog</title>
+		
+		<style>
+
+@import "/css/style.css";
+@import "/css/dialog.css";
+@import "/css/fa.css";
+
+i {
+    display: inline-block;
+    margin: 0.5em;
+}
+
+form.v3 .version:not(.v3),
+form:not(.v3) .version.v3,
+body.edit input[type=submit] {
+	display: none;
+}
+
+		</style>
+		<script>
+
+function getByteLength(s) {
+	var length = 0;
+	
+	for (var i=0, ch; ch=s.charCodeAt(i++); length+=ch>>11? 3: ch>>7? 2: 1);
+	
+	return length;
+}
+
+function initialize (profile) {
+    if (profile) {
+        $.form.elements["name"].disabled = true;
+
+        $.form.elements["name"].value = profile.name;
+        $.form.elements["port"].value = profile.port;
+        $.form.elements["version"].value = profile.version;
+        
+        if (profile.version === 3) {
+            $.form.elements["user"].value = profile.security;
+            console.log(profile);
+            if ("authProto" in profile) {
+                const authKey = $.form.elements["authKey"];
+
+                $.form.elements["authProto"].value = profile.authProto;
+                
+                authKey.disabled = false;
+                authKey.value = profile.authKey;
+                
+                if ("privProto" in profile) {
+                    ["privProto", "privKey"].forEach(s => {
+                        const e = $.form.elements[s];
+
+                        e.value = profile[s];
+                        e.disabled = false;
+                    });
+                }
+            }
+        }
+        else {
+            $.form.elements["community"].value = profile.security;
+        }
+        
+        $.form.className = `v${profile.version}`;
+        
+        document.body.classList.add("edit");
+        
+        document.querySelector("input[type=submit]").disabled = true;
+    }
+    else {
+        $.form.elements["name"].focus();
+    }
+
+    document.body.classList.remove("loading");
+}
+    
+function onSubmit (e) {
+    e.preventDefault();
+    
+    let
+        name = this.elements["name"].value,
+        version = Number(document.body.querySelector("[name=version]").value),
+        request = {
+            target: "profile",
+            command: "add",
+            name: name,
+            profile: {
+                name: name,
+                protocol: "udp",
+                port: this.elements["port"].value,
+                version: version,
+                level: 0
+            }
+        };
+    
+    if (version === 3) {
+        let element = this.elements["user"];
+
+        if (!element.value) {
+            return element.focus();
+        }
+        
+        request.profile.level++; // noauth-nopriv
+        request.profile.security = element.value;
+        
+        if (this.elements["authProto"].value) {
+            element = this.elements["authKey"];
+            
+            if (!element.value) {
+                return element.focus();
+            }
+            else if (getByteLength(element.value) < 8) {
+                alert("USM 규격에 따라 authentication passphrase는 8자 이상입니다.");
+                
+                return element.select();
+            }
+            
+            request.profile.level++; // auth-nopriv
+            request.profile.authProto = this.elements["authProto"].value;
+            request.profile.authKey = element.value;
+            
+            if (this.elements["privProto"].value) {
+                element = this.elements["privKey"];
+                
+                if (!element.value) {
+                    return element.focus();
+                }
+                else if (getByteLength(element.value) < 8) {
+                    alert("USM 규격에 따라 privacy는 passphrase는 8자 이상입니다.");
+                    
+                    return element.select();
+                }
+                
+                request.profile.level++; //auth-priv
+                request.profile.privProto = this.elements["privProto"].value;
+                request.profile.privKey = element.value;
+            }
+        }
+    }
+    else {
+        let element = this.elements["community"];
+        
+        if (!element.value) {
+            return element.focus();
+        }
+        
+        request.profile.security = this.elements["community"].value;
+    }
+
+    document.body.classList.add("loading");
+    
+    $.request.execute(request, function () {
+        switch (this.status) {
+        case 200:
+            top.closeDialog(true);
+
+            break;
+        case 409:
+            alert("Error!\n\n프로파일 추가 실패.");
+
+            break;
+        default:
+            showMessage(this);
+        }
+
+        document.body.classList.remove("loading");
+    });
+}
+    
+function onReset (e) {
+    if (!confirm("Confirm.\n\n이 프로파일을 삭제하겠습니까?")) {
+        return;
+    }
+    
+    document.body.classList.add("loading");
+    
+    $.request.execute({
+        command: "remove",
+        target: "profile",
+        name: $.name
+    }, function () {
+        switch (this.status) {
+        case 200:
+            top.closeDialog(true);
+
+            break;
+        case 409:
+            alert("Error!\n\n프로파일 삭제 오류.");
+
+            break;
+        default:
+            showMessage(this);
+        }
+
+        document.body.classList.remove("loading");
+    });
+}
+    
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+		</script>
+	</head>
+	
+	<body class="loading">
+
+		<main>
+            <h2>
+                <span  id="close" title="대화창 닫기">&#xf00d;</span>
+                snmp profile
+            </h2>
+            <form>
+                <table>
+                    <tr>
+                        <th>profile name</th>
+                        <td>
+                            <input type="text" name="name" class="table text"
+                                placeholder="snmp profile name" required autofocus>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>udp port</th>
+                        <td>
+                            <input type="number" min="1" step="1" value="161" name="port" class="table text"
+                                placeholder="snmp udp port" pattern="\d*" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>snmp version</th>
+                        <td>
+                            <select name="version">
+                                <option value="1" selected>v2c</option>
+                                <option value="3">v3</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr class="version">
+                        <th>community</th> 
+                        <td>
+                            <input type="text" name="community" class="table text"
+                                placeholder="snmp community string">
+                        </td>
+                    </tr>
+                    <tr class="version v3">
+                        <th>user</th>
+                        <td>
+                            <input type="text" name="user" class="table text"
+                                placeholder="user name">
+                        </td>
+                    </tr>
+                    <tr class="version v3">
+                        <th>
+                            authentication<br>
+                            <select name="authProto">
+                                <option value="" selected>사용안함</option>
+                                <option value="md5">MD5</option>
+                                <option value="sha">SHA</option>
+                            </select>
+                        </th>
+                        <td>
+                            <input type="password" name="authKey"
+                                placeholder="user password" disabled>
+                        </td>
+                    </tr>
+                    <tr class="version v3">
+                        <th>
+                            privacy<br>
+                            <select name="privProto" disabled>
+                                <option value="" selected>사용안함</option>
+                                <option value="des">DES</option>
+                                <option value="aes128">AES</option>
+                                <option value="aes192">AES(192)</option>
+                                <option value="aes256">AES(256)</option>
+                            </select>
+                        </th>
+                        <td>
+                            <input type="password" name="privKey"
+                                placeholder="encription password" disabled>
+                        </td>
+                    </tr>
+                </table>
+                <i>※등록된 Profile은 수정할 수 없고 사용중인 프로파일은 삭제되지 않습니다.</i>
+                <footer>
+                    <input type="reset" value="&#xf1f8; Remove">
+                    <input type="submit" value="&#xf0c7; Save">
+                </footer>
+                <div class="loading mask"></div>
+            </form>
+        </main>
+        
+        <script src="/js/request.js"></script>
+		<script>
+
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request(),
+        form: document.querySelector("form"),
+        name: search.get("name") || undefined
+    };
+
+if (top.account.level === 0) {
+    document.body.classList.add("root");
+    
+    $.form.onreset = onReset;
+    $.form.onsubmit = onSubmit;
+}
+
+document.addEventListener("keydown", function (e) {
+	switch (e.keyCode) {
+	case 27:
+        top.closeDialog();
+		
+		break;
+	}
+});
+
+document.getElementById("close").onclick = e => top.closeDialog();
+
+document.body.querySelector("[name=version]").onchange = function (e) {
+    $.form.className = `v${this.value}`;
+};
+
+$.form.elements["authProto"].onchange = function (e) {
+    const
+        privProto = $.form.elements["privProto"],
+        authKey = $.form.elements["authKey"];
+
+    if (this.value) {
+        authKey.disabled = false;
+        authKey.focus();
+
+        privProto.disabled = false;
+    } else {
+        [
+            authKey,
+            privProto,
+            $.form.elements["privKey"]
+        ].forEach(key => {
+            key.value = "";
+            key.disabled = true;
+        });
+    }
+}
+
+$.form.elements["privProto"].onchange = function (e) {
+    const privKey = $.form.elements["privKey"];
+
+    if (this.value) {
+        privKey.disabled = false;
+        privKey.focus();
+    } else {
+        privKey.value = "";
+        privKey.disabled = true;
+    }
+};
+
+if ($.name) {
+    $.request.execute({
+        command: "get",
+        target: "profile",
+        name: $.name
+    }, function () {
+        switch (this.status) {
+        case 200:
+            initialize(JSON.parse(this.responseText));
+
+            break;
+        default:
+            showMessage(this);
+        }
+    });
+} else {
+    initialize();
+}
+		</script>
+	
+	</body>
+	
+</html>

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+
+@import "/css/style.css";
+@import "/css/fa.css";
+
+body {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    padding: 0; margin: 0;
+    background: #ffffff url("/img/bg_signin.png") no-repeat center center fixed;
+	background-size: cover;
+    display: flex; flex-direction: column;
+}
+
+body:not(.background)::before {
+	content: "";
+	position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+	background-color: rgba(0, 0, 0, 0.8);
+	z-index: -1;
+}
+
+main {
+    flex: 1;
+}
+
+nav {
+    position: absolute; inset: 0 0 auto 0;
+    padding: 5px;
+    display: flex; justify-content: space-between;
+    font: 20px "Font Awesome 5 Free";
+    color: #ffffff;
+    user-select: none;
+    pointer-events: none;
+}
+
+nav span {
+    border-radius: 50%;
+    display: inline-flex;
+    width: 32px; height: 32px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 132, 255, 0.5);
+    border-color: #0084ff;
+    cursor: pointer;
+    pointer-events: all;
+}
+
+nav span:hover {
+    background-color: #0084ff;
+}
+
+svg {
+    width: 100%; height: 100%;
+}
+
+.node * {
+    pointer-events: none;
+}
+
+.node image {
+    pointer-events: all;
+}
+
+.node circle {
+	stroke: none;
+	fill: none;
+}
+
+.node.critical circle {
+	stroke: rgba(255, 170, 0, 0.3);
+    fill: rgba(255, 170, 0, 0.6);
+	animation: status 2s infinite;
+}
+
+.node.shutdown circle {
+	stroke: rgba(255, 0, 0, 0.3);
+    fill: rgba(255, 0, 0, 0.6);
+	animation: status 2s infinite;
+}
+
+polyline {
+    fill: none;
+    stroke-dasharray: 5px;
+    animation: flow 0.5s infinite linear;
+}
+
+.path circle {
+    fill: #dddddd;
+}
+
+.path text {
+    cursor: pointer;
+    fill: #fcba30;
+}
+
+iframe {
+    width: 100%; height: 100%;
+    border: none;
+    padding: 0; margin: 0;
+}
+
+#dialog {
+	position: fixed; inset: 0 0 0 0;
+    z-index: 1;
+}
+
+.loading.mask {
+    z-index: 9;
+}
+
+@keyframes status {
+	from {
+    	stroke-opacity: 0;
+    }
+    to {
+    	stroke-opacity: 1;
+    }
+}
+
+@keyframes flow {
+    to {
+        stroke-dashoffset: 10px;
+    }
+}
+
+text {
+    font: 12px tahoma, arial, "맑은 고딕";
+    text-anchor: middle;
+    fill: #ffffff;
+}
+
+body:not(.label) .node tspan,
+body.name .node tspan:last-child,
+body:not(.name) .node tspan:first-child,
+body:not(.exit) #exit,
+body:not(.dialog) #dialog,
+body:not(.frame) .frame {
+	display: none;
+}
+            </style>
+            <script>
+
+function onEvent(e) {
+    const event = e.data;
+
+    if (!event || event.level < 0) {
+        return;
+    }
+    
+    if (event.id) {
+        if ($.timer) {
+            clearTimeout($.timer);
+        }
+
+        $.timer = setTimeout(() => requestAnimationFrame(t =>
+            $.request.execute({
+                command: "get",
+                target: "node"
+            }, function (e) {
+                switch(this.status) {
+                case 200:
+                    break;
+                default:
+                    throw showMessage(this);
+                }
+
+                window.nodeData = JSON.parse(this.responseText);
+
+                const pos = window.positionData[String(event.id)];
+
+                document.body.querySelector("iframe").contentWindow.location
+                    .replace(`/topology/viewer.html?group=${pos && pos.parent || ""}&focus=${event.id}`);
+            })
+        ), 1000);
+    }
+}
+
+function showDialog(src, parent) {
+    const dialog = document.getElementById("dialog");
+
+    dialog.onload = function () {
+        $.parent = parent;
+
+		document.body.classList.add("dialog");
+	};
+
+    dialog.src = src;
+}
+
+function closeDialog(reset) {
+    document.body.classList.remove("dialog");
+    
+    if (reset) {
+        resetParent();
+    }
+
+    delete $.parent;
+}
+
+function resetParent() {
+    if ($.parent) {
+        $.parent.location.reload();
+    }
+}
+
+function moveStage (group, id) {
+    document.body.querySelector("iframe")
+        .contentWindow.location.replace(`/topology/viewer.html?group=${group || ""}&focus=${id || ""}`);
+}
+
+function getBranchData () {
+    return new Promise ((resolve, reject) => {
+        $.request.execute({
+            command: "get",
+            target: "branch"
+        }, function (e) {
+            switch(this.status) {
+            case 200:
+                break;
+            default:
+                reject(this);
+            }
+
+            window.branchData = JSON.parse(this.responseText);
+
+            resolve();
+        });
+    });
+}
+
+function getNodeData () {
+    return new Promise ((resolve, reject) => {
+        $.request.execute({
+            command: "get",
+            target: "node"
+        }, function (e) {
+            switch(this.status) {
+            case 200:
+                break;
+            default:
+                reject(this);
+            }
+
+            window.nodeData = JSON.parse(this.responseText);
+
+            resolve();
+        });
+    });
+}
+
+function getPositionData () {
+    return new Promise ((resolve, reject) => {
+        $.request.execute({
+            command: "get",
+            target: "position",
+            name: "position"
+        }, function (e) {
+            switch(this.status) {
+            case 200:
+                window.positionData = JSON.parse(this.responseText);
+            case 204:
+                break;
+            default:
+                reject(this);
+            }
+            
+            resolve();
+        });
+    });
+}
+
+function getPathData() {
+    return new Promise ((resolve, reject) => {
+        $.request.execute({
+            command: "get",
+            target: "path"
+        }, function (e) {
+            switch(this.status) {
+            case 200:
+                break;
+            default:
+                reject(this);
+            }
+
+            window.pathData = JSON.parse(this.responseText);
+
+            resolve();
+        });
+    });
+}
+
+function getSettingData() {
+    return new Promise ((resolve, reject) => {
+        $.request.execute({
+            command: "get",
+            target: "setting"
+        }, function (e) {
+            switch(this.status) {
+            case 200:
+                break;
+            default:
+                reject(this);
+            }
+
+            window.settingData = JSON.parse(this.responseText);
+
+            resolve();
+        });
+    });
+}
+
+function getLinkData () {
+    return new Promise ((resolve, reject) => {
+        $.request.execute({
+            command: "get",
+            target: "link"
+        }, function (e) {
+            switch(this.status) {
+            case 200:    
+                break;
+            default:
+                reject(this);
+            }
+
+            window.linkData = JSON.parse(this.responseText);
+    
+            resolve();
+        });
+    });
+}
+
+function getIconData () {
+    return new Promise ((resolve, reject) => {
+        $.request.execute({
+            command: "get",
+            target: "icon"
+        }, function (e) {
+            switch(this.status) {
+            case 200:    
+                break;
+            default:
+                reject(this);
+            }
+
+            window.iconData = JSON.parse(this.responseText);
+    
+            resolve();
+        });
+    });
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert(NOTICE_SESS_EXPIRE["kr"]);
+
+        break;
+    default:
+        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+            </script>
+        </head>
+        
+        <body class="label name loading">
+            <nav>
+                <div>
+                </div>
+                <div class="frame">
+                    <span id="popup" title="새 창">&#xf2d2;</span>
+                </div>
+            </nav>
+            <main>
+                <iframe></iframe>
+            </main>
+            <iframe id="dialog" name="dialog"></iframe>
+            <div class="loading mask"></div>
+
+            <script src="/js/request.js"></script>
+            <script src="/js/icon.js"></script>
+            <script src="/js/constants.js"></script>
+            <script src="/js/channel.js"></script>
+            <script>
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request()
+    };
+var positionData = {};
+
+function initAccount (account) {
+    if (window === top) {
+        window.account = account;
+    } else {
+        document.getElementById("popup").onclick = e => {
+            const popup = window.open();
+
+            popup.onload = e => popup.focus();
+
+            popup.location.replace(window.location.pathname);
+        };
+
+        document.body.classList.add("frame");
+    }
+
+    const iconData = ITAhM.iconData;
+
+    for (let type in window.iconData) {
+        iconData[type] = window.iconData[type];
+    }
+
+    window.iconData = iconData;
+
+    document.body.querySelector("iframe").src = "/topology/viewer.html";
+    
+    Channel.listen(onEvent);
+
+    document.body.classList.remove("loading");
+}
+
+Promise
+    .all([
+        getPositionData(),
+        getNodeData(),
+        getBranchData(),
+        getLinkData(),
+        getPathData(),
+        getSettingData(),
+        getIconData()
+    ])
+    .then(() => {
+        Channel.getAccount(initAccount);
+    })
+    .catch(xhr => showMessage(xhr));
+
+        </script>
+    </body>
+</html>

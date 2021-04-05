@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="No-Cache">
+		
+		<title>ITAhM</title>
+		
+		<style>
+@import "/css/style.css";
+
+body {
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+}
+
+#chart {
+	position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+#graph >path {
+	stroke-width: 2px;
+	fill-opacity: 0.3;
+	animation: grow_area 1s;
+}
+
+#graph >path.avg {
+	stroke-width: 3px;
+	fill: none;
+	stroke: #fff;
+	animation: grow_avg 1s;
+}
+
+#graph >path.line {
+    stroke-width: 2px;
+	fill: none;
+    stroke: #777;
+    stroke-opacity: 0.8;
+    animation: grow_data 1s;
+}
+
+#graph >circle {
+    stroke: #fff;
+    stroke-width: 0.5px;
+    fill: none;
+    animation: grow_pt 1s;
+}
+
+.balloon {
+	position: absolute;
+	padding: 5px;
+	box-sizing: border-box;
+	font-weight: bold;
+	color: #fff;
+	font-weight: bold;
+	pointer-events: none;
+	transition: top .5s;
+	white-space: nowrap;
+}
+
+.balloon.date {
+    background-color: #F4A259;
+    border: 1px solid #ddd;
+    top: -1em;
+}
+
+.balloon::after {
+    content: "";
+    position: absolute;
+    border: 0.5em solid transparent;
+}
+
+.balloon.date::after {
+    border-top-color: #f4a259;
+    left: 50%; top: 100%;
+    transform: translateX(-50%)
+}
+
+.balloon.value {
+    background-color: #777/*#F4A259*/;
+    border: 1px solid #ddd;
+	font-size: 12px;
+}
+
+.balloon.value::after {
+    transform: translateY(-50%);
+    top: 50%;
+}
+
+.balloon.avg::after {
+    border-left-color: #777777;
+    left: 100%;
+}
+
+.balloon.value:not(.avg)::after {
+    border-right-color: #777777;
+    right: 100%;
+}
+
+.balloon.max {
+	transform: translateY(0.5em) translateX(0.5em);
+}
+
+.balloon.min {
+	transform: translateY(0.5em) translateX(0.5em);
+}
+
+.balloon.avg {
+	transform: translateY(0.5em) translateX(-100%) translateX(-0.5em);
+}
+
+#hover_date {
+	transform: translateX(-50%);
+}
+
+text {
+	fill: #fff;
+	font-size: 9pt;
+}
+
+#grid path {
+	stroke: #ddd;
+	stroke-width: .5;
+	fill: none;
+}
+
+#axis_left text {
+	text-anchor: end;
+}
+
+#axis_date text {
+	text-anchor: middle;
+}
+
+#axis_date text:first-child {
+	text-anchor: start;
+}
+
+#axis_date text:last-child {
+	text-anchor: end;
+}
+
+#date_text tspan:first-child,
+#date_text tspan:last-child {
+	font-weight: bold;
+	fill: #0084ff;
+	cursor: pointer;
+}
+
+#date_text tspan:first-child:hover {
+	cursor: pointer;
+}
+
+#hover line {
+    stroke-width: 1px;
+    stroke: #f4a259;
+}
+
+nav {
+	position: fixed; right: 0; bottom: 0; left: 0;
+	display: flex;
+	justify-content: space-between;
+}
+
+nav img {
+	background-color: #fff;
+}
+
+nav label {
+	position:relative;
+}
+
+nav input[type="checkbox"] {
+	position:absolute;
+	visibility: hidden;
+}
+
+nav input[type="checkbox"]:not(:checked) ~img:not(.lock),
+nav input[type="checkbox"]:checked ~img.lock {
+	display: none;
+}
+
+.no_data {
+    display: none;
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    justify-content: center;
+    align-items: center;
+}
+
+.no_data::before {
+    content: "NO DATA";
+    color: #ccc;
+    opacity: 0.5;
+    display: block;
+    font-weight: boolder;
+    font-size: 10em;
+}
+
+body.empty .no_data {
+    display: flex;
+}
+
+@media print {
+	text {
+		fill: #000;
+	}
+}
+
+@keyframes grow_avg {
+	from {
+		transform: scale(0, 1);
+	}
+	to {
+		transform: scale(1, 1);
+	}
+}
+
+@keyframes grow_data {
+	from {
+		transform: scale(1, 0);
+	}
+	to {
+		transform: scale(1, 1);
+	}
+}
+
+@keyframes grow_area {
+	from {
+		transform: scale(1, 0);
+		transform-origin: 0 50%;
+	}
+	to {
+		transform: scale(1, 1);
+		transform-origin: 0 50%;
+	}
+}
+
+@keyframes grow_pt {
+	from {
+		transform: translateY(100%);
+	}
+}
+		</style>
+		<script>
+	
+function clear(svgElement) {
+	var element;
+	
+	while(element = svgElement.firstChild) {
+		svgElement.removeChild(element);
+	}
+}
+
+function createDateText(x, y, date, pY, pM, pD) {
+	var svgText = document.createElementNS("http://www.w3.org/2000/svg", "text"),
+		yy = date.getFullYear(),
+		m = date.getMonth(),
+		d = date.getDate(),
+		h = date.getHours(),
+		b, svgText;
+	
+	if (yy !== pY) {
+		yy = yy.toString().substring(2) +"년";
+	}
+	else {
+		yy = "";
+	}
+	
+	if (m != pM) {
+		m += 1;
+		
+		if (m < 10) {
+			m = "0"+ m;
+		}
+		
+		m += "월";
+	}
+	else {
+		m = "";
+	}
+	
+	if (d != pD) {
+		if (d < 10) {
+			d = "0"+ d;
+		}
+		
+		d += "일";
+	}
+	else {
+		d = "";
+	}
+	
+	if (h === 0) {
+		h = "";
+	}
+	else {
+		if (h < 10) {
+			h = "0"+ h;
+		}
+		
+		h += "시";
+	}
+	
+	svgText.setAttribute("x", x);	
+	svgText.setAttribute("y", y);
+	svgText.textContent = yy + m + d + h;
+	
+	return svgText;
+}
+
+function Area(x, max, min) {
+	this.initialize(x, max, min);
+}
+
+Area.prototype = {
+	initialize: function (x, fY, bY) {
+		this.o = [x, fY];
+		this.f = [];
+		this.b = [["V", bY, "H", x].join("")];
+	},
+	add: function (x, fY, bY) {
+		this.f[this.f.length] = ["H", x, "V", fY].join("");
+		this.b[this.b.length] = ["V", bY, "H", x].join("");
+	},
+	draw: function (x, y) {
+		const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+		
+		this.b.reverse();
+		
+		path.setAttribute("d", 
+			["M", this.o.join(" ")].join("")
+			+ this.f.join("")
+			+ ["H", x].join("")
+			+ ["V", y].join("")
+			+ this.b.join("") +"z");
+		
+		if (this.color) {
+			path.setAttribute("fill", this.color);
+			path.setAttribute("stroke", this.color);
+		}
+		
+		return path;
+	}
+};
+
+/**
+ * private
+ */
+function createValueText(x, y, value) {
+	var svgText = document.createElementNS("http://www.w3.org/2000/svg", "text");		
+	
+	svgText.setAttribute("x", x);
+	svgText.setAttribute("y", y);
+	svgText.textContent = value;
+	
+	return svgText;
+}
+
+/**
+ * public
+ */
+function initialize(args) {
+    const
+        chart = document.getElementById("chart"),
+        rect = (rect => {
+            return {
+                width: rect.width - MARGIN *2,
+                height: rect.height - MARGIN *2 - DATE_AXIS_HEIGHT
+            }
+        })(chart.getBoundingClientRect()),
+        hover = document.getElementById("hover"),
+        valueMax = document.getElementById("value_max"),
+        valueAvg = document.getElementById("value_avg"),
+        valueMin = document.getElementById("value_min"),
+        container = document.getElementById("container"),
+        hoverV = document.getElementById("hover_v"),
+        hoverHMax = document.getElementById("hover_h_max"),
+        hoverHMin = document.getElementById("hover_h_min"),
+        hoverHAvg = document.getElementById("hover_h_avg"),
+        hoverDate = document.getElementById("hover_date"),
+        fragment = document.createDocumentFragment();
+    
+    fragment.appendChild(hover);
+	fragment.appendChild(hoverDate);
+	fragment.appendChild(valueMax);
+	fragment.appendChild(valueMin);
+    fragment.appendChild(valueAvg);
+
+    container.transform.baseVal.getItem(0).setTranslate(MARGIN, MARGIN);
+
+    // 그리드 그리기
+	(() => {
+        const
+            path = new ITAhM.Path(document.getElementById("grid")),
+            countXarr = [];
+        var
+            countX, countY;
+
+        for (let i=0, arr=[24, 12, 8, 6, 4, 3, 2, 1]; i<arr.length; i++) {
+            countX = arr[i];
+            
+            if (countX *MIN_AXIS_HSPACE < rect.width) {
+                break;
+            }
+        }
+        
+        blockWidth = rect.width / countX;
+        
+        for (let x = 0, i=0; i<=countX; i++, x += blockWidth) {
+            path.moveTo(x, 0).lineTo(Math.round(x) -.5, rect.height);
+        }
+        
+        countY = Math.max(1, Math.floor(rect.height / MIN_AXIS_VSPACE));
+        
+        blockHeight = rect.height / countY;	
+        
+        for (let y = 0, i=0, roundedY ; i <= countY; i++, y += blockHeight) {
+            roundedY = Math.round(y) -.5;
+            
+            path.moveTo(0, roundedY).lineTo(rect.width, roundedY);
+        }
+        
+        path.draw();
+    })();
+    
+    $.from = args.from;
+
+    const summaryData = args.summary.parse($.from, args.to);
+    
+    if (!summaryData) {
+        document.body.classList.remove("loading");
+        document.body.classList.add("empty");
+        
+        return;
+    }
+
+    const graph = document.getElementById("graph");
+
+    $.low = summaryData.low;
+    $.tpp = (args.to - $.from) / rect.width;
+    $.yRatio = rect.height / (summaryData.high - $.low);
+
+    var blockWidth, blockHeight;
+    
+    // 그래프 영역, hover 세팅
+    (() => {
+        graph.transform.baseVal.getItem(0).setTranslate(0, rect.height);
+
+        hoverV.setAttribute("y2", rect.height);
+        hoverHMax.setAttribute("x2", rect.width);
+        hoverHAvg.setAttribute("x2", rect.width);
+        hoverHMin.setAttribute("x2", rect.width);
+    })();
+
+    // X축
+	(axis => {
+        for (let x = 0, date, pY, pM, pD; Math.floor(x) <= rect.width; x += blockWidth) {
+            date = new Date($.from + Math.round(x * $.tpp));
+            
+            axis.appendChild(createDateText(x, 0, date, pY, pM, pD));
+            
+            pY = date.getFullYear();
+            pM = date.getMonth();
+            pD = date.getDate();
+        }
+        
+        axis.transform.baseVal.getItem(0).setTranslate(0, rect.height + MARGIN);
+    })(document.getElementById("axis_date"));
+
+    // Y축
+	((valueAxis, rateAxis) => {
+        var
+            diff = (summaryData.high - $.low) * blockHeight / rect.height,
+		    value;
+	
+        for (let y = 0, grow = 0; y <= rect.height; y += blockHeight, grow += diff) {
+            value = summaryData.high - grow;
+            
+            valueAxis.appendChild(createValueText(0, y, args.toString(value === 0? 0: value)));
+            
+            if (args.max) {
+                rateAxis.appendChild(createValueText(0, y, (value *100 / args.max).toFixed(2) + "%"));
+            }
+        }
+        
+        valueAxis.transform.baseVal.getItem(0).setTranslate(valueAxis.getBBox().width, 0);
+        rateAxis.transform.baseVal.getItem(0).setTranslate(rect.width - rateAxis.getBBox().width, 0);
+    })(document.getElementById("axis_left"), document.getElementById("axis_right"));
+
+    // summary 그래프
+	(() => {
+        const
+            area = new Area(),
+            strokeAvg = new ITAhM.Path(graph),
+            blocks = summaryData.keys;
+        
+        area.color = args.color || "#0084ff";
+        
+        strokeAvg.set("class", "avg");
+        
+        strokeAvg.beginPath();
+        
+        for (let i=0, _i=blocks.length, dateArray, millis, date, x, y, yAvg, yMax, yMin; i<_i; i++) {
+            dateArray = blocks[i];
+        
+            millis = dateArray[0];
+            
+            x = (millis - $.from) / $.tpp;
+            y = args.summary.get(millis);
+        
+            yAvg = (y.avg - $.low) * $.yRatio;
+            yMax = (y.max - $.low) * $.yRatio;
+            yMin = (y.min - $.low) * $.yRatio;
+            
+            area.initialize(x, yMax, yMin);
+                    
+            strokeAvg.moveTo(x, yAvg);
+            
+            for (let j=1,_j=dateArray.length; j<_j; j++) {
+                millis = dateArray[j];
+                
+                x = (millis - $.from) / $.tpp;
+                y = args.summary.get(millis);
+                
+                strokeAvg.lineTo(x, yAvg);
+                
+                yMax = (y.max - $.low) * $.yRatio;
+                yMin = (y.min - $.low) * $.yRatio;
+                yAvg = (y.avg - $.low) * $.yRatio;
+                
+                strokeAvg.lineTo(x, yAvg);
+                
+                area.add(x, yMax, yMin);
+            }
+            
+            date = new Date(millis);
+        
+            x = (date.setHours(date.getHours() +1) - $.from) / $.tpp;
+            
+            strokeAvg.lineTo(x, yAvg);
+            
+            graph.appendChild(area.draw(x, yMin));
+            
+            strokeAvg.draw();
+        }
+    })();
+
+    document.body.classList.remove("loading");
+
+    chart.addEventListener("mousemove", function (e) {
+        var x = e.clientX - MARGIN;
+        
+        if (x < 0 || rect.width < x) {
+            return clear();
+        }
+        
+        var date = new Date($.from + x * $.tpp),
+            millis = date.setMinutes(0, 0, 0),
+            value = args.summary.get(millis);
+        
+        if (!value) {
+            return clear();
+        }
+        
+        hoverV.setAttribute("x1", x);
+        hoverV.setAttribute("x2", x);
+        
+        var y = rect.height - (value.max - $.low) * $.yRatio;
+        
+        hoverHMax.setAttribute("y1", y);
+        hoverHMax.setAttribute("y2", y);
+        valueMax.style.top = y + "px";
+        valueMax.textContent = args.toString(value.max);
+        
+        y = rect.height - (value.avg - $.low) * $.yRatio;
+        
+        hoverHAvg.setAttribute("y1", y);
+        hoverHAvg.setAttribute("y2", y);
+        valueAvg.style.top = y + "px";
+        valueAvg.textContent = args.toString(value.avg);
+        
+        y = rect.height - (value.min - $.low) * $.yRatio;
+        
+        hoverHMin.setAttribute("y1", y);
+        hoverHMin.setAttribute("y2", y);
+        valueMin.style.top = y + "px";
+        valueMin.textContent = args.toString(value.min);
+        
+        var d = date.getDate(),
+            h = date.getHours();
+        
+        x = (x + MARGIN) + "px";
+        hoverDate.style.left = x;
+        hoverDate.textContent = (d>9? "": "0")+ d +"일 "+ (h>9? "": "0")+ h +"시";
+        
+        valueMax.style.left = x;
+        valueAvg.style.left = x;
+        valueMin.style.left = x;
+        
+        container.appendChild(hover);
+        
+        document.body.appendChild(fragment);
+    });
+
+    chart.addEventListener("mouseleave", function (e) {
+        clear();
+    });
+
+    function clear() {
+        fragment.appendChild(hover);
+        fragment.appendChild(hoverDate);
+        fragment.appendChild(valueMax);
+        fragment.appendChild(valueMin);
+        fragment.appendChild(valueAvg);
+    }
+}
+
+/**
+ * public
+ */
+function draw(chartData, sort = false) {
+    const
+        df = document.createDocumentFragment(),
+        pt = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        
+    pt.setAttributeNS(null, "r", 3);
+
+    var point;
+    chartData.forEach((timestamp, value) => {
+        point = pt.cloneNode(true);
+
+        point.setAttributeNS(null, "cx", Math.round((timestamp - $.from) / $.tpp));
+        point.setAttributeNS(null, "cy", Math.round((value - $.low) * $.yRatio));
+
+        df.appendChild(point);
+    }, sort);
+
+    document.getElementById("graph").appendChild(df);
+}
+
+		</script>
+	</head>
+	
+	<body class="loading">
+		<svg id="chart">
+			<g transform="translate(0, 0)" id="container">
+		        <g transform="translate(0, 0)" id="axis_date" />
+		        <g transform="translate(0, 0) scale(1 -1)" id="graph" />
+		        <g transform="translate(0, 0)" id="axis_left" />
+				<g transform="translate(0, 0)" id="axis_right" />
+		        <g transform="translate(0, 0)" id="grid" />
+		        <g id="hover">
+		        	<line id="hover_v" x1="0" y1="0" x2="0" y2="0" />
+		        	<line id="hover_h_max" x1="0" y1="0" x2="0" y2="0"/>
+		        	<line id="hover_h_avg" x1="0" y1="0" x2="0" y2="0"/>
+		        	<line id="hover_h_min" x1="0" y1="0" x2="0" y2="0"/>
+		        </g>
+		    </g>
+		</svg>
+		
+		<span id="hover_date" class="balloon date"></span>
+		<span id="value_max" class="balloon value max"></span>
+		<span id="value_min" class="balloon value min"></span>
+		<span id="value_avg" class="balloon value avg"></span>
+		
+        <div class="loading mask"></div>
+        <div class="no_data"></div>
+		
+		<script src="/js/ITAhM.js"></script>
+		<script src="/js/object.js"></script>
+		<script>
+		
+const 
+	MIN_AXIS_VSPACE = 50,
+	MIN_AXIS_HSPACE = 100,
+	DATE_AXIS_HEIGHT = 6,
+    MARGIN = 20,
+    $ = {};
+
+// resize
+(function (delay) {
+	var start;
+	
+	function optimize(timestamp) {
+        if (!start) {
+            start = timestamp;
+        }
+
+		if (timestamp - start > delay) {
+			window.location.reload();
+		}
+		else {
+			requestAnimationFrame(optimize);
+		}
+	}
+	
+	window.addEventListener("resize", function() {
+        if (start) {
+            start = undefined;
+        } else {
+            requestAnimationFrame(optimize);
+        }
+	});
+})(300);
+
+		</script>
+	
+	</body>
+	
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+@import "/css/fa.css";
+
+body {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    padding: 0; margin: 0;
+    font-family: "맑은 고딕", Arial, Tahoma;
+}
+
+body::before,
+body::after {
+    content: "";
+    position: absolute; top: 0; left: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+body::before {
+    right: 0; height: 50%;
+    border-bottom: 1px dotted #aaaaaa;
+}
+
+body::after {
+    bottom: 0; width: 50%;
+    border-right: 1px dotted #aaaaaa;
+}
+
+nav {
+    position: absolute; top: 5px; left: 5px;
+    display: flex;
+    font: 20px "Font Awesome 5 Free";
+    color: #ffffff;
+    user-select: none;
+}
+
+nav >span {
+    border-radius: 50%;
+    display: flex; width: 32px; height: 32px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 132, 255, 0.5);
+    border-color: #0084ff;
+    cursor: pointer;
+}
+
+nav >span:hover {
+    background-color: #0084ff;
+}
+
+aside {
+    position: absolute; top:0; right: 0; bottom: 0;
+    background-color: #ffffff;
+    width: 0;
+}
+
+iframe {
+    width: 100%; height: 100%;
+    border: none;
+}
+
+body.list aside {
+    width: 500px;
+    border-left: 1px solid #777;
+    transition: width 1s;
+}
+
+#tab {
+    position: absolute; top: 50%; left: 0;
+    padding: 3px;
+    transform: translateX(-100%);
+    font-family: "Font Awesome 5 Free";
+    border: 1px solid #777777;
+    border-right-color: #ffffff;
+    cursor: pointer;
+}
+
+svg {
+    width: 100%; height: 100%;
+    user-select:none;
+}
+
+rect {
+    fill: #dddddd;
+    stroke-width: 0.5;
+    stroke: #666666;
+}
+
+g.selected rect {
+    fill: #777777;
+}
+
+g.selected text {
+    fill: #ffffff;
+}
+
+g.over rect {
+    stroke: #ffdf01;
+    stroke-width: 0.5;
+    stroke-dasharray: 0.5, 0.5;
+}
+
+text {
+    font-size: 3px;
+    pointer-events: none;
+    fill: #999999;
+    text-shadow: #000 0 1px;
+}
+
+#grid {
+    position: absolute; width: 100%; height: 100%;
+}
+
+#grid>div {
+    position: relative;
+}
+
+#grid>div:first-child {
+    width: 100%;
+    top: 30%;
+    border-top: 1px solid red;
+}
+
+#grid>div:last-child {
+    height: 100%;
+    left: 30%;
+    border-left: 1px solid red;
+}
+
+body:not(.grid) #grid {
+    display: none;
+}
+
+        </style>
+        <script>
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+            
+        </script>        
+    </head>
+        
+    <body>
+        <nav>
+            <span title="Rack 추가" id="add">&#xf067;</span>
+            <span title="위치 저장" id="save">&#xf0c7;</span>
+            <span title="
+==============================
+
+● Click: Rack 선택 
+● Rack 선택 후 Drag: Rack 이동
+● Right Click: Rack 편집
+● 목록에서 Drag & Drop: Rack 장착
+● Rack 위치 변동시 저장 필수
+
+==============================
+                ">
+                    &#xf128;
+                </span>
+        </nav>
+        <svg id="svg">
+            <defs>
+                <g id="rack">
+                    <rect x="0" y="0" width="16" height="24" transform="translate(-8, -12)"></rect>
+                    <text x="0" y="0" dominent-baseline="middle" text-anchor="middle"></text>
+                </g>
+            </defs>
+            <g id="container" transform="translate(0, 0) scale(5, 5)"></g>
+        </svg>
+        <div id="grid">
+            <div></div>
+            <div></div>
+        </div>
+        <aside>
+            <div id="tab">&#xf00b;</div>
+            <iframe id="list"></iframe>
+        </aside>
+
+        <script src="/dc/edit.js"></script>
+        <script src="/js/request.js"></script>
+        <script>
+const $ = {
+        request: new Request()
+    };
+
+document.getElementById("add").onclick = e => {
+    top.showDialog("/dc/dialog/facility.html", this);
+};
+
+document.getElementById("tab").onclick = function (e) {
+    const frame = document.getElementById("list");
+
+    if (document.body.classList.contains("list")) {
+        document.body.classList.remove("list");
+
+        frame.onload = undefined;
+
+        frame.src = "about:blank";
+    } else {
+        frame.onload = function () {
+            document.body.classList.add("list");
+        };
+
+        frame.src = "/dc/list.html";
+    }
+};
+
+document.getElementById("save").onclick = function (e) {
+    document.body.classList.add("loading");
+
+    $.request.execute({
+        command: "set",
+        target: "rack",
+        rack: map
+    }, function () {
+        switch (this.status) {
+        case 200:
+            alert("Information.\n\n저장 성공.");
+
+            document.body.classList.remove("loading");
+
+            break;
+
+        default:
+            showMessage(this);
+        }
+    });
+};
+
+$.request.execute({
+    command: "get",
+    target: "rack"
+}, function () {
+    switch (this.status) {
+    case 200:
+        break;
+
+    default:
+        showMessage(this);
+    }
+
+    const rackData = JSON.parse(this.responseText);
+
+    for (let id in rackData) {
+        addRack(id, rackData[id]);
+    }
+
+    onResize();
+
+    document.body.classList.remove("loading");
+});
+
+        </script>
+    </body>
+</html>

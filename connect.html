@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>CeMS Console</title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/fa.css";
+
+body {
+    font-family: arial, tahoma, "맑은 고딕";
+    font-size: 10pt;
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    margin: 0; padding: 0;
+    background: #f9f9f9 url("/img/bg_signin.png") fixed center no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+main {
+    width: 320px;
+}
+
+form {
+    padding: 20px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+}
+
+h1, h2 {
+    text-align: center;
+    color: #0084ff;
+}
+
+input[type=submit] {
+    width: 100%;
+	box-sizing: border-box;
+	padding: 10px;
+	margin-top: 20px;
+	background-image: linear-gradient(#7af, #0084ff 45%,  #0084ff 55%, #7af);
+	border: 1px solid #07f;
+	font-weight: bold;
+	color: #fff;
+}
+
+.glyph {
+    font-family: 'Font Awesome 5 Free';
+    color: #0084ff;
+}
+
+.input {
+    display: flex;
+    padding: 1em;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.input >span {
+    flex: none;
+    display: inline-block;
+    margin: 0 0.5em;
+}
+
+.input >input {
+    flex: 1;
+    border: none;
+    outline: none;
+}
+
+body.ready {
+    display: none;
+}
+
+        </style>
+        <script>
+
+function onConnect() {
+    switch (this.status) {
+    case 200:
+        try {
+            return top.signIn(JSON.parse(this.responseText));
+        }
+        catch(e) {
+            alert("Error!\n\n서비스가 비정상 종료 되었습니다.\n"+
+            "모든 브라우저를 닫고 다시 시작하십시오.");
+        }
+
+        break;
+    case 400:
+        return window.location.replace("/signin.html");
+    default:
+        try {
+            console.log(JSON.parse(this.responseText).error);
+        } catch (e) {}
+    }
+
+    document.body.classList.remove("ready");
+}
+
+        </script>
+	</head>
+	
+	<body class="ready">
+		<main>
+            <h1>Connect to agent</h1>
+            <form id="connect">
+                <p>IP Address</p>
+                <div class="input">
+                    <span class="glyph">&#xf015;</span>
+                    <input type="text" name="ip" placeholder="IP address" autofocus required>
+                </div>
+                <p>TCP Port</p>
+                <div class="input">
+                    <span class="glyph">&#xf542;</span>
+                    <input type="text" name="tcp" placeholder="TCP port" required>
+                </div>
+                <input type="submit" value="연결">
+            </form>
+            <h1>
+                <a href="http://www.corebrg.com">
+                    <img width="64" height="64" src="/img/logo.png">
+                </a>
+            </h1>
+		</main>
+		
+		<div class="loading mask"></div>
+
+		<script src="/js/request.js"></script>
+        <script>
+
+const $ = {
+    request: new Request()
+};
+
+{
+    const form = document.getElementById("connect");
+
+    form.onsubmit = function (e) {
+        e.preventDefault();
+        
+        document.body.classList.add("loading");
+
+        const agent = `${window.location.protocol}//${this.elements["ip"].value}:${this.elements["tcp"].value}`;
+
+        $.request.connect(agent, function () {
+            switch (this.status) {
+            case 200:
+                try {
+                    return top.signIn(JSON.parse(this.responseText));
+                }
+                catch(e) {
+                    alert("Error!\n\n서비스가 비정상 종료 되었습니다.\n"+
+                    "모든 브라우저를 닫고 다시 시작하십시오.");
+                }
+
+                break;
+            case 400:
+                return window.location.replace("/signin.html");
+            default:
+                alert(`Error!\n\n${agent} 연결 오류.\n오류 코드 ${this.status}.`);
+
+                try {
+                    console.log(JSON.parse(this.responseText).error);
+                } catch (e) {}
+            }
+
+            document.body.classList.remove("loading");
+        });
+    };
+}
+
+if (!$.request.try(function () {
+    switch (this.status) {
+    case 200:
+        try {
+            return top.signIn(JSON.parse(this.responseText));
+        }
+        catch(e) {
+            alert("Error!\n\n서비스가 비정상 종료 되었습니다.\n"+
+            "모든 브라우저를 닫고 다시 시작하십시오.");
+        }
+
+        break;
+    case 400:
+        return window.location.replace("/signin.html");
+    default:
+        try {
+            console.log(JSON.parse(this.responseText).error);
+        } catch (e) {}
+    }
+
+    document.body.classList.remove("ready");
+})) {
+    document.body.classList.remove("ready");
+}
+
+		</script>
+	
+	</body>
+	
+</html>

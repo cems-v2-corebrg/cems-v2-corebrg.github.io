@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>dialog</title>
+		
+		<style>
+
+@import "/css/style.css";
+@import "/css/dialog.css";
+@import "/css/fa.css";
+
+body {
+	margin: 0; padding: 0;
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: rgba(0, 0, 0, .8);
+}
+
+iframe {
+    border: none;
+    width: 100%; height: 100%;
+    position: fixed; inset: 0 0 0 0;
+}
+
+dialog {
+    border: 1px solid #dddddd;
+}
+
+dialog h3 {
+    background-color: #424242;
+    color: #ffffff;
+    text-shadow: 0 2px 3px #000000;
+    padding: 1em;
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+dialog .footer {
+    display: flex;
+}
+
+dialog .footer input {
+    flex: 1;
+    padding: 0.5em;
+    font: 1em "Font Awesome 5 Free", "맑은 고딕", Tahoma, Arial;
+}
+
+body:not(.edit) tr.edit,
+body:not(.dialog) iframe {
+    display: none;
+}
+
+		</style>
+        <script>
+
+function initialize (user) {
+    if (user) {
+        $.form.elements["id"].value = user.id;
+        $.form.elements["id"].disabled = true;
+
+        $.form.elements["name"].value = user.name || "";
+        $.form.elements["sms"].value = user.sms || "";
+        $.form.elements["email"].value = user.email || "";
+
+        $.form.elements["level"].value = user.level;
+
+        document.body.classList.add("edit");
+    }
+
+    document.body.classList.remove("loading");
+}
+
+function onReset (e) {
+    if(!confirm("User 정보를 삭제하겠습니까?")) {
+        return;
+    }
+
+    e.preventDefault();
+
+    document.body.classList.add("loading");
+
+    $.request.execute({
+        command: "remove",
+        target: "user",
+        id: $.form.elements["id"].value
+    }, function () {
+        switch (this.status) {
+        case 200:				
+            top.closeDialog(true);
+
+            break;
+        case 403:
+            alert("Error!\n\n삭제할 수 없는 User 입니다.");
+
+            break;
+        default:
+            showMessage(this);
+        }
+
+        document.body.classList.remove("loading");
+    });
+};
+
+function onSubmit(e) {
+    e.preventDefault();
+
+    const
+        request = {
+            target: "user",
+            id: $.form.elements["id"].value,
+            user: {
+                id: $.form.elements["id"].value
+            }
+        };
+
+    request.user.name = $.form.elements["name"].value || undefined;
+    request.user.sms = $.form.elements["sms"].value || undefined;
+    request.user.email = $.form.elements["email"].value || undefined;
+
+    if (document.body.classList.contains("edit")) {
+        // 수정
+        request.command = "set";
+    }
+    else {
+        // 생성
+        request.command = "add";
+    }
+
+    document.body.classList.add("loading");
+
+    $.request.execute(request, function () {
+        switch (this.status) {
+        case 200:
+            top.closeDialog(true);
+
+            break;
+        case 409:
+            alert("Error!\n\n사용할 수 없는 아이디 입니다.");
+
+            break;
+        default:
+            throw showMessage(this);
+        }
+
+        document.body.classList.remove("loading");
+    });
+};
+
+function onChangeLevel (e) {
+    if (!confirm("Confirm.\n\nUser 권한을 변경 하겠습니까?")) {
+        this.value = $.level;
+
+        return;
+    }
+
+    $.auth = {
+        level: this.value
+    };
+
+    if ($.level > 1) {
+        $.dialog.showModal();
+    } else  {
+        setAuth();
+    }
+}
+
+function onSubmitLevel (e) {
+    e.preventDefault();
+
+    $.auth.password = hex_md5(this.elements["password"].value);
+
+    setAuth();
+}
+
+function setAuth() {
+    document.body.classList.add("loading");
+
+    $.dialog.close();
+
+    $.request.execute({
+        target: "user",
+        command: "set",
+        id: $.id,
+        auth: $.auth
+    }, function () {
+        switch (this.status) {
+        case 200:
+            break;
+        default:
+            throw showMessage(this);
+        }
+
+        alert("Information.\n\n권한 설정을 완료 하였습니다.");
+
+        top.resetParent();
+
+        document.body.classList.remove("loading");
+    });
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert(NOTICE_SESS_EXPIRE["kr"]);
+
+        break;
+    default:
+        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+        </script>
+	</head>
+	
+	<body class="loading dialog">
+        <main>
+            <h2>
+                <span  id="close" title="대화창 닫기">&#xf00d;</span>
+                User
+            </h2>
+            <form autocomplete="off">
+                <table>
+                    <colgroup>
+                        <col width="120">
+                    </colgroup>
+                    <tbody>
+                        <tr>
+                            <th>아이디</th>
+                            <td>
+                                <input type="text" name="id"
+                                    placeholder="사용자 아이디" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>이름</th>
+                            <td>
+                                <input type="text" name="name"
+                                    placeholder="사용자 이름" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>모바일</th>
+                            <td>
+                                <input type="text" name="sms"
+                                    pattern="(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})"
+                                    placeholder="기호(-) 없이 숫자만 입력">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>이메일</th>
+                            <td>
+                                <input type="email" name="email"
+                                    placeholder="이메일 주소 형식 입력">
+                            </td>
+                        </tr>
+                        <tr class="edit">
+                            <th>권한</th>
+                            <td>
+                                <select name="level">
+                                    <option value="0">관리자</option>
+                                    <option value="1">사용자</option>
+                                    <option value="2">수신자</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <footer>
+                    <input type="reset" value="&#xf1f8; Remove">
+                    <input type="submit" value="&#xf0c7; Save">
+                </footer>
+                <div class="loading mask"></div>
+            </form>
+        </main>
+        <dialog>
+            <h3>
+                비밀번호 설정
+            </h3>
+            <form id="dialog">
+                <table>
+                    <tbody>
+                        <tr>
+                            <th>Password</th>
+                            <td>
+                                <input type="password" name="password" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Confirm</th>
+                            <td>
+                                <input type="password" name="confirm" required>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="footer">
+                    <input type="reset" value="&#xf00d; Cancel">
+                    <input type="submit" value="&#xf00c; Apply">
+                </div>
+                <div class="loading mask"></div>
+            </form>
+        </dialog>
+
+        <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+        <script src="/js/md5.js"></script>
+		<script>
+
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request(),
+        id: search.get("id") || undefined,
+        form: document.querySelector("form"),
+        dialog: document.body.querySelector("dialog")
+    };
+
+if (top.account.level === 0) {
+    $.form.onsubmit = onSubmit;
+    $.form.onreset = onReset;
+    $.form.elements["level"].onchange = onChangeLevel;
+    document.getElementById("dialog").onsubmit = onSubmitLevel;
+
+    document.body.classList.add("root");
+}
+
+document.addEventListener("keydown", function (e) {
+	switch (e.keyCode) {
+	case 27:
+        top.closeDialog();
+		
+		break;
+	}
+});
+
+$.form.elements["level"].onmousedown = function (e) {
+    $.level = this.value;
+}
+
+document.getElementById("close").onclick = e => top.closeDialog();
+
+document.getElementById("dialog").onreset = function (e) {
+    $.form.elements["level"].value = $.level;
+
+    $.dialog.close();
+};
+
+if ($.id) {
+    $.request.execute({
+        command: "get",
+        target: "user",
+        id: $.id
+    }, function () {
+        switch (this.status) {
+        case 200:
+            initialize(JSON.parse(this.responseText));
+
+            break;
+        default:
+            showMessage(this);
+        }
+    });
+} else {
+    initialize();
+}
+
+		</script>
+	
+	</body>
+	
+</html>

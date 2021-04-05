@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">		
+		<style>
+
+body {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    padding: 0; margin: 0;
+}
+
+ul {
+    list-style: none;
+    display: flex;
+}
+
+li {
+    width: 80px;
+    height: 80px;
+}
+
+ul {
+    background-color: red;
+}
+
+#inp {
+    display: none;
+}
+
+:checked~ul {
+    background-color: blue;
+}
+
+:checked~main {
+    color: green;
+}
+		</style>
+		<script>
+
+        </script>
+	</head>
+	
+	<body>
+        <label for="inp">
+            toogle
+        </label>
+        <input id="inp" type="checkbox">
+        <main>
+            Good
+        </main>
+        <ul>
+            <li id="canvas1">
+            </li>
+            <li id="canvas2">
+            </li>
+            <li id="canvas3">
+            </li>
+            <li id="canvas4">
+            </li>
+        </ul>
+        <button onclick="test()">Ethernet</button>
+        <script src="/util/ethernet.js"></script>
+		<script>
+
+
+const image = new Image();
+let test1, test2, test3;
+
+image.onload = e => {
+        test1 = new Ethernet(document.getElementById("canvas1"), {
+            image: image,
+            bandwidth: 1000
+        });
+        test2 = new Ethernet(document.getElementById("canvas2"), {
+            image: image,
+            bandwidth: 1000,
+            status: Ethernet.STATUS_NORMAL
+        });
+        test3 = new Ethernet(document.getElementById("canvas3"), {
+            image: image,
+            bandwidth: 1000,
+            status: Ethernet.STATUS_SHUTDOWN
+        });
+        test4 = new Ethernet(document.getElementById("canvas4"), {
+            image: image,
+            bandwidth: 1000,
+            status: Ethernet.STATUS_CRITICAL
+        });
+
+    //test1.set(Math.round(Math.random() *1000), Math.round(Math.random() *1000));
+    //test2.set(Math.round(Math.random() *1000), Math.round(Math.random() *1000));
+    //test3.set();
+    //test4.set(Math.round(Math.random() *1000), Math.round(Math.random() *1000));
+}
+
+function test() {
+    test1.status(Ethernet.STATUS_SHUTDOWN);
+    test1.set();
+}
+
+image.src = "/canvas/ethernet.png";
+
+let critical = false;
+
+		</script>
+	
+	</body>
+	
+</html>

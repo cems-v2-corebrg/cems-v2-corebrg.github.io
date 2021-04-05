@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/fa.css";
+
+body {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    margin: 0; padding: 0;
+    user-select: none;
+}
+
+#map {
+    width: 100%; height: 100%;
+}
+
+nav {
+    position: absolute; top: 5px; left: 5px;
+    display: flex;
+    font: 20px "Font Awesome 5 Free";
+    color: #ffffff;
+    z-index: 9;
+}
+
+nav >span {
+    border-radius: 50%;
+    display: flex; width: 32px; height: 32px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 132, 255, 0.5);
+    border-color: #0084ff;
+    cursor: pointer;
+}
+
+nav >span:hover {
+    background-color: #0084ff;
+}
+
+.label {
+    display: inline-block;
+    padding: 0.5em;
+    text-align: center;
+    font-weight: bold;
+    background-color: #71706e;
+    box-shadow: 0px 2px 3px 0px #000000;
+    text-shadow: 0px 1px 1px rgba(0,0,0,0.5);
+    color: #ffffff;
+    border-radius: 0.5em;
+    user-select: none;
+}
+
+.status {
+    width: 5em;
+    height: 5em;
+    border-radius: 50%;
+    opacity: 0;
+}
+
+.status.critical {
+    background: radial-gradient(rgba(255,165,0,0.6) 40%, rgba(255,165,0,0.3) 60%);
+    animation: status 2s infinite;
+}
+
+.status.shutdown {
+    background: radial-gradient(rgba(255,0,0,0.6) 40%, rgba(255,0,0,0.3) 60%);
+    animation: status 2s infinite;
+}
+
+.loading.mask {
+    z-index: 9;
+}
+
+@keyframes status {
+	from {
+    	opacity: 0;
+        transform: scale(0);
+    }
+    to {
+    	opacity: 1;
+        transform: scale(2);
+    }
+}
+
+body:not(.event) #event {
+    display: none;
+}
+
+        </style>
+        <script>
+
+function addBranch(id, branch, status) {
+    if (!("lat" in branch) || !("lng" in branch)) {
+        return;
+    }
+    
+    const
+        pos = new kakao.maps.LatLng(branch.lat, branch.lng),
+        marker = new kakao.maps.Marker({
+            position: pos,
+            zIndex: 7
+            //clickable: false
+            //,image: new kakao.maps.MarkerImage("/img/svg/idc.svg", new kakao.maps.Size(50, 40))
+        }),
+        div = document.createElement("div");
+
+    kakao.maps.event.addListener(marker, "click", e => parent.moveStage(branch.id));
+    
+    if (branch.name) {
+        new kakao.maps.CustomOverlay({
+            map: $.map,
+            position: pos,
+            content: `<span class="label">${branch.name}</span>`,
+            zIndex: 5
+        });
+    }
+
+    div.className = "status";
+    
+    if (status) {
+        div.classList.add(status);
+    }
+
+    $.statusMap[String(branch.id)] = new kakao.maps.CustomOverlay({
+        map: $.map,
+        position: pos,
+        content: div,
+        zIndex: 6
+    });
+
+    $.clusterer.addMarker(marker);
+
+    $.branchMap[id] = branch;
+}
+
+function initialize() {
+    const
+        shutdown = {},
+        critical = {};
+    var group;
+
+    for (let id in parent.nodeData) {
+        node = parent.nodeData[id];
+
+        if ("protocol" in node) {
+            if (group = findBranch(id)) {
+                if (id !== group) {
+                    if ("status" in node && !node.status) {
+                        shutdown[group] = true;
+                    }
+                    else if ("critical" in node && node.critical) {
+                        critical[group] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    for (let id in parent.branchData) {
+        addBranch(id, parent.branchData[id], shutdown[id]? "shutdown": critical[id]? "critical": undefined);
+    }
+
+    if ($.focus) {
+        const group = findBranchFromStage($.focus);
+                
+        if (group) {
+            const branch = $.branchMap[group];
+            
+            $.map.setLevel(3);
+            $.map.setCenter(new kakao.maps.LatLng(branch.lat, branch.lng));
+        }
+    }
+
+    document.body.classList.remove("loading");
+}
+
+function findBranch(id) {
+    var pos = parent.positionData[id];
+
+    if (pos && ("parent" in pos)) {
+        return findBranchFromStage(String(pos.parent), parent.positionData);
+    }
+}
+
+function findBranchFromStage(id, stage = $.branchMap) {
+    for (let pos; pos = parent.positionData[id]; id = String(pos.parent)) {
+        if (id in stage) {
+            return id;
+        }
+
+        if (!("parent" in pos)) {
+            return;
+        }
+    }
+}
+
+function onSearch (e) {
+    const keyword = prompt("노드 이름 또는 IP주소를 입력하세요.");
+    
+    if (!keyword) {
+        return;
+    }
+
+    let
+        found = false,
+        node;
+
+    for (let id in parent.nodeData) {
+        node = parent.nodeData[id];
+
+        if (keyword === node.ip || keyword === node.name) {
+            parent.moveStage(parent.positionData[id].parent, id);
+            
+            found = true;
+
+            break;
+        }
+    }
+
+    if (!found) {
+        alert("Information.\n\n검색 결과가 없습니다.");
+    }
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert(NOTICE_SESS_EXPIRE["kr"]);
+
+        break;
+    default:
+        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+        </script>
+    </head>
+    <body class="loading">
+        <div id="map"></div>
+        <nav>
+            <span title="초기화" id="reload">
+                &#xf2f9;
+            </span>
+            <span title="노드 찾기" id="search">
+                &#xf002;
+            </span>
+        </nav>
+        <div class="loading mask"></div>
+
+        <script src="/js/channel.js"></script>
+        <script src="/js/constants.js"></script>
+        <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=2d5f1506a806e98b9b51ecb765853bd7&libraries=services,clusterer,drawing"></script>
+        <script>
+
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        statusMap: {},
+        branchMap: {},
+        focus: Number(search.get("focus")) || undefined,
+        positionData: parent.getPositionData()
+    };
+
+document.getElementById("reload").onclick = e => window.location.reload();
+document.getElementById("search").onclick = onSearch;
+
+try {
+    $.map = new kakao.maps.Map(document.getElementById("map"), {
+        center: new kakao.maps.LatLng(36.289385, 127.729168),
+        level: 12
+    });
+} catch (e) {
+    alert("Error!\n\n지도 불러오기 오류.");
+
+    throw "kakao.maps.Map exception";
+}
+
+$.clusterer = new kakao.maps.MarkerClusterer({
+    map: $.map, // 마커들을 클러스터로 관리하고 표시할 지도 객체 
+    averageCenter: true, // 클러스터에 포함된 마커들의 평균 위치를 클러스터 마커 위치로 설정 
+    minLevel: 10, // 클러스터 할 최소 지도 레벨
+    disableClickZoom: true
+});
+
+//$.map.addOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+
+kakao.maps.event.addListener(
+    $.clusterer,
+    "clusterclick",
+    cluster => $.map.setLevel($.map.getLevel() -1, {anchor: cluster.getCenter()})
+);
+
+initialize();
+
+        </script>
+        
+    </body>
+</html>

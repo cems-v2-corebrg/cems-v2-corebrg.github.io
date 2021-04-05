@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Tree control</title>
+        <style>
+@import "/css/fa.css";
+
+:root {
+    --size: 2em;
+    --line: rgba(128, 128, 128, 1);
+}
+
+body {
+    font: 10pt "맑은 고딕";
+    margin: 0; padding: 0;
+    position: fixed; inset: 0 0 0 0;
+    background-color: #efefef;
+}
+
+main {
+    height: 100%;
+    overflow-y: auto;
+}
+
+#tree {
+    margin: 1em var(--size);
+}
+
+#tree,
+#tree ul {
+    list-style: none;
+    padding: 0;
+    pointer-events: none;
+}
+
+#tree,
+#tree ul,
+#tree li,
+#tree label {
+    background-color: inherit;
+}
+
+#tree >li >span {
+    font-weight: bold;
+}
+
+#tree input {
+    position: absolute;
+    clip: rect(0, 0, 0, 0);
+}
+
+#tree input:not(:checked) ~ ul {
+    display: none;
+}
+  
+/* ————————————————————–
+    Tree rows
+*/
+#tree li {
+    padding-left: var(--size);
+    line-height: 1em;
+    position: relative;
+}
+
+/* ————————————————————–
+    Tree expanded icon
+*/
+#tree label {
+    margin: 0.5em 1em 0 auto;
+    margin-left: calc(var(--size) *-1 - 1em);
+    cursor: pointer;
+    position: absolute;
+    z-index: 1;
+    pointer-events: all;
+    background-color: #efefef;
+}
+
+#tree label::after {
+    font-family: "Font Awesome 5 Free";
+}
+
+#tree :not(:checked)~ label::after {
+    content: "\f055";
+}
+
+#tree :checked ~ label::after {
+    content: "\f056";
+}
+
+/* ————————————————————–
+Tree branches
+*/
+#tree ul li:before {
+    position: absolute; inset: 1em auto auto -0.5em;
+    display: block;
+    width: 0; height: 100%;
+    border-left: 1px solid var(--line);
+    content: "";
+}
+
+#tree li:last-child:before {
+    display: none;
+}
+
+#tree span {
+    display: inline-block;
+    padding: 0.5em;
+    cursor: pointer;
+    pointer-events: all;
+    border: 1px solid transparent;
+    user-select: none;
+    white-space: nowrap
+}
+
+#tree li.parent >span {
+    font-weight: bold;
+}
+
+#tree li.selected >span {
+    background-color: #337ab7;
+    border-color: #2e6da4;
+    color: #ffffff;
+}
+
+#tree span:hover {
+    background-color: rgba(51, 122, 183, 0.2);
+}
+
+#tree span::after {
+    position: absolute;
+    display: block;
+    width: var(--size);
+    box-sizing: content-box;
+    content: "";
+    left: -0.5em;
+    pointer-events: none;
+}
+
+#tree ul span:last-child::after {
+    top: 0;
+    height: 1em;
+    /*border-radius: 0 0 0 0.5em;*/
+    border: 0px solid var(--line);
+    border-width: 0 0 1px 1px;
+}
+
+#tree input:checked ~span:after {
+    top: 1em;
+    height: 1.5em;
+    /*border-radius: 0 0.5em 0 0;*/
+    border: 0px solid var(--line);
+    border-width: 1px 1px 0 0;
+}
+
+#tree input:not(:checked) ~span::after {
+    border: none;
+}
+
+body.type2 #tree >li:not(:last-of-type) >span {
+    display: block;
+    background-color: rgba(128, 0, 0,0.2);
+    color: initial;
+    border-bottom-color: #ffffff;
+}
+
+        </style>
+        <script>
+function TreeView() {
+    this.initialize(arguments);
+}
+
+TreeView.prototype = {
+    initialize: function (args) {
+        this.container = args[0];
+        this.config = args[1] || {};
+
+        if ("font" in this.config) {
+            document.body.style.font = this.config.font;
+        }
+
+        if ("background" in this.config) {
+            document.body.style.backgroundColor = this.config.background;
+        }
+
+        document.body.addEventListener("click", e => {
+            if (this.selected) {
+                this.selected.classList.remove("selected");
+                
+                delete this.selected;
+
+                this.config.onselect && this.config.onselect();
+            }
+        });
+    },
+    add: function (text, parent) {
+        const item = this.create(text);
+
+        this.append(item, parent);
+
+        return item;
+    },
+    create: function (text) {
+        const
+            item = document.createElement("li"),
+            span = document.createElement("span");
+
+        span.textContent = text;
+        item.appendChild(span);
+
+        span.onclick = e => {
+            e.stopPropagation();
+
+            this.select(item);
+        };
+
+        span.ondrop = e => {
+            e.preventDefault();
+
+            this.config.ondrop && this.config.ondrop(item, e.dataTransfer);
+        };
+
+        span.ondragover = e => {
+            e.preventDefault();
+
+            e.dataTransfer.dropEffect = "move";
+        };
+        
+        return item;
+    },
+    append: function (item, parent) {
+        if (parent) {
+            const ul = parent.querySelector("ul");
+
+            if (ul) {
+                parent = ul;
+            }
+            else {
+                const
+                    id = uuidv4(),
+                    label = document.createElement("label"),
+                    checkbox = document.createElement("input");
+
+                checkbox.type = "checkbox";
+                checkbox.id = id;
+
+                label.htmlFor = id;
+
+                if ("color" in this.config) {
+                    label.style.color = this.config.color;
+                }
+
+                if ("background" in this.config) {
+                    label.style.backgroundColor = this.config.background;
+                }
+
+                parent.insertBefore(label, parent.querySelector("span"));
+                parent.insertBefore(checkbox, label);
+
+                parent.classList.add("parent");
+
+                parent = parent.appendChild(document.createElement("ul"));
+            }
+        } else {
+            parent = this.container;
+        }
+
+        parent.appendChild(item);
+    },
+    remove: function (item) {
+        const ul = item.parentNode;
+
+        ul.removeChild(item);
+
+        if (ul.children.length === 0) {
+            [].forEach.call(ul.parentNode.querySelectorAll(":not(span)"), e => ul.parentNode.removeChild(e));
+        }
+
+        return item;
+    },
+    select: function (item) {
+        if (this.selected) {
+            this.selected.classList.remove("selected");
+        }
+
+        this.selected = item;
+
+        item.classList.add("selected");
+
+        this.config.onselect && this.config.onselect(item);
+    },
+    move: function (item, parent) {
+        this.append(this.remove(item), parent);
+    }
+};
+        </script>
+    </head>
+    <body>
+        <main>
+            <ul id="tree"></ul>
+        </main>
+        <script>
+
+function getInstance(config) {
+    return new TreeView(document.getElementById("tree"), config)
+}
+
+function uuidv4() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+}
+
+const expandTrue = function (item) {
+    const parent = item.parentNode.parentNode;
+
+    if (parent) {
+        const checkbox = parent.querySelector("input[type=checkbox");
+
+        if (checkbox && !checkbox.checked) {
+            checkbox.checked = true;
+        }
+
+        expandTrue(parent, true);
+    }
+};
+
+const expandFalse = function (item) {
+    Array
+        .from(item.querySelectorAll("input[type=checkbox]"))
+        .forEach(checkbox => checkbox.checked = false);
+};
+
+function expand(item, b = true) {
+    if (b) {
+        expandTrue(item);
+    } else {
+        expandFalse(item);
+    }
+
+    const checkbox = item.querySelector("input[type=checkbox]");
+
+    if (checkbox) {
+        checkbox.checked = b;
+    }
+}
+
+function toggle(item) {
+    const checkbox = item.querySelector("input[type=checkbox]");
+
+    if (checkbox) {
+        expand(item, !checkbox.checked);
+    }
+}
+
+function click(item) {
+    onItemClick.call(item);
+}
+
+        </script>
+    </body>
+</html>

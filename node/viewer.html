@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		
+		<title>List @ ITAhM</title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/fa.css";
+@import "/css/list.css";
+
+body {
+	/*padding: 1em;*/
+    background-color: #424242;
+}
+
+header {
+    display: flex; justify-content: space-between;
+}
+
+header input,
+header select {
+    font-family: "Font Awesome 5 Free";
+	padding: .5em;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+ul {
+	margin: 0; padding: 0;
+	list-style: none;
+}
+
+tbody tr:hover {
+    cursor: pointer;
+}
+
+thead th:nth-child(1) {
+    overflow: visible;
+}
+
+td:nth-child(5) {
+    padding-left: 3em;
+    background: no-repeat left/2em;
+}
+
+tr:nth-child(odd) {
+	background-color: #ebebeb;
+}
+
+tr >td:nth-child(1) {
+    text-align: center;
+    color: #efefef;
+    background-color: #28a745;
+}
+
+tr >td:nth-child(1)::before {
+    content: "정상";
+}
+
+tr[data-shutdown] >td:nth-child(1) {
+    background-color: #dc3545;
+}
+
+tr[data-shutdown] >td:nth-child(1)::before {
+    content: "장애";
+}
+
+tr[data-critical] >td:nth-child(1) {
+    background-color: #ffc107;
+}
+
+tr[data-critical] >td:nth-child(1)::before {
+    content: "임계";
+}
+
+tr[data-disabled] >td:nth-child(1) {
+    background-color: #6c757d;
+}
+
+tr[data-disabled] >td:nth-child(1)::before {
+    content: "비활성";
+}
+
+details {
+    position: relative;
+    display: inline-block;
+}
+
+details[open] summary::before {
+    content: "";
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    background-color: transparent;
+}
+
+summary {
+    width: 3em; height: 1em;
+    border: 1px solid #000000;
+} 
+
+summary::marker {
+  display: none;
+  content: "";
+}
+
+#dialog {
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	padding: 0; margin: 0;
+}
+
+iframe {
+    width: 100%; height: 100%;
+    border: none;
+}
+
+#selector {
+    position: absolute; top: 100%; left: 50%;
+    font-weight: normal;
+    transform: translateX(-50%);
+    margin-top: 1em;
+    border: 1px solid rgba(27, 31, 35, 0.15);
+    box-shadow: 0 1px 15px rgba(27, 31, 35, 0.15);
+    background-color: #ffffff;
+    pointer-events: none;
+}
+
+#selector li {
+    width: 5em;
+    padding: 1em;
+    margin: 1px;
+    cursor: pointer;
+    pointer-events: all;
+}
+
+.status {
+    background: linear-gradient(to right, #28a745 25%, #ffc107 25%, #ffc107 50%, #dc3545 50%, #dc3545 75%, #6c757d 75%);
+}
+
+.status.normal {
+    background: #28a745;
+}
+
+.status.shutdown {
+    background: #dc3545;
+}
+
+.status.critical {
+    background: #ffc107;
+}
+
+.status.disabled {
+    background: #6c757d;
+}
+
+tr[data-disabled] {
+	color: #999;
+}
+
+#count {
+	font-size: 30px; font-weight: bold;
+	display: inline-block;
+	margin: 0 30px;
+}
+
+header form input {
+    font-family: "Font Awesome 5 Free";
+}
+
+i {
+    color: #ffffff;
+}
+
+.hidden,
+body:not(.dialog) #dialog,
+body.keyword #list tr:not(.keyword),
+#list.normal tr:not([data-normal]),
+#list.critical tr:not([data-critical]),
+#list.shutdown tr:not([data-shutdown]),
+#list.disabled tr:not([data-disabled]) {
+	display: none;
+}
+
+		</style>
+		
+		<script>
+// static function
+const REGEXP_IPV4 = new RegExp("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+	+ "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+	+ "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+	+ "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+
+function IP2Int(s) {
+	const o = REGEXP_IPV4.exec(s);
+	
+	if(o === null || o.length != 5) return 0xffffffff;
+	
+	var n = 0;
+	for(let i=1; i<5; i++) {
+		n <<= 8;
+		n |= o[i];
+	}
+	
+	return n >>> 0;
+}
+		</script>
+		
+		<script>
+
+//public
+function reload() {
+	window.location.reload();
+}
+
+function onShowStatus() {
+	window.sessionStorage.setItem("node_id", window.selectedID);
+
+    window.location.href = "/resource.html";
+}
+
+function GroupParser () {
+    this.initialize(arguments);
+}
+
+GroupParser.prototype = {
+    initialize: function (args) {
+        const data = args[0];
+
+        this.map = {};
+
+        let group, value;
+
+        for (let id in data) {
+            group = data[id];
+            value = [group.name];
+
+            while ("parent" in group) {
+                value.unshift(data[group.parent].name);
+
+                group = data[group.parent];
+            }
+
+            this.map[id] = value.join("/");
+        }
+    },
+    parse: function (id) {
+        return this.map[String(id)];
+    }
+}
+
+/**
+ * @param {string} id
+ * @param {Object} node
+ **/
+function createRow(id, node) {
+	const
+		row = document.createElement("tr"),
+        icon = $.iconData[node.type || "unknown"] || $.iconData["unknown"];
+    let type, labels, label, td;
+
+    row.appendChild(document.createElement("td")); // N.1 상태
+    row.appendChild(document.createElement("td")).textContent = node.name; // N.2 이름
+    row.appendChild(document.createElement("td")).textContent = "group" in node && $.parser.parse(node.group) || ""; // N.3 그룹
+	row.appendChild(document.createElement("td")).textContent = node.ip || ""; // N.4 IP주소
+
+    type = row.appendChild(document.createElement("td")); // N.5 타입
+    
+    type.textContent = node.type;
+	type.style.backgroundImage = `url(${icon.src})`;
+	
+	row.appendChild(document.createElement("td")).textContent = (protocol => {
+         if (protocol) {
+            switch (protocol.toUpperCase()) {
+            case "ICMP":
+            case "TCP":
+                return protocol.toUpperCase();
+            default:
+                return "SNMP";
+            }
+         } else {
+             return "";
+         }
+    }) (node.protocol); // N.6 모니터
+
+	if ($.customArray) {
+        const extra = node.extra && JSON.parse(node.extra) || {};
+
+		$.customArray.forEach(function (custom) {
+			row.appendChild(document.createElement("td")).textContent = extra[custom] || "";
+		});
+	};
+	
+	row.appendChild(document.createElement("td")) // 여백
+
+	row.dataset.id = id;
+	
+	if (node.label) {
+		labels = node.label.split(",");
+		
+		for (var i=0, length=labels.length; i<length; i++) {
+			label = labels[i];
+			
+			if (!(label in $.labelMap)) {
+				$.labelMap[label] = [];
+			}
+
+			$.labelMap[label].push(row);
+		}
+	}
+	else {
+		$.labelMap[""].push(row);
+	}
+    
+    row.onclick = e => {
+        top.showDialog(`/dialog/node.html?id=${id}`, this);
+    };
+
+	if (node.protocol) {
+		if ("status" in node && !node.status) {
+			row.dataset.shutdown = true;
+		}
+		else if ("critical" in node && node.critical) {
+			row.dataset.critical = true;
+		}
+		else {
+			row.dataset.normal = true;
+        }
+
+        row.oncontextmenu = e => {
+            e.preventDefault();
+
+            top.showDialog(`/chart.html?id=${id}`);
+        };
+	}
+	else {
+		row.dataset.disabled = true;
+	}
+
+	return row;
+}
+
+function initLabel() {
+    var df = document.createDocumentFragment(),
+        select = document.getElementById("label"),
+		option = document.createElement("option");
+
+	for (let label in $.labelMap) {
+		option = document.createElement("option");
+		
+		option.text = label;
+		
+		df.appendChild(option);
+	}
+	
+	select.insertBefore(df, select.firstChild);
+}
+
+function selectStatus(status) {
+    const list = document.body.querySelector("tbody");
+
+    list.className = status;
+    list.classList.remove("status");
+
+    document.querySelector("summary").className = status;
+
+    document.body.querySelector("details").removeAttribute("open");
+
+	document.getElementById("count").textContent = count();
+}
+
+function onSelectStatus (e) {
+    selectStatus(e.target.className);
+}
+
+function onSort (e) {
+	const
+        list = document.body.querySelector("tbody"),
+        df = document.createDocumentFragment(),
+        index = [].indexOf.call(this.parentNode.children, this);
+
+	let bias;
+
+	if (this.classList.contains("descend")) {
+		this.classList.remove("descend");
+
+		this.classList.add("ascend");
+
+		bias = 1;
+	} else {
+		this.classList.remove("ascend");
+
+		this.classList.add("descend");
+
+		bias = -1;
+	}
+	
+    [].slice.call(list.children)
+        .sort((a, b) => a.children[index].textContent.localeCompare(b.children[index].textContent) * bias)
+        .forEach(e => df.appendChild(e));
+
+	list.appendChild(df);
+}
+
+function onSearch (e) {
+    e.preventDefault();
+    
+    const list = document.body.querySelector("tbody");
+
+    document.body.classList.add("loading", "keyword");
+
+    const keyword = this.elements["keyword"].value.toLowerCase();
+
+    if (!keyword) {
+        return $.form.reset();
+    }
+
+    const df = document.createDocumentFragment();
+    
+    for (let row, cols; row = list.firstElementChild;) {
+        cols = row.children;
+
+        df.appendChild(row);
+
+        for (var i=0, length=cols.length; i<length; i++) {
+            row.classList.remove("keyword");
+
+            if (cols[i].textContent.toLowerCase().indexOf(keyword) !== -1) {
+                row.classList.add("keyword");
+                
+                break;
+            }
+        }
+    }
+    
+    list.appendChild(df);
+
+    document.body.classList.remove("loading");
+
+    document.getElementById("count").textContent = count();
+}
+
+function onReset(e) {
+    const
+        list = document.body.querySelector("tbody"),
+        df = document.createDocumentFragment();
+
+    document.body.classList.add("loading");
+    
+    for (let row; row = list.firstElementChild;) {
+        df.appendChild(row).classList.remove("keyword");
+    }
+
+    document.body.classList.remove("keyword");
+
+    list.appendChild(df);
+
+    document.body.classList.remove("loading");
+
+    document.getElementById("count").textContent = count();
+}
+    
+function onSave() {
+    const
+        keys = ["name", "ip", "type", "manager"],
+		rows = [];
+	
+	let node, cols;
+
+	for (let id in $.nodeData) {
+        node = $.nodeData[id];
+        
+        cols = [];
+
+        if (node.protocol) {
+            if ("status" in node && !node.status) {
+                cols.push("장애");
+            }
+            else if ("critical" in node && node.critical) {
+                cols.push("주의");
+            }
+            else {
+                cols.push("정상");
+            }
+        }
+        else {
+            cols.push("");
+        }
+    
+        keys.forEach(key => 
+            cols.push(`"${(node[key] || "").replace(/\"/g, "'")}"`)
+        );
+        
+        $.customArray && $.customArray.forEach(key => {
+            const extra = node.extra && JSON.parse(node.extra) || {};
+
+            cols.push(`"${(extra[key] || "").replace(/\"/g, "'")}"`);
+        });
+
+        rows.push(cols.join(","));
+    }
+
+	ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
+		type: "text/csv;charset=utf-8;"
+	}), "node.csv");
+}
+
+function count() {
+    const list = document.body.querySelector("tbody");
+	var count = 0;
+
+	[].forEach.call(list.children, function (row) {
+		if (row.offsetHeight > 0) {
+			count++;
+		}
+	});
+
+	return count;
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert(NOTICE_SESS_EXPIRE["kr"]);
+
+        break;
+    default:
+        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+		</script>
+		
+	</head>
+	
+	<body class="loading">
+        <header>
+            <div>
+                <select id="label">
+                    <optgroup>
+                        <option value="">미분류
+                    </optgroup>
+                    <optgroup>
+                        <option selected>모두 보기
+                    </optgroup>
+                </select>
+                <input type="button" value="&#xf067; Add" id="add" title="노드 추가">
+                <input type="button" value="&#xf019; Export" id="export" title="CSV 내보내기">
+            </div>
+            <i id="count"></i>
+            <form>
+                <input type="text" name="keyword" placeholder="IP, Type, Name">
+                <input type="submit" value="&#xf002; Search">
+                <input type="reset" value="&#xf2f9; Reset">
+            </form>
+        </header>
+        <main>
+            <table>
+                <colgroup>
+                    <col width="100">
+                    <col width="200">
+                    <col width="200">
+                    <col width="180">
+                    <col width="180">
+                    <col width="180">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>
+                            <details title="상태별">
+                                <summary class="status"></summary>
+                                <ul id="selector">
+                                    <li class="status normal">정상</li>
+                                    <li class="status shutdown">장애</li>
+                                    <li class="status critical">주의</il>
+                                    <li class="status disabled">비활성</li>
+                                    <li class="status all">전체</li>
+                                </ul>
+                            </details>
+                        </th>
+                        <th class="sort">이름</th>
+                        <th class="sort">그룹</th>
+                        <th class="sort">주소</th>
+                        <th class="sort">종류</th>
+                        <th class="sort">모니터</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="list"></tbody>
+            </table>
+        </main>
+        
+		<iframe id="dialog"></iframe>
+		<div class="loading mask"></div>
+        
+        <script src="/js/ITAhM.js"></script>
+        <script src="/js/icon.js"></script>
+		<script src="/js/object.js"></script>
+        <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+		<script>
+
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request(),
+        iconData: ITAhM.iconData,
+        list: document.getElementById("list"),
+        header: document.getElementById("header"),
+        form: document.querySelector("form"),
+        status: search.get("status"),
+        labelMap: {
+            "": []
+        }
+    };
+
+new BroadcastChannel("bc_manager").onmessage = function (e) {
+    const bc = this;
+
+    $.request.execute({
+        "command": "get",
+        "target": "manager",
+        "node": e.data
+    }, function (e) {
+        switch(this.status) {
+        case 200:
+            break;
+        default:
+            throw showMessage(this);
+        }
+
+        bc.postMessage(JSON.parse(this.responseText));
+    });
+};
+
+document.getElementById("add").onclick = e =>
+    top.showDialog("/dialog/node.html", window);
+
+document.getElementById("label").onchange = function () {
+	const
+        list = document.body.querySelector("tbody"),
+		df = document.createDocumentFragment(),
+		label = this.value;
+	
+	document.body.classList.add("loading");
+	
+	if (this.selectedIndex === this.options.length -1) {
+		for (let row; row = list.firstElementChild;) {
+			df.appendChild(row).classList.remove("hidden");
+		}
+	}
+	else {
+		for (let row; row = list.firstElementChild;) {
+			df.appendChild(row).classList[$.labelMap[label].indexOf(row) == -1? "add": "remove"]("hidden");
+		}
+	}
+	
+	list.appendChild(df);
+
+	document.body.classList.remove("loading");
+
+	document.getElementById("count").textContent = count();
+};
+
+document.getElementById("selector").onclick = onSelectStatus;
+
+document.getElementById("export").onclick = onSave;
+
+[].forEach.call(document.body.querySelectorAll("th.sort"), th => th.onclick = onSort);
+
+$.form.onsubmit = onSearch;
+$.form.onreset = onReset;
+
+function initialize(e) {
+    switch(this.status) {
+    case 200:
+        break;
+    default:
+        return showMessage(this);
+    }
+
+    const settingData = JSON.parse(this.responseText);
+
+    if ("custom" in settingData) {
+		var customs = settingData.custom;
+		
+		if (customs) {
+            const header = document.body.querySelector("thead>tr");
+			let df = document.createDocumentFragment();
+			
+			$.customArray = customs.split(",");
+			
+			$.customArray.forEach(function (custom) {
+				df.appendChild(document.createElement("th")).textContent = custom;
+			});
+			
+			header.insertBefore(df, header.lastElementChild);
+		}
+    }
+    
+    const df = document.createDocumentFragment();
+    
+    var row;
+
+    for (let id in $.nodeData) {
+        row = createRow(id, $.nodeData[id]);
+
+        if (row) {
+		    df.appendChild(row);
+        }
+    }
+	
+	list.appendChild(df);
+    
+    if ($.status) {
+        selectStatus(`status ${$.status}`);
+    }
+    
+	document.body.classList.remove("loading");
+
+	document.getElementById("count").textContent = count();
+
+    initLabel();
+}
+
+function initIcon(e) {
+    switch(this.status) {
+    case 200:        
+        break;
+    default:
+        return showMessage(this);
+    }
+
+    const iconData = JSON.parse(this.responseText);
+
+    for (let type in iconData) {
+        $.iconData[type] = iconData[type];
+    }
+    
+    $.request.execute({
+        "command": "get",
+        "target": "setting"
+    }, initialize);
+}
+
+function initGroup(e) {
+    switch(this.status) {
+    case 200:
+        break;
+    default:
+        return showMessage(this);
+    }
+
+    $.parser = new GroupParser(JSON.parse(this.responseText));
+    
+    $.request.execute({
+        "command": "get",
+        "target": "icon"
+    }, initIcon);
+}
+
+function initNode(e) {
+    switch(this.status) {
+    case 200:
+        break;
+    default:
+        return showMessage(this);
+    }
+
+    $.nodeData = JSON.parse(this.responseText);
+        
+    $.request.execute({
+        "command": "get",
+        "target": "group"
+    }, initGroup);
+}
+
+$.request.execute({
+    "command": "get",
+    "target": "node"
+}, initNode);
+        </script>
+	
+	</body>
+	
+</html>

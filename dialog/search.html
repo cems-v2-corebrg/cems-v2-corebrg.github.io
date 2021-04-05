@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>dialog</title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/fa.css";
+@import "/css/dialog.css";
+
+body:not(.monitor) .monitor {
+	display: none;
+}
+
+		</style>
+		<script>
+
+function onSubmit (e) {
+    e.preventDefault();
+    
+    document.body.classList.add("loading");
+    
+    $.request.execute({
+        command: "search",
+        network: $.form.elements["network"].value,
+        mask: parseInt($.form.elements["mask"].options[$.form.elements["mask"].selectedIndex].text),
+        profile: $.form.elements["profile"].value || undefined
+    }, function () {
+        switch (this.status) {
+        case 200:
+            alert("자동 탐지 요청을 처리하고 있습니다.");
+
+            closeDialog(true);
+
+            break;
+        default:
+            showMessage(this);
+        }
+    });
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+        </script>
+	</head>
+	
+	<body class="loading">
+		<main>
+			<h2>
+                <span  id="close" title="대화창 닫기">&#xf00d;</span>
+                Smart search
+            </h2>
+            <form>
+                <table>
+                    <colgroup>
+                        <col width="120">
+                    </colgroup>
+                    <tbody>
+                        <tr>
+                            <th>네트워크 주소</th>
+                            <td colspan="2">
+                                <input type="text" required name="network" autofocus placeholder="Network address"
+                                    pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>서브넷 마스크</th>
+                            <td id="mask">
+                                255.255.255.192
+                            </td>
+                            <td>
+                                <select name="mask">
+                                    <option value="255.255.255.0">24
+                                    <option value="255.255.255.128">25
+                                    <option value="255.255.255.192" selected>26
+                                    <option value="255.255.255.224">27
+                                    <option value="255.255.255.240">28
+                                    <option value="255.255.255.248">29
+                                    <option value="255.255.255.252">30
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>SNMP 프로파일</th>
+                            <td colspan="2">
+                                <select name="profile">
+                                    <option value="" selected>자동</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <footer>
+                    <input type="submit" value="&#xf002; 탐색">
+                </footer>
+                <div class="loading mask"></div>
+            </form>
+        </main>
+        
+        <script src="/js/request.js"></script>
+        <script src="/js/dialog.js"></script>
+		<script>
+
+const $ = {
+        form: document.querySelector("form"),
+        request: new Request()
+    };
+
+if (top.account.level === 0) {
+    $.form.onsubmit = onSubmit;
+    
+    document.body.classList.add("root");
+}
+
+$.form.elements["mask"].onchange = function (e) {
+    document.getElementById("mask").textContent = this.value;
+};
+
+function initProfile () {
+    switch (this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    const
+        df = document.createDocumentFragment(),
+        profileData = JSON.parse(this.responseText);
+
+    for (let name in profileData) {
+        df.appendChild(document.createElement("option")).text = name;
+    }
+
+    $.form.elements["profile"].appendChild(df);
+
+    document.body.classList.remove("loading");
+}
+	
+$.request.execute({
+    command: "get",
+    target: "profile"
+}, initProfile);
+
+		</script>
+	
+	</body>
+	
+</html>

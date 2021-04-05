@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="No-Cache">
+		
+		<title>Chart @ ITAhM</title>
+		
+		<style>
+
+@import "/css/style.css";
+@import "/css/fa.css";
+
+:root {
+    --footer-height: 60px;
+}
+body {
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	margin: 0; padding: 0;
+}
+
+input[type=date] {
+	font-family: arial, tahoma, "맑은 고딕";
+	font-size: 10pt;
+}
+
+header {
+	position: absolute; top: 5px; right: 5px; left: 5px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+}
+
+.chart {
+	position: absolute; top: 0; right: 0; bottom: var(--footer-height); left: 0;
+}
+
+iframe {
+	width: 100%; height: 100%;
+	border: none;
+}
+
+h2 {
+	background-color: #0084ff;
+	padding: 10px; margin: 0;
+    color: #fff;
+    text-shadow: 0 2px 3px #000;
+}
+
+#close {
+    font: 1em "Font Awesome 5 Free";
+    display: block;
+    float: right;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#close:hover {
+    transform: scale(1.2);
+}
+
+footer {
+	position: absolute; right: 0; bottom: 0; left: 0;
+	height: var(--footer-height);
+	color: #fff;
+    user-select: none;
+}
+
+/*
+.cursor {
+	position: absolute;	top: 0; bottom: 0;
+    background-color: #1e1f26;
+    white-space: nowrap;
+    display: flex;
+}
+
+.cursor.body {
+    cursor: move;
+}
+
+.cursor.left {
+	left: 0; width: 5px;
+	cursor: e-resize;
+    align-items: flex-start;
+    background-color: #663399;
+}
+
+.cursor.right {
+	right: 0; width: 5px;
+	cursor: e-resize;
+    align-items: flex-end;
+    direction: rtl;
+    background-color: #663399;
+}
+*/
+.label {
+	position: absolute;
+	white-space: nowrap;
+}
+
+.label.start {
+	top: 0; left: 0;
+}
+
+.label.end {
+	right: 0; bottom: 0;
+}
+
+.label::after {
+	content: attr(title);
+}
+
+.popup {
+	position: fixed; top:0; right: 0; bottom: 0; left: 0; 
+	display: flex; justify-content: center; align-items: center;
+	background-color: rgba(0, 0, 0, .6);
+}
+
+.dialog {
+	width: 400px;
+	box-sizing: border-box;
+	padding: 20px;
+	background-color: #fff;
+	border: 3px solid #000;
+}
+
+.dialog >div {
+	display: flex;
+}
+
+.dialog >div >* {
+	flex: 1;
+}
+
+.dialog >div:last-child {
+	margin-top: 1em;
+}
+
+.dialog >div input {
+    font-family: "Font Awesome 5 Free";
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 0.5em;
+}
+
+#realtime_frame {
+	border: none;
+	width: 100%; height: 100%;
+	background-color: #fff;
+}
+
+nav {
+    display: flex;
+    font: 20px "Font Awesome 5 Free";
+    color: #ffffff;
+}
+
+nav >span {
+    border-radius: 50%;
+    display: flex; width: 32px; height: 32px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 132, 255, 0.5);
+    border-color: #0084ff;
+    cursor: pointer;
+}
+
+nav >span:hover {
+    background-color: #0084ff;
+}
+
+.layout,
+body:not(.set) .set,
+body:not(.detail) #detail {
+	display: none;
+}
+
+.label {
+	pointer-events: none;
+}
+
+#realtime.realtime {
+    animation: realtime 4s linear infinite;
+}
+
+@keyframes realtime {
+    from {
+        transform: rotate(0);
+    } to {
+        transform: rotate(360deg);
+    }
+}
+        </style>
+        <script>
+function Cursor() {
+    this.initialize(arguments);
+}
+
+Cursor.prototype = {
+    initialize: function (args) {
+        const
+            container = document.createElement("div"),
+            body = document.createElement("div"),
+            leftHandle = document.createElement("div"),
+            rightHandle = document.createElement("div"),
+            resize = () => {
+                const size = container.getBoundingClientRect().width;
+
+                if (!this.size) {
+                    this.handleLeftPos = this.calcLeftPos = 0;
+                    this.handleRightPos = this.calcRightPos = size;
+                } else {
+                    this.handleLeftPos = Math.round(this.handleLeftPos * size / this.size);
+                    this.handleRightPos = Math.round(this.handleRightPos * size / this.size);
+
+                    this.calcLeftPos = Math.round(this.calcLeftPos * size / this.size);
+                    this.calcRightPos = Math.round(this.calcRightPos * size / this.size);
+                }
+
+                this.step = this.config.step || size
+                this.size = size;
+
+                drawHandle();
+                drawMask();
+            },
+            drawHandle = () => {
+                body.style.left = `${this.handleLeftPos}px`;
+                body.style.right = `${this.size - this.handleRightPos}px`;
+            },
+            drawMask = () => {
+                container.style.background = `linear-gradient(to right, ${this.config.maskColor} ${this.calcLeftPos}px, transparent ${this.calcLeftPos}px,`+
+                ` transparent ${this.calcRightPos}px, ${this.config.maskColor} ${this.calcRightPos}px)`;
+            };
+
+        this.config = args[1] || {};
+
+        if (!this.config.maskColor) {
+            this.config.maskColor = "rgba(255,255,255,0.4)";
+        }
+
+        if (!this.config.handleColor) {
+            this.config.handleColor = "rgba(0, 0, 0, 0.8)"
+        }
+
+        container.style.position = "absolute";
+        container.style.inset = "0 0 0 0";
+        container.style.cursor = "default";
+
+        body.style.position = "absolute";
+        body.style.inset = "0 0 0 0";
+        body.style.display = "flex";
+        body.style.justifyContent = "space-between";
+
+        leftHandle.style.borderLeft = `5px solid ${this.config.handleColor}`;
+        leftHandle.classList.add("handle", "left");
+
+        rightHandle.style.borderRight = `5px solid ${this.config.handleColor}`;
+        rightHandle.classList.add("handle", "right");
+
+        body.appendChild(leftHandle);
+        body.appendChild(rightHandle);
+
+        container.appendChild(body);
+
+        window.addEventListener("resize", resize.bind(this));
+
+        container.addEventListener("mouseover", e => {
+            if (this.dragHandle) {
+                return;
+            }
+
+            switch (e.target) {
+            case body:
+                container.style.cursor = "move";
+
+                break;
+            case leftHandle:
+                container.style.cursor = "e-resize";
+
+                break;
+            case rightHandle:
+                container.style.cursor = "e-resize";
+
+                break;
+            default:
+                container.style.cursor = "default";
+            }
+        });
+
+        container.addEventListener("mousedown", e => {
+            switch (e.target) {
+            case body:
+                container.style.cursor = "move";
+
+                break;
+            case leftHandle:
+                container.style.cursor = "e-resize";
+
+                break;
+            case rightHandle:
+                container.style.cursor = "e-resize";
+
+                break;
+            default:
+                return;
+            }
+
+            this.dragHandle = e.target;
+        });
+
+        container.addEventListener("mousemove", e => {
+            if (!this.dragHandle) {
+                return;
+            }
+
+            if (!this.dragOrigin) {
+                this.dragOrigin = {
+                    x: e.clientX,
+                    leftPos: this.handleLeftPos,
+                    rightPos: this.handleRightPos
+                };
+            }
+
+            switch (this.dragHandle) {
+            case body:
+                if (e.clientX > this.dragOrigin.x) {
+                    this.handleRightPos = Math.min(this.size, this.dragOrigin.rightPos + e.clientX - this.dragOrigin.x);
+                    this.handleLeftPos = this.handleRightPos - body.getBoundingClientRect().width;
+                    
+                } else {
+                    this.handleLeftPos = Math.max(0, this.dragOrigin.leftPos + e.clientX - this.dragOrigin.x);
+                    this.handleRightPos = this.handleLeftPos + body.getBoundingClientRect().width;
+                }
+
+                break;
+            case leftHandle:
+                this.handleLeftPos = Math.min(Math.max(0, this.dragOrigin.leftPos + e.clientX - this.dragOrigin.x), this.handleRightPos - this.size / this.step);
+
+                break;
+            case rightHandle:
+                this.handleRightPos = Math.max(Math.min(this.size, this.dragOrigin.rightPos + e.clientX - this.dragOrigin.x), this.handleLeftPos + this.size / this.step);
+
+                break;
+            default:
+                return;
+            }
+
+            drawHandle();
+
+            let
+                left = Math.round(this.handleLeftPos * this.step / this.size) * this.size / this.step,
+                right = Math.round(this.handleRightPos * this.step / this.size) * this.size / this.step;
+            
+            if (this.calcLeftPos != left || this.calcRightPos != right) {
+                this.config.onchange && this.config.onchange(Math.round(left / this.size * this.step), Math.round(right / this.size * this.step));
+            }
+
+            this.calcLeftPos = left;
+            this.calcRightPos = right;
+            
+            drawMask();
+        });
+
+        container.addEventListener("mouseup", e => {
+            if (!this.dragHandle) {
+                return;
+            }
+
+            delete this.dragHandle;
+            delete this.dragOrigin;
+
+            if (this.step) {
+                body.style.left = `${this.calcLeftPos}px`;
+                body.style.right = `${this.size - this.calcRightPos}px`;
+            }
+            
+            this.handleLeftPos = this.calcLeftPos;
+            this.handleRightPos = this.calcRightPos;
+            
+            container.style.cursor = "default";
+        });
+
+        args[0].appendChild(container);
+
+        resize();
+    }
+};
+        </script>
+		<script>
+
+function resize() {
+	$.cursor.resize();
+}
+
+function getDateText(mills) {
+	var date = new Date(mills),
+		dd = date.getDate();
+	
+	return MONTH[date.getMonth()] + (dd >9? "": "0") + dd +"일";
+}
+
+function setValueAsDate(e, d) {
+	if ("valueAsDate" in e) {
+		d = new Date(d.getTime());
+		
+		d.setHours(9, 0, 0, 0);
+		
+		e.valueAsDate = d;
+	}
+	else {
+		var mm = d.getMonth() +1,
+			dd = d.getDate();
+		
+		e.value = [d.getFullYear(), mm > 9? mm: "0"+ mm, dd > 9? dd: "0"+ dd].join('-');
+	}
+}
+
+function getValueAsDate(e) {
+	var date;
+	
+	if ("valueAsDate" in e) {
+		date = e.valueAsDate;
+	}
+	else {
+		date = new Date(e.value);
+	}
+	
+	date.setHours(0, 0, 0, 0);
+	
+	return date;
+}
+
+/** public **/
+function preview(resourceData) {
+    const data = [];
+    let labels = $.preview.config.data.labels;
+
+    if (!labels || labels.length === 0) {
+        labels = Object.keys(resourceData)
+            .sort((a, b) => Number(a) - Number(b))
+            .map(key => Number(key));
+
+        $.preview.config.data.labels = labels;
+    }
+    
+    labels.forEach(key => {
+        data.push(resourceData[key].max);
+    });
+    
+    $.preview.config.data.datasets.push({
+        data: data
+    });
+    
+    $.preview.update();
+}
+
+		</script>
+	</head>
+	
+	<body>
+		<div class="chart">
+			<iframe id="chart"></iframe>
+		</div>
+		
+		<header>
+			<nav>
+                <span id="set" title="기간 설정">
+                    &#xf073;
+                </span>
+                <span id="detail" title="원본 차트">
+                    &#xf2a1;
+                </span>
+                <span id="realtime" title="실시간 차트">
+                    &#xf2f1;
+                </span>
+                <span id="save" title="CSV 내보내기">
+                    &#xf019;
+                </span>
+            </nav>
+		</header>
+		
+		<footer>
+            <canvas id="preview"></canvas>
+		</footer>
+		
+		<div class="popup set">
+			<form class="dialog" autocomplete="off">
+				<h2>
+                    <span  id="close" title="대화창 닫기">&#xf00d;</span>
+                    기간설정
+                </h2>
+				<div>
+					<div>
+						<p>부터</p>
+						<input type="date" id="set_start">
+					</div>
+					<div>
+						<p style="text-align: right;">까지(포함)</p>
+						<input type="date" id="set_end">
+					</div>
+				</div>
+				<div>
+					<input type="submit" value="&#xf00c; 적용">
+				</div>
+			</form>
+		</div>
+		
+		<script src="/js/ITAhM.js"></script>
+		<script src="/js/Draggable.js"></script>
+        <script src="/js/object.js"></script>
+        <script src="/js/constants.js"></script>
+        <script src="/js/import/moment.js"></script>
+        <script src="/js/import/chart.js"></script>
+        <script>
+Chart.defaults.global.tooltips.enabled = false;
+Chart.defaults.global.legend.display = false;
+Chart.defaults.global.elements.line.borderWidth = 0;
+Chart.defaults.global.elements.point.radius = 0;
+Chart.defaults.global.elements.line.backgroundColor = "#dddddd";
+        </script>
+		<script>
+
+const
+    MONTH = ["01월", "02월", "03월", "04월", "05월", "06월", "07월", "08월", "09월", "10월", "11월", "12월"],
+    search = new URLSearchParams(window.location.search),
+    options = {
+        maintainAspectRatio: false,
+        elements: {
+            line: {
+                tension: 0
+            }
+        },
+        scales: {
+            xAxes: [{
+                type: "time",
+                ticks: {
+                },
+                display: false,
+                gridLines: {
+                    display: false
+                }
+            }],
+            yAxes: [{
+                gridLines: {
+                    display: false
+                },
+                ticks: {
+                    display: false
+                }
+            }]
+        }
+    },
+    $ = {
+        id: Number(search.get("id")),
+        index: Number(search.get("index")),
+        name: search.get("name"),
+        from: Number(search.get("from")),
+        to: Number(search.get("to")),
+        chart: document.getElementById("chart").contentWindow,
+        preview:  new Chart(document.getElementById("preview"), {
+            type: "line",
+            data: {
+                datasets: []
+            },
+            options: options
+        })
+    };
+    
+document.getElementById("detail").onclick = function () {
+    document.body.classList.remove("detail");
+    
+    $.chart.detail();
+};
+
+document.getElementById("realtime").onclick = function () {
+    $.chart.realtime(this.classList.toggle("realtime"));
+};
+
+document.getElementById("save").onclick = function () {
+	$.chart.getFile();
+};
+
+document.getElementById("set").onclick = function (e) {
+	document.body.classList.add("set");
+};
+
+document.getElementById("close").onclick = e => document.body.classList.remove("set");
+
+window.addEventListener("resize", function () {
+	if ($.resizeTimer) {
+		clearTimeout($.resizeTimer);
+	}
+	
+	$.resizeTimer = setTimeout(resize, 300);
+});
+
+(form => {
+	var
+		inputStart = document.getElementById("set_start"),
+		inputEnd = document.getElementById("set_end"),
+		kst = new Date();
+	
+	kst.setDate(kst.getDate());
+	
+	setValueAsDate(inputEnd, kst); 
+	setValueAsDate(inputStart, kst);
+	
+	form.onsubmit = function (e) {
+		e.preventDefault();
+		
+		const
+            from = getValueAsDate(inputStart),
+			to = getValueAsDate(inputEnd);
+
+		if (from > to) {
+            search.set("from", to.getTime());
+            search.set("to", from.setDate(from.getDate() +1));
+		}
+		else {
+            search.set("from", from.getTime());
+            search.set("to", to.setDate(to.getDate() +1));
+		}
+
+        window.location.search = search;
+	}
+})(document.body.querySelector("form"));
+
+//$.cursor = new Cursor($.from, $.to);
+
+new Cursor(document.querySelector("footer"), {
+    step: new Date($.to).getDate() - new Date($.from).getDate(),
+    maskColor: "rgba(0, 0, 0, 0.5)",
+    handleColor: "rgba(0, 0, 0, 0.8)",
+    onchange: (f, t) => {
+        const
+            from = new Date($.from),
+            to = new Date($.from);
+
+        $.chart.draw(from.setDate(from.getDate() + f), to.setDate(to.getDate() + t));
+
+        document.body.classList[t - f === 1? "add": "remove"]("detail");
+    }
+});
+
+if ($.id && $.from && $.to && $.name) {
+    const ticks = $.preview.config.options.scales.xAxes[0].ticks;
+
+    ticks.max = $.to;
+    ticks.min = $.from;
+
+    document.body.classList[new Date($.to).getDate() - new Date($.from).getDate() === 1? "add": "remove"]("detail");
+
+    $.chart.location.replace(`${$.name}?id=${$.id}&index=${$.index}&from=${$.from}&to=${$.to}`);
+}
+		</script>
+	
+	</body>
+	
+</html>

@@ -1,0 +1,281 @@
+@charset "utf-8";
+
+body {
+    font : 10pt "맑은 고딕", Arial, Tahoma;
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    padding: 0; margin: 0;
+    display: flex; flex-direction: column;
+    user-select: none;
+    background-color: var(--var-color-bg);
+}
+
+header {
+    background-color: #1e1f26;
+    flex: none;
+    display: flex; justify-content: space-between;
+    padding: 0.5em;
+    color: #ffffff;
+    font-weight: bold;
+    z-index: 2;
+}
+
+article {
+    flex: 1;
+    display: flex;
+}
+
+aside {
+    flex: none;
+    position: relative;
+    z-index: 1;
+}
+
+main {
+    flex: 1;
+    position: relative;
+}
+
+iframe {
+    border: none;
+    width: 100%; height: 100%;
+}
+
+#dialog {
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	padding: 0; margin: 0;
+    z-index: 3;
+}
+
+#status {
+    width: 400px;
+    transition: transform 0.5s linear;
+}
+
+#tab {
+    position: absolute; top: 40%; right: 0;
+    width: 1em; height: 2em;
+    cursor: pointer;
+}
+
+body.status #tab {
+    border-radius: 1em 0 0 1em;
+    background-color: #dddddd;
+}
+
+body:not(.status) #tab {
+    border-radius: 0 1em 1em 0;
+    background-color: #ff0000;
+    transform: translateX(100%);
+}
+
+body:not(.status) aside {
+    width: 0;
+}
+
+body:not(.status) #status {
+    transform: translateX(-100%);
+}
+
+footer {
+    position: absolute; inset: auto 0 0 auto;
+    display: flex; flex-direction: column;
+    padding: 1em;
+    font-weight: bold;
+    color: #fff;
+    cursor: pointer;
+}
+
+footer >div {
+    margin: 0.5em;
+    align-self: flex-end;
+}
+
+footer >div::before,
+footer >div::after {
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+footer >div::before {
+    content: attr(data-elapse);
+    padding: 5px 1em;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.5);
+    color: #424242;
+}
+
+footer >div::after {
+    content: attr(data-message);
+    padding: 0.5em 1em;
+    background-color: #ffa500;
+    border: 1px solid #c46c00;
+    border-radius: 1em 0 0 1em;
+    margin-left: 1em;
+}
+
+a:link,
+a:visited {
+    color: inherit;
+    text-decoration: inherit;
+}
+
+/** account **/
+details {
+    position: relative;
+    display: inline-block;
+}
+
+details[open] summary::before {
+    content: "";
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    background-color: transparent;
+}
+
+summary {
+    outline: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+.popup {
+    position: absolute; top: 100%; right: 0;
+    border-radius: 3px;
+    border: 1px solid rgba(27,31,35,.15);
+    box-shadow: 0 1px 15px rgba(27,31,35,.15);
+    width: 160px;
+    padding: 1em 0;
+    margin-top: 8px;
+    background-color: #ffffff;
+    color: #24292e;
+    z-index: 1;
+    list-style: none;
+    padding: 1em; margin: 0;
+}
+
+.popup::after {
+    position: absolute; top: -14px; right: 10px; left: auto;
+    display: inline-block;
+    content: "";
+    border: 7px solid transparent;
+    border-bottom-color: #fff;
+}
+
+.popup li {
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.popup li:hover {
+    background-color: #0366d6;
+    color: #ffffff;
+}
+
+.popup a {
+    display: block;
+}
+/** account **/
+
+/** 기본스킨 **/
+.account {
+    display: none;
+}
+
+nav {
+    display: flex; justify-content: space-between;
+    flex: 1;
+}
+
+nav b {
+    color: #7f7f7f;
+}
+
+nav >ul {
+    display: flex;
+}
+
+nav >ul >li >a,
+nav b::before {
+    content: "\f7a5";
+    font: 20px "Font Awesome 5 Free";
+}
+
+nav ul {
+    list-style: none;
+    margin: 0; padding: 0em;
+}
+
+nav >ul >li {
+    position: relative;
+    cursor: pointer;
+    overflow: visible;
+    display: flex;
+}
+
+nav >ul ul {
+    position: absolute;
+    display: none;
+    padding: 0.5em 0;
+    background-color: #efefef;
+    border: 1px solid #dddddd;
+    color: #0f0f0f;
+}
+
+nav >ul >li:hover ul {
+    display: block;
+}
+
+nav >ul ul >li {
+    white-space: nowrap;
+    font-size: 12px;
+    padding: 3px 1em;
+}
+
+nav >ul ul >li:hover {
+    background-color: #0084ff;
+    color: #fefefe;
+}
+
+nav >ul >li >a,
+nav b::before {
+    padding: 0.5em;
+    display: inline-block;
+}
+
+nav >ul >li >a:hover {
+    color: #0084ff;
+}
+
+nav >ul >li >a:active {
+    transform: translateY(2px);
+    color: #0084ff;
+}
+
+nav >ul >li >a >div {
+    display: none;
+}
+
+nav >ul ul {
+    inset: 100% auto auto 0;
+    font-family: "Font Awesome 5 Free", "맑은 고딕", Arial, Tahoma;
+}
+
+nav >ul:last-child ul {
+    inset: 100% 0 auto auto;
+}
+
+nav >ul ul::after {
+    content: "";
+    position: absolute;
+    border: 5px solid transparent;
+}
+
+nav >ul ul::after {
+    inset: auto auto 100% 5px;
+    border-bottom-color: #efefef;
+}
+
+nav >ul:last-child ul::after {
+    inset: auto 5px 100% auto;
+}

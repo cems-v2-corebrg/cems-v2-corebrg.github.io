@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="No-Cache">
+		
+		<title>CeMS Chart</title>
+
+		<style>
+@import "/css/fa.css";
+
+body {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    padding: 0; margin: 0;
+    background-color: #4d525a;
+    display: flex; flex-direction: column;
+}
+
+nav {
+    font: bold 20px 'Font Awesome 5 Free';
+    color: #aaaaaa;
+    flex: none;
+    padding: 0.5em;
+    display: flex; justify-content: space-between;
+}
+
+main {
+    flex: 1;
+}
+
+nav span {
+    display: inline-block;
+    cursor: pointer;
+}
+
+nav span:hover {
+    transform: scale(1.2);
+    color: #ffffff;
+}
+
+iframe {
+    width: 100%; height: 100%;
+    padding: 0; margin: 0;
+    border: none;
+}
+
+body.chart nav .summary,
+body:not(.chart) nav .chart,
+body:not(.frame) .frame {
+    display: none;
+}
+
+		</style>
+		
+		<script>
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert(NOTICE_SESS_EXPIRE["kr"]);
+
+        break;
+    default:
+        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+		</script>
+	</head>
+
+	<body>
+        <nav>
+            <div>
+                <span id="close" class="frame summary" title="이전으로">&#xf536;</span>
+                <span id="back" class="chart" title="이전으로">&#xf536;</span>
+            </div>
+            <div class="frame">
+                <span id="popup" title="새 창">&#xf2d2;</span>
+            </div>
+        </nav>
+        <main>
+            <iframe></iframe>
+        </main>
+        <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+        <script src="/js/channel.js"></script>
+		<script>
+
+const search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request()
+    };
+
+document.querySelector("iframe").onload = function (e) {
+    document.body.classList[this.contentWindow.location.pathname.indexOf("summary") === -1? "add": "remove"]("chart");
+};
+
+function initNode () {
+    switch (this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    const node = JSON.parse(this.responseText);
+            
+    document.title = node.name || node.ip || "Chart";
+    
+    if ($.chart && $.index) {
+        const date = new Date();
+
+        window.sessionStorage.removeItem("chart");
+        window.sessionStorage.removeItem("index");
+
+        document.querySelector("iframe").src
+            = `/chart/chart.html?id=${$.id}&index=${$.index}&name=${$.chart}&from=${date.setHours(0, 0, 0, 0)}&to=${date.setDate(date.getDate() +1)}`;
+    } else {
+        document.querySelector("iframe").src = `/chart/summary.html?id=${$.id}`;
+    }
+}
+
+Channel.getAccount(account => {
+    if (window === top) {
+        window.account = account;
+
+        $.id =  Number(window.sessionStorage.getItem("id"));
+        $.chart = window.sessionStorage.getItem("chart");
+        $.index = window.sessionStorage.getItem("index");
+    } else {
+        $.id = Number(search.get("id"));
+        $.chart = search.get("chart");
+        $.index = search.get("index");
+
+        document.getElementById("popup").onclick = e => {
+            const popup = window.open();
+
+            popup.sessionStorage.setItem("id", $.id);
+
+            popup.location.replace("/chart.html");
+
+            top.closeDialog();
+        };
+
+        document.getElementById("close").onclick = e => top.closeDialog();
+
+        document.body.classList.add("frame");
+    }
+
+    if ($.id) {
+        document.getElementById("back").onclick = e =>
+            document.querySelector("iframe").contentWindow.location.replace(`/chart/summary.html?id=${$.id}`);
+
+        $.request.execute({
+            command: "get",
+            target: "node",
+            id: $.id,
+            resource: true
+        }, initNode);
+    } else {
+        window.location.replace("/warning.html");
+    }
+});
+
+		</script>
+	
+	</body>
+</html>

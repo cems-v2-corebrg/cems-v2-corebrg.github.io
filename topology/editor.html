@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>CeMS Topology editor</title>
+        <style>
+
+@import "/css/fa.css";
+
+body {
+    font: 10pt "맑은 고딕", arial, tahoma;
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    padding: 0; margin: 0;
+    display: flex;
+}
+
+iframe {
+    width: 100%; height: 100%;
+    border: none;
+}
+
+			</style>            
+        </head>
+        
+        <script>
+
+function uuidv4() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert(NOTICE_SESS_EXPIRE["kr"]);
+
+        break;
+    default:
+        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+        </script>
+
+        <body>
+            <iframe id="frame"></iframe>
+
+        <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+        <script>
+
+const $ = {
+        request: new Request()
+    };
+
+if (top.account.level === 0) {
+    $.request.execute({
+        command: "get",
+        target: "position",
+        name: "position"
+    }, initPosition);    
+} else {
+    window.location.replace("/warning.html");
+}
+
+function initPosition (e) {
+    switch(this.status) {
+    case 200:
+        window.positionData = JSON.parse(this.responseText);
+    case 204:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    document.getElementById("frame").src = "/topology/tool.html";
+}
+
+        </script>
+    </body>
+</html>
