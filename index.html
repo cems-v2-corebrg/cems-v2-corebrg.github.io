@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 	<head>
@@ -9,241 +8,8 @@
 
 @import "/css/var.css";
 @import "/css/fa.css";
-
-body {
-    font : 10pt "맑은 고딕", Arial, Tahoma;
-    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-    padding: 0; margin: 0;
-    display: flex; flex-direction: column;
-    user-select: none;
-    background-color: var(--var-color-bg);
-}
-
-header {
-    background-color: #1e1f26;
-    flex: none;
-    display: flex; justify-content: space-between;
-    padding: 1em;
-    color: #ffffff;
-    font-weight: bold;
-    z-index: 2;
-}
-
-header b {
-    color: #7f7f7f;
-}
-
-nav span {
-    position: relative;
-    cursor: pointer;
-    overflow: visible;
-}
-
-nav span ul {
-    position: absolute; top: 0; left: 0;
-    list-style: none;
-    margin: 0; padding: 0.5em;
-    background-color: #1e1f26;
-    transition: top 0.5s;
-    display: none;
-}
-
-nav span:hover ul {
-    top: 100%;
-    display: flex;
-}
-
-nav span li {
-    white-space: nowrap;
-    padding: 0.5em;
-    font-size: 10pt;
-}
-
-nav span>a,
-nav b {
-    font: 20px "Font Awesome 5 Free";
-}
-
-nav >span:hover>a {
-    /*display: inline-block;
-    transform: translateY(-2px);*/
-}
-
-nav >span:active>a {
-    color: #0084ff;
-    transform: translateY(0);
-}
-
-article {
-    flex: 1;
-    display: flex;
-}
-
-aside {
-    flex: none;
-    position: relative;
-    z-index: 1;
-}
-
-main {
-    flex: 1;
-    position: relative;
-}
-
-iframe {
-    border: none;
-    width: 100%; height: 100%;
-}
-
-#dialog {
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-	padding: 0; margin: 0;
-    z-index: 3;
-}
-
-#status {
-    width: 400px;
-    transition: transform 0.5s linear;
-}
-
-#tab {
-    position: absolute; top: 40%; right: 0;
-    width: 1em; height: 2em;
-    cursor: pointer;
-}
-
-body.status #tab {
-    border-radius: 1em 0 0 1em;
-    background-color: #dddddd;
-}
-
-body:not(.status) #tab {
-    border-radius: 0 1em 1em 0;
-    background-color: #ff0000;
-    transform: translateX(100%);
-}
-
-body:not(.status) aside {
-    width: 0;
-}
-
-body:not(.status) #status {
-    transform: translateX(-100%);
-}
-
-footer {
-    position: absolute; inset: auto 0 0 auto;
-    display: flex; flex-direction: column;
-    padding: 1em;
-    font-weight: bold;
-    color: #fff;
-    cursor: pointer;
-}
-
-footer >div {
-    margin: 0.5em;
-    align-self: flex-end;
-}
-
-footer >div::before,
-footer >div::after {
-    display: inline-block;
-    box-sizing: border-box;
-}
-
-footer >div::before {
-    content: attr(data-elapse);
-    padding: 5px 1em;
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.5);
-    color: #424242;
-}
-
-footer >div::after {
-    content: attr(data-message);
-    padding: 0.5em 1em;
-    background-color: #ffa500;
-    border: 1px solid #c46c00;
-    border-radius: 1em 0 0 1em;
-    margin-left: 1em;
-}
-
-a:link,
-a:visited {
-    color: inherit;
-    text-decoration: inherit;
-}
-
-body:not(.authorized) header {
-    pointer-events: none;
-    color: #7f7f7f;
-}
-
-/** account **/
-details {
-    position: relative;
-    display: inline-block;
-}
-
-details[open] summary::before {
-    content: "";
-    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-    background-color: transparent;
-}
-
-summary {
-    outline: none;
-}
-
-summary::marker {
-    content: "";
-    display: none;
-}
-
-.popup {
-    position: absolute; top: 100%; right: 0;
-    border-radius: 3px;
-    border: 1px solid rgba(27,31,35,.15);
-    box-shadow: 0 1px 15px rgba(27,31,35,.15);
-    width: 160px;
-    padding: 1em 0;
-    margin-top: 8px;
-    background-color: #ffffff;
-    color: #24292e;
-    z-index: 1;
-    list-style: none;
-    padding: 1em; margin: 0;
-}
-
-.popup::after {
-    position: absolute; top: -14px; right: 10px; left: auto;
-    display: inline-block;
-    content: "";
-    border: 7px solid transparent;
-    border-bottom-color: #fff;
-}
-
-.popup li {
-    padding: 4px 8px;
-    cursor: pointer;
-}
-
-.popup li:hover {
-    background-color: #0366d6;
-    color: #ffffff;
-}
-
-.popup a {
-    display: block;
-}
-/** account **/
-
-body:not(.authorized) aside,
-body:not(.event) footer,
-body:not(.dialog) #dialog,
-body:not(.root) nav ul {
-    display: none;
-}
+@import "/css/skin/index.css";
+@import "/css/skin/type1.css";
 
         </style>
         <script>
@@ -283,10 +49,9 @@ function signIn(account) {
 
     document.title = $.request.agent;
 
-    document.getElementById("user").textContent = account.id;
+    document.getElementById("user").title = account.id;
     document.getElementById("signout").onclick = onSignOut;
 
-    //window.open("/dc.html"); // TODO 데모 끝나면 삭제할것
     {
         const commander = new Commander(account);
 
@@ -504,134 +269,170 @@ function onTest(e) {
     <body class="status">
         <header>
             <nav>
-                <b>
-                    &#xf7a5;
-                </b>
-                <span title="토폴로지">
-                    <a href="/topology.html" target="main">
-                        &#xf0e8;
-                    </a>
-                    <ul>
-                        <li>
-                            <a href="/topology.html" target="main">보기</a>
-                        </li>
-                        <li>
-                            <a href="/topology/editor.html" target="main">편집</a>
-                        </li>
-                    </ul>
-                </span>
-                <span title="지도">
-                    <a href="/branch.html" target="main">
-                        &#xf3c5;
-                    </a>
-                </span>
-                <span title="데이터센터">
-                    <a href="/dc.html" target="main">
-                        &#xf64f;
-                    </a>
-                    <ul>
-                        <li>
-                            <a href="/dc.html" target="main">보기</a>
-                        </li>
-                        <li>
-                            <a href="/dc/editor.html" target="main">편집</a>
-                        </li>
-                    </ul>
-                </span>
-                <span title="Top Ten">
-                    <a href="/topTen.html" target="main">
-                        &#xf160;
-                    </a>
-                </span>
-                <b>
-                    &#xf7a5;
-                </b>
-                <span title="이벤트">
-                    <a href="/event.html" target="main">
-                        &#xf783;
-                    </a>
-                </span>
-                <span title="감사">
-                    <a href="/audit.html" target="main">
-                        &#xf1e5;
-                    </a>
-                </span>
-                <b>
-                    &#xf7a5;
-                </b>
-                <span title="노드 목록">
-                    <a href="/node/viewer.html" target="main">
-                        &#xf233;
-                    </a>
-                    <ul>
-                        <li>
-                            <a href="/node/viewer.html" target="main">보기</a>
-                        </li>
-                        <li>
-                            <a href="/node/editor.html" target="main">편집</a>
-                        </li>
-                    </ul>
-                </span>
-                <span title="브랜치 목록">
-                    <a href="/group.html" target="main">
-                        &#xf126;
-                    </a>
-                </span>
-                <span title="회선 목록">
-                    <a href="/link.html" target="main">
-                        &#xf83e;
-                    </a>
-                </span>
-                <span title="사용자 목록">
-                    <a href="/user.html" target="main">
-                        &#xf0c0;
-                    </a>
-                </span>
-                <b>
-                    &#xf7a5;
-                </b>
-                <span title="임계 관리">
-                    <a href="/critical.html" target="main">
-                        &#xf08d;
-                    </a>
-                </span>
-                <span title="아이콘">
-                    <a href="/icon.html" target="main">
-                        &#xf61f;
-                    </a>
-                </span>
-                <span title="설정">
-                    <a href="/setting.html" target="main">
-                        &#xf013;
-                    </a>
-                </span>
-                <b>
-                    &#xf7a5;
-                </b>
-                <span title="Home">
-                    <a href="/">
-                        &#xf015;
-                    </a>
-                </span>
-                <b>
-                    &#xf7a5;
-                </b>
-                <span title="Home">
-                    <a href="/list.html">
-                        &#xf015;
-                    </a>
-                </span>
-                <!--input type="file" onchange="onTest(event)"-->
+                <ul>
+                    <li>
+                        <b></b>
+                    </li>
+                    <li title="토폴로지">
+                        <a href="/topology.html" target="main">
+                            &#xf0e8;
+                            <div>토폴로지</div>
+                        </a>
+                        <ul>
+                            <li>
+                                <a href="/topology.html" target="main">&#xf06e; 보기</a>
+                            </li>
+                            <li>
+                                <a href="/topology/editor.html" target="main">&#xf044; 편집</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li title="지도">
+                        <a href="/branch.html" target="main">
+                            &#xf3c5;
+                            <div>지도</div>
+                        </a>
+                    </li>
+                    <li title="데이터센터">
+                        <a href="/dc.html" target="main">
+                            &#xf64f;
+                            <div>DC</div>
+                        </a>
+                        <ul>
+                            <li>
+                                <a href="/dc.html" target="main">&#xf06e; 보기</a>
+                            </li>
+                            <li>
+                                <a href="/dc/editor.html" target="main">&#xf044; 편집</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li title="Top Ten">
+                        <a href="/topTen.html" target="main">
+                            &#xf160;
+                            <div>탑텐</div>
+                        </a>
+                    </li>
+                    <li>
+                        <b></b>
+                    </li>
+                    <li title="이벤트">
+                        <a href="/event.html" target="main">
+                            &#xf783;
+                            <div>이벤트</div>
+                        </a>
+                    </li>
+                    <li title="감사">
+                        <a href="/audit.html" target="main">
+                            &#xf1e5;
+                            <div>감사</div>
+                        </a>
+                    </li>
+                    <li>
+                        <b></b>
+                    </li>
+                    <li title="노드">
+                        <a href="/node/viewer.html" target="main">
+                            &#xf233;
+                            <div>노드</div>
+                        </a>
+                        <ul>
+                            <li>
+                                <a href="/node/viewer.html" target="main">&#xf06e; 보기</a>
+                            </li>
+                            <li>
+                                <a href="/node/editor.html" target="main">&#xf044; 편집</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li title="리스트">
+                        <a>
+                            &#xf0ca;
+                            <div>리스트</div>
+                        </a>
+                        <ul>
+                            <li>
+                                <a href="/group.html" target="main">&#xf126; 브랜치</a>
+                            </li>
+                            <li>
+                                <a href="/link.html" target="main"> &#xf83e; 회선</a>
+                            </li>
+                            <li>
+                                <a href="/user.html" target="main">&#xf0c0; 사용자</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <!--li title="노드 목록">
+                        <a href="/node.html" target="main">
+                            &#xf233;
+                            <div>노드</div>
+                        </a>
+                    </li>
+                    <li title="그룹 목록">
+                        <a href="/group.html" target="main">
+                            &#xf5fd;
+                            <div>그룹</div>
+                        </a>
+                    </li>
+                    <li title="회선 목록">
+                        <a href="/link.html" target="main">
+                            &#xf83e;
+                            <div>회선</div>
+                        </a>
+                    </li>
+                    <li title="사용자 목록">
+                        <a href="/user.html" target="main">
+                            &#xf0c0;
+                            <div>사용자</div>
+                        </a>
+                    </li-->
+                    <li>
+                        <b></b>
+                    </li>
+                    <li title="임계 관리">
+                        <a href="/critical.html" target="main">
+                            &#xf08d;
+                            <div>임계</div>
+                        </a>
+                    </li>
+                    <li title="아이콘">
+                        <a href="/icon.html" target="main">
+                            &#xf61f;
+                            <div>아이콘</div>
+                        </a>
+                    </li>
+                    <li title="설정">
+                        <a href="/setting.html" target="main">
+                            &#xf013;
+                            <div>설정</div>
+                        </a>
+                    </li>
+                    <li>
+                        <b></b>
+                    </li>
+                    <li title="Home">
+                        <a href="/">
+                            &#xf015;
+                            <div>홈</div>
+                        </a>
+                    </li>
+                </ul>
+                <ul>
+                    <li id="user">
+                        <a href="/">
+                            &#xf011;
+                        </a>
+                        <ul>
+                            <li id="password">
+                                <a>&#xf084; 비밀번호</a>
+                            </li>
+                            <li id="signout">
+                                <a>&#xf2f5; 나가기</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
             </nav>
-            <div class="account">
-                <details>
-                    <summary id="user"></summary>
-                    <ul class="popup">
-                        <li id="password">Password</li>
-                        <li id="signout">Sign out</li>
-                    </ul>
-                </details>
-            </div>
         </header>
         <article>
             <aside>
@@ -684,7 +485,7 @@ document.querySelector("footer").onclick = function (e) {
 };
 
 document.getElementById("password").onclick = e => {
-    document.querySelector("div.account details").open = false;
+    //document.querySelector("div.account details").open = false;
     
     showDialog("/dialog/password.html");
 }

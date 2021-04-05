@@ -135,8 +135,9 @@ summary {
     outline: none;
 }
 
-summary::-webkit-details-marker {
-  display: none;
+summary::marker {
+    content: "";
+    display: none;
 }
 
 .popup {
@@ -178,10 +179,6 @@ summary::-webkit-details-marker {
 /** account **/
 
 /** 기본스킨 **/
-.account {
-    display: none;
-}
-
 nav {
     display: flex; justify-content: space-between;
     flex: 1;
@@ -278,4 +275,12 @@ nav >ul ul::after {
 
 nav >ul:last-child ul::after {
     inset: auto 5px 100% auto;
+}
+
+body:not(.authorized) header,
+body:not(.authorized) aside,
+body:not(.event) footer,
+body:not(.dialog) #dialog,
+body:not(.root) nav ul {
+    display: none;
 }
