@@ -7,102 +7,13 @@
 		<style>
 @import "/css/style.css";
 @import "/css/fa.css";
+@import "/css/dialog.css";
 
-body {
-	margin: 0; padding: 0;
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	background-color: rgba(0, 0, 0, .8);
-}
-
-form {
-	width: 360px;
-	padding: 20px;
-	background-color: #fff;
-	position: relative;
-}
-
-h2 {
-	margin: 0; padding: 10px;
-	background-color: #0084ff;
-    color: #fff;
-    text-shadow: 0 2px 3px #000;
-}
-
-div.table {
-	margin: 1em 0px;
-}
-
-div.table ul {
-	display: flex;
-	list-style: none;
-	padding: 1px;
-	margin: 0;
-}
-
-div.table li:first-child {
-	flex: none;
-	width: 100px;
-	padding: .5em;
-	text-align: right;
-    background-color: #686160;
-    color: #fff;
-    font-weight: bold;
-}
-
-div.table li:nth-child(2) {
-	flex: 1;
-	background-size: 2em;
+.preview {
+    background-size: 2em;
 	background-repeat: no-repeat;
 	background-position: center;
 }
-
-div.table li:nth-child(3) {
-	flex: 4;
-}
-
-input[type=text],
-input[type=submit],
-input[type=reset] {
-	width: 100%;
-	box-sizing: border-box;
-	padding: .5em;
-}
-
-footer {
-	display: flex;
-	margin-top: 1em;
-}
-
-footer input {
-    flex: 1;
-    font-family: "Font Awesome 5 Free";
-    font-weight: bold;
-}
-
-#close {
-    font-family: "Font Awesome 5 Free";
-    display: block;
-    float: right;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-#close:hover {
-    transform: scale(1.2);
-}
-
-.loading.mask {
-	position: absolute;
-}
-
-body:not(.root) footer,
-body:not(.edit) input[type=reset] {
-	display: none;
-}
-
 		</style>
 		<script>
 
@@ -201,44 +112,61 @@ function showMessage(xhr) {
         </script>
 	</head>
 	
-	<body>
-	
-		<form class="loading" autocomplete="off">
-			<h2>
+	<body class="loading">
+		<main>
+            <h2>
                 <span  id="close" title="대화창 닫기">&#xf00d;</span>
-                아이콘
+                Icon
             </h2>
-			<div class="table">
-				<ul>
-					<li>타입
-					<li><input type="text" name="type" placeholder="아이콘 타입" required>
-				</ul>
-				<ul>
-					<li>그룹
-					<li><input type="text" name="group" placeholder="아이콘 그룹" required>
-				</ul>
-				<ul>
-					<li>기본 이미지
-					<li></li>
-					<li><input type="text" name="url" placeholder="Image URL" required>
-				</ul>
-				<ul>
-					<li>비활성 이미지
-					<li></li>
-					<li><input type="text" name="disabled" placeholder="Image URL">
-                </ul>
-                <ul>
-					<li>장애 이미지
-					<li></li>
-					<li><input type="text" name="shutdown" placeholder="Image URL">
-				</ul>
-			</div>
-			<footer>
-                <input type="reset" value="&#xf2ea; 초기화">
-                <input type="submit" value="&#xf0c7; 저장">
-			</footer>
-			<div class="loading mask"></div>
-		</form>
+            <form autocomplete="off">
+                <table>
+                    <colgroup>
+                        <col width="120">
+                        <col width="50">
+                    </colgroup>
+                    <tbody>
+                        <tr>
+                            <th>타입</th>
+                            <td colspan="2">
+                                <input type="text" name="type" placeholder="아이콘 타입" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>그룹</th>
+                            <td colspan="2">
+                                <input type="text" name="group" placeholder="아이콘 그룹" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>기본</th>
+                            <td class="preview"></td>
+                            <td>
+                                <input type="text" name="url" placeholder="Image URL" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>비활성</th>
+                            <td class="preview"></td>
+                            <td>
+                                <input type="text" name="disabled" placeholder="Image URL">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>장애</th>
+                            <td class="preview"></td>
+                            <td>
+                                <input type="text" name="shutdown" placeholder="Image URL">
+                            </td>
+                        </tr>
+				    </tbody>
+                </table>
+                <footer>
+                    <input type="reset" value="&#xf2ea; 초기화">
+                    <input type="submit" value="&#xf0c7; 저장">
+                </footer>
+                <div class="loading mask"></div>
+	    	</form>
+        </main>
         
         <script src="/js/request.js"></script>
         <script src="/js/icon.js"></script>
@@ -316,7 +244,7 @@ if ($.type) {
 
             break;
         default:
-            showMessage(this);
+            throw showMessage(this);
         }
     });
 } else {
