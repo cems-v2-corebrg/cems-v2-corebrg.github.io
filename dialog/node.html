@@ -477,10 +477,10 @@ function initNode(e) {
 
             [].forEach.call(monitor.querySelectorAll(".protocol:not(.ip)"), e => e.disabled = false);
         } else {
-            if (isIPv4(node.ip)) {
-                [].forEach.call(monitor.querySelectorAll(".protocol.ip:not(.tcp)"), e => e.disabled = false);
-            } else if (isTCP(node.ip)){
+            if (isTCP(node.ip)) {
                 [].forEach.call(monitor.querySelectorAll(".protocol.tcp"), e => e.disabled = false);
+            } else if (isIPv4(node.ip)) {
+                [].forEach.call(monitor.querySelectorAll(".protocol.ip:not(.tcp)"), e => e.disabled = false);
             }
         }
         

@@ -35,13 +35,18 @@ section {
     position: relative;
 	padding: 5px;
 	background-color: #424242;
+    display: flex; flex-direction: column;
+}
+
+section ul {
+    flex: 1;
 }
 
 section li {
     position: relative;
 }
 
-#information li,
+.information li,
 #response li,
 #processor li,
 #storage li,
@@ -93,10 +98,20 @@ section li {
     flex: none; width: 80px;
 }
 
-#information {
+section.enterprise {
+    flex: none; width: 160px;
+}
+
+section.type {
+    flex: none; width: 120px;
+}
+
+section.enterprise ul,
+section.type ul {
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
+    margin: 1em;
 }
 
 section.information {
@@ -133,7 +148,7 @@ section.portmap {
 	background-color: #ff0000;
 }
 
-.fixed.container {
+.container {
     display: flex;
 }
 
@@ -190,7 +205,7 @@ div.tbody {
 
 section.information table {
 	border-collapse: collapse;
-	width: 280px;
+	width: 100%; min-width: 300px;
 	table-layout: fixed;
 }
 
@@ -247,7 +262,7 @@ function PortMap() {
         },
         add: function (index, indexData) {
             const container = document.createElement("li");
-            let port, bandwidth, label, ifAdminStatus, ifOperStatus, inBPS, outBPS, inErrs, outErrs,
+            let port, bandwidth, ifAdminStatus, ifOperStatus, inBPS, outBPS, inErrs, outErrs,
                 critical = false;
             
             bandwidth = indexData[ITAhM.snmp.oid.bandwidth];
@@ -305,22 +320,6 @@ function PortMap() {
             critical ||= outBPS.critical;
 
             outBPS = Number(outBPS.value);
-
-            label = indexData[ITAhM.snmp.oid.ifName];
-
-            label = label && label.value;
-
-            if (!label) {
-                label = indexData[ITAhM.snmp.oid.ifDescr];
-
-                label = label && label.value;
-
-                if (!label) {
-                    label = indexData[ITAhM.snmp.oid.ifAlias];
-
-                    label = label && label.value;
-                }
-            }
             
             inErrs = indexData[ITAhM.snmp.oid.inErrs];
 
@@ -350,8 +349,24 @@ function PortMap() {
                 port.set(inBPS, outBPS);
             }
 
-            if (label) {
-                port.label(label);
+            for (let i=0, ar = [
+                indexData[ITAhM.snmp.oid.ifName],
+                indexData[ITAhM.snmp.oid.ifDescr],
+                indexData[ITAhM.snmp.oid.ifAlias]
+            ]; i<ar.length; i++) {
+                if (ar[i] && ar[i].value) {
+                    port.label(ar[i++].value);
+
+                    for (; i<ar.length; i++) {
+                        if (ar[i] && ar[i].value) {
+                            container.title = ar[i].value;
+
+                            break;
+                        }
+                    }
+
+                    break;
+                }
             }
 
             //port.link(Math.round(Math.random() *10000000000000), $.loader.map[++i %3 ==0? "/img/svg/router.svg": i %3 ==1? "/img/svg/firewall.svg": "/img/svg/workgroup.svg"]);
@@ -490,6 +505,9 @@ function Processor() {
                 array.push(Number(resourceData[index][ITAhM.snmp.oid.hrProcessorLoad].value));
             });
 
+            document.body.querySelector(".processor.status")
+                .classList[resourceData["0"]["1.3.6.1.4.1.49447.4"].critical? "add": "remove"]("critical");
+
             this.set("max", Math.max.apply(undefined, array));
             this.set("min", Math.min.apply(undefined, array));
             this.set("avg", array.reduce((a, b) => a + b) / array.length);
@@ -523,8 +541,11 @@ function Response() {
 
             container.appendChild(chart);
         },
-        set: function (value) {
-            this.chart.config.label = `${value}ms`;
+        update: function (rtt) {
+            this.chart.config.label = `${rtt.value}ms`;
+
+            document.body.querySelector(".response.status")
+                .classList[rtt.critical? "add": "remove"]("critical");
 
             this.chart.config.data.datasets[0] = {
                 data: [100],
@@ -635,6 +656,9 @@ function Storage() {
                 datasets[0].data[0] = Math.round(value);
             }
 
+            this.container.querySelector(".status")
+                .classList[indexData[ITAhM.snmp.oid.hrStorageUsed].critical? "add": "remove"]("critical");
+
             chart.config.label = `${value}%`;
             chart.config.data.datasets = datasets;
 
@@ -653,21 +677,27 @@ function initialize(node) {
 
     document.title = node.name || node.ip || "Summary";
 
-    document.getElementById("node").textContent = ((name, ip) =>{
-        if (name) {
-            if (ip) {
-                return `${name} [${ip}]`;
-            } else {
-                return name;
-            }
-        } else if (ip) {
-            return ip;
-        } else {
-            return "기본 정보";
-        }
-    })(node.name, node.ip);
+    node.ip && (document.body.querySelector(".information .node.ip").textContent = node.ip);
+    node.name && (document.body.querySelector(".information .node.name").textContent = node.name);
 
     document.body.classList.add("response");
+
+    {
+        const container = document.body.querySelector("section.type ul");
+        let icon;
+        if (node.type) {
+            if (node.type in $.iconData) {
+                icon = $.iconData[node.type];
+            } else if (node.type in ITAhM.iconData) {
+                icon = ITAhM.iconData[node.type];
+            }
+        } else {
+            icon = ITAhM.iconData["unknown"];
+        }
+    
+        container.style.backgroundImage = `url(${icon.src})`;
+        container.title = icon.type;
+    }
 
     for (let index in node.resource) {
         indexData = node.resource[index];
@@ -675,14 +705,16 @@ function initialize(node) {
         //sysName
         (function(sysName) {
             if (sysName) {
-                document.getElementById("sys_name").textContent = sysName.value;
+                document.body.querySelector(".information .snmp.name")
+                    .textContent = sysName.value;
             }
         })(indexData[ITAhM.snmp.oid.sysName]);
 
         //sysDescr
         (function(sysDescr) {
             if (sysDescr) {
-                document.getElementById("sys_name").title = sysDescr.value;
+                document.body.querySelector(".information .snmp.descr")
+                    .textContent = sysDescr.value;
             }
         })(indexData[ITAhM.snmp.oid.sysDescr]);
 
@@ -691,10 +723,8 @@ function initialize(node) {
             if (sysObjectID) {
                 const enterprise = ITAhM.util.enterpriseFromOID(sysObjectID.value);
 
-                document.getElementById("information").title = enterprise? enterprise.name: sysObjectID;
-                
-                if (enterprise) {
-                    document.getElementById("information").style.backgroundImage = `url(${enterprise.logo})`;
+                if (enterprise && enterprise.logo) {
+                    document.body.querySelector("section.enterprise ul").style.backgroundImage = `url(${enterprise.logo})`;
                 }
             }
         })(indexData[ITAhM.snmp.oid.sysObjectID]);
@@ -702,7 +732,7 @@ function initialize(node) {
         //responseTime
         (function(rtt) {
             if (rtt) {
-                $.response.set(rtt.value);
+                $.response.update(rtt);
 
                 document.getElementById("response").querySelector("li").dataset.response = toElapseString(rtt.timestamp);
             }
@@ -831,7 +861,7 @@ function update(node) {
     try {
         let rt = resourceData["0"][ITAhM.snmp.oid.responseTime];
         
-        $.response.set(rt.value);
+        $.response.update(rt);
         
         document.getElementById("response").querySelector("li").dataset.response = toElapseString(rt.timestamp);
     } catch (e) {}
@@ -901,39 +931,60 @@ function showMessage(xhr) {
 
 	<body class="loading">
 		<article>
+            <section class="enterprise">
+                <h2>정보 공급자</h2>
+                <ul></ul>
+            </section>
+            
 			<section class="information">
                 <h2 id="node">기본 정보</h2>
-                <ul id="information">
+                <ul>
                     <li>
                         <table>
                             <tr>
-                                <th>장비명</th>
-                                <td id="sys_name"></td>
+                                <th>이름</th>
+                                <td class="node name"></td>
+                            </tr>
+                            <tr>
+                                <th>IP 주소</th>
+                                <td class="node ip"></td>
+                            </tr>
+                            <tr>
+                                <th>SNMP 이름</th>
+                                <td class="snmp name"></td>
+                            </tr>
+                            <tr>
+                                <th>SNMP 설명</th>
+                                <td class="snmp descr"></td>
                             </tr>
                         </table>
                     </li>
                 </ul>
 			</section>
 
+            <section class="type">
+                <h2>종류</h2>
+                <ul></ul>
+            </section>
+
             <section class="response status">
                 <h2>응답 시간</h2>
-                <ul id="response" class="fixed container selectable"></ul>
-                </div>
+                <ul id="response" class="container selectable"></ul>
             </section>
 
 			<section class="processor status">
 				<h2>프로세서 로드</h2>
-				<ul id="processor" class="fixed container selectable"></ul>
+				<ul id="processor" class="container selectable"></ul>
             </section>
             
             <section class="memory">
                 <h2>물리 메모리</h2>
-                <ul id="memory" class="fixed container"></ul>
+                <ul id="memory" class="container"></ul>
             </section>
 
             <section class="storage">
                 <h2>스토리지</h2>
-                <ul id="storage" class="fixed container"></ul>
+                <ul id="storage" class="container"></ul>
             </section>
 			
 			<section class="portmap">
@@ -958,6 +1009,7 @@ function showMessage(xhr) {
 		<div class="loading mask"></div>
 	
 		<script src="/js/ITAhM.js"></script>
+        <script src="/js/icon.js"></script>
         <script src="/js/snmp.js"></script>
         <script src="/util/gauge.js"></script>
         <script src="/util/ethernet.js"></script>
@@ -1059,13 +1111,29 @@ function initNode () {
     initialize(JSON.parse(this.responseText));
 }
 
-function onImageLoad() {
+function initIcon () {
+    switch (this.status) {
+        case 200:
+            break;
+        default:
+            throw showMessage(this);
+    }
+
+    $.iconData = JSON.parse(this.responseText);
+
     $.request.execute({
         command: "get",
         target: "node",
         id: $.id,
         resource: true
     }, initNode);
+}
+
+function onImageLoad() {
+    $.request.execute({
+        command: "get",
+        target: "icon"
+    }, initIcon);
 }
 
 if ($.id) {

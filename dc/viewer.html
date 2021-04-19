@@ -13,6 +13,7 @@ body {
     padding: 0; margin: 0;
     background: #fff url("/img/bg_signin.png") no-repeat center center fixed;
 	background-size: cover;
+    display: flex; flex-direction: column;
 }
 
 body::before {
@@ -22,26 +23,50 @@ body::before {
 	z-index: -1;
 }
 
-nav {
-    position: absolute; top: 5px; left: 5px;
+header {
+    flex: none;
+    background-color: #dddddd;
+    color: #7f7f7f;
+    border-bottom: 2px ridge #101010;
+}
+
+main {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+ul {
+    list-style: none;
+    margin: 0; padding: 0;
     display: flex;
-    font: 20px "Font Awesome 5 Free";
-    color: #ffffff;
+    overflow-x: auto;
 }
 
-nav >span {
-    border-radius: 50%;
-    display: flex; width: 32px; height: 32px;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 132, 255, 0.5);
-    border-color: #0084ff;
+li {
+    padding: 0.5em 1em 0.5em 1em;
+    border-right: 1px solid #aaaaaa;
     cursor: pointer;
+    position: relative;
 }
 
-nav >span:hover {
-    background-color: #0084ff;
+li.selected {
+    font-weight: bold;
+    color: #fefefe;
+    background-color: #101010;
 }
+
+canvas:focus {
+    outline: none;
+}
+/*
+body::before {
+	content: "";
+	position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	z-index: -1;
+}
+*/
 
 .label {
     cursor: pointer;    
@@ -58,14 +83,19 @@ iframe {
     border: none;
 }
 
-body:not(.focus) iframe,
-body.play #play,
-body:not(.play) #stop {
+body:not(.focus) iframe {
     display: none;
 }
 
             </style>
             <script>
+function openDC(e) {
+    const search = new URLSearchParams();
+
+    search.set("name", this.textContent);
+            
+    window.location.search = search;
+}
 
 function onSelectRack (id) {
     const iframe = document.querySelector("iframe");
@@ -87,13 +117,26 @@ function onSelectRack (id) {
             facility: parent.facilityData[id],
             locationData: locationData,
             nodeData: parent.nodeData,
-            modelData: parent.modelData
+            modelData: $.loader.map
         });
 
         document.body.classList.add("focus");
     };
 
     iframe.src = `/dc/dialog/focus.html?id=${id}`;
+}
+
+function loadTexture (url) {
+    return new Promise((resolve, reject) => {
+        new THREE.TextureLoader().load(url,
+            texture => {
+                texture.minFilter = THREE.LinearFilter;
+
+                resolve(texture);
+            },
+            undefined,
+            e => reject(e));
+    });
 }
 
 function showMessage(xhr) {
@@ -115,6 +158,10 @@ function showMessage(xhr) {
         </head>
         
         <body class="loading">
+            <header>
+                <ul></ul>
+            </header>
+            <main></main>
             <iframe></iframe>
             <div class="loading mask"></div>
             <script src="/js/import/three.js"></script>
@@ -122,13 +169,16 @@ function showMessage(xhr) {
             <script src="/dc/viewer.js"></script>
             <script src="/js/request.js"></script>
             <script src="/dc/model.js"></script>
+            <script src="/util/loader.js"></script>
             <script>
 
 const
     search = new URLSearchParams(window.location.search),
     $ = {
         request: new Request(),
-        focus: Number(search.get("focus")) || undefined
+        name: search.get("name"),
+        focus: Number(search.get("focus")) || undefined,
+        loader: new ImageLoader(onLoadImage, loadTexture)
     };
 
 /**
@@ -147,8 +197,8 @@ function addDevice(id, location) {
         if (model) {
             config.model = {
                 unit: model.unit,
-                front: parent.modelData[model.front],
-                rear: parent.modelData[model.rear]
+                front: $.loader.map[model.front],
+                rear: $.loader.map[model.rear]
             };
         }
     } catch (e) {
@@ -169,44 +219,92 @@ function addDevice(id, location) {
     putDevice(location.rack, id, config);
 }
 
-{  
-    let facility, model, pos;
+{
+    const
+        container = document.body.querySelector("header ul"),
+        df = document.createDocumentFragment();
+    let li;
+
+    for (let name in parent.positionData) {
+        li = document.createElement("li");
+
+        if (name === $.name) {
+            li.classList.add("selected");
+        }
+
+        li.textContent = name;
+
+        li.onclick = openDC;
+
+        df.appendChild(li);
+    }
+
+    container.appendChild(df);
+}
+
+function onLoadImage() {
+    let location, model, pos;
 
     for (let id in parent.facilityData) {
-        facility = parent.facilityData[id];
-        
-        pos = parent.positionData[id];
+        pos = $.positionData[id];
 
         if (!pos) {
-            pos = {
-                x: 0,
-                y: 0,
-                z: 0
-            };
-
-            parent.positionData[id] = pos;
+            continue;
         }
         
-        createFacility(facility, pos);
+        createFacility(parent.facilityData[id], pos);
     }
+
+    for (let id in parent.locationData) {
+        location = parent.locationData[id];
+
+        if (String(location.rack) in $.positionData) {
+            addDevice(id, location);
+        }
+    }
+
+    draw();
+
+    if ($.focus) {
+        onSelectRack($.focus);
+    }
+
+    document.body.classList.remove("loading");
 }
 
-for (let id in parent.locationData) {
-    addDevice(id, parent.locationData[id]);
+if ($.name) {
+    const
+        positionData = parent.positionData[$.name],
+        models = [];
+    let location;
+
+    $.positionData = positionData.position;
+
+    setFloor({
+        width: positionData.size.width,
+        height: positionData.size.height
+    });
+
+    for (let id in parent.locationData) {
+        location = parent.locationData[id];
+
+        if (String(location.rack) in $.positionData) {
+            try {
+                const model = modelData[location.maker][location.model];
+
+                if (model) {
+                    models.push(model.front);
+                    models.push(model.rear);
+                }
+            } catch (e) {
+            }
+        }
+    }
+
+    $.loader.load(models);
+} else {
+    document.body.classList.remove("loading");
 }
-
-if (parent.settingData.dc) {
-    setFloor(JSON.parse(parent.settingData.dc));
-}
-
-draw();
-
-if ($.focus) {
-    onSelectRack($.focus);
-}
-
-document.body.classList.remove("loading");
-
         </script>
     </body>
 </html>

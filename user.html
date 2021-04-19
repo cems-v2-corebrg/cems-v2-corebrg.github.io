@@ -8,90 +8,19 @@
 
 @import "/css/style.css";
 @import "/css/fa.css";
+@import "/css/list.css";
 
-body {
-    font: 10pt "맑은 고딕", Arial, Tahoma;
-    margin: 0; padding: 1em;
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-    display: flex; flex-direction: column;
-}
-
-main {
-    flex: 1;
-    overflow-y: auto;
-}
-
-input[type=date],
-input[type=text],
-input[type=button],
-input[type=submit],
-.fa {
-	font-family: "Font Awesome 5 Free", "맑은 고딕", arial, tahoma;
+input[type=button] {
+	font-family: "Font Awesome 5 Free", "맑은 고딕";
 	padding: 0.5em;
 }
 
-table {
-    border-collapse: collapse;
-    width: 100%;
-    z-index: -1;
-}
-
 thead th {
-    font-family: "Font Awesome 5 Free", "맑은 고딕", arial, tahoma;
-}
-
-main th {
-    background-color: #34495e;
-    color: #efefef;
-    position: sticky; top: 0;
-}
-
-main th,
-main td {
-    padding: 1em;
+    font-family: "Font Awesome 5 Free", "맑은 고딕";
 }
 
 #list tr {
-    border-bottom: 1px solid #ffffff;
     cursor: pointer;
-    background-color: #ffffff;
-}
-
-#list tr:nth-child(odd) {
-	background-color: #ebebeb;
-}
-
-header {
-    padding: 0.5em;
-    color: #ffffff;
-    user-select: none;
-}
-
-.button {
-    font: 20px "Font Awesome 5 Free";
-    display: inline-block;
-    cursor: pointer;
-}
-
-
-.button:hover>a {
-    display: inline-block;
-    transform: translateY(-2px);
-}
-
-.button:active>a {
-    color: #0084ff;
-    transform: translateY(0);
-}
-
-.button>a:link,
-.button>a:visited {
-    color: inherit;
-    text-decoration: inherit;
-}
-
-.loading.mask {
-    z-index: 9;
 }
 
 body:not(.root) .root {
@@ -105,8 +34,10 @@ function createItem(user) {
     const tr = document.createElement("tr");
     
     tr.appendChild(document.createElement("td")).textContent = user.id;
-    tr.appendChild(document.createElement("td")).textContent = user.level === 0? "관리자": user.level === 1? "사용자": "수신자";
-    tr.appendChild(document.createElement("td")).textContent = user.name || "";
+    tr.appendChild(document.createElement("td")).textContent = user.name;
+    tr.appendChild(document.createElement("td")).textContent = user.level === 0?
+        "관리자": user.level === 1?
+        "사용자": "수신자";
     tr.appendChild(document.createElement("td")).textContent = user.email || "";
     tr.appendChild(document.createElement("td")).textContent = user.sms || "";
 
@@ -139,12 +70,10 @@ function showMessage(xhr) {
 	
 	<body class="loading">
         <header>
-            <span id="add" class="button root" title="사용자 추가">
-                <a>&#xf234;</a>
-            </span>
-            <span id="export" class="button" title="CSV 내보내기">
-                <a>&#xf019;</a>
-            </span>
+            <nav>
+                <input type="button" value="&#xf067; Add" id="add" class="root" title="사용자 추가">
+                <input type="button" value="&#xf019; Export" id="export" title="CSV 내보내기">
+            </nav>
         </header>
         <main>
             <table>
@@ -158,8 +87,8 @@ function showMessage(xhr) {
                 <thead>
                     <tr>
                         <th>&#xf507; 아이디</th>
-                        <th>&#xf005; 권한</th>
                         <th>&#xf004; 이름</th>
+                        <th>&#xf005; 권한</th>
                         <th>&#xf0e0; 이메일</th>
                         <th>&#xf3cd; 모바일</th>
                     </tr>

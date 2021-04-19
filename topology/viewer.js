@@ -176,9 +176,7 @@
         
         layerMap.device.appendChild(svgDevice);
         
-        args.path.replace("critical", "src");
-
-        svgIcon.setAttributeNS(XLINK_NS_URI, "xlink:href", icon[args.path]);
+        svgIcon.setAttributeNS(XLINK_NS_URI, "xlink:href", icon[args.path === "critical"? "shutdown": args.path]);
         
         if (args.path === "critical" || args.path === "shutdown") {
             setStatus(svgDevice, args.path);
@@ -439,7 +437,7 @@
                 icon: parent.iconData[node.type || "unknown"] || parent.iconData["unknown"],
                 position: positionData[id],
                 click: moveStage,
-                path: shutdown.indexOf(id) !== -1? "shutdown": shutdown.indexOf(id) !== -1? "critical": "src",
+                path: shutdown.indexOf(id) !== -1? "shutdown": critical.indexOf(id) !== -1? "critical": "src",
                 size: 60
             };
 

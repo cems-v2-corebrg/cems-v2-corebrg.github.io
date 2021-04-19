@@ -415,9 +415,10 @@ const $ = {
         typeMap: {}
     };
 
-document.getElementById("normal").onclick = e => top.open("/node.html?status=normal", "main");
-document.getElementById("critical").onclick = e => top.open("/node.html?status=critical", "main");
-document.getElementById("shutdown").onclick = e => top.open("/node.html?status=shutdown", "main");
+["normal", "critical", "shutdown"].forEach(status => {
+    document.getElementById(status).onclick = e =>
+        top.open(`/node/viewer.html?status=${status}`, "main");
+});
 
 function initNode() {
     switch (this.status) {

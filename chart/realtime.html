@@ -11,11 +11,10 @@
 @import "/css/fa.css";
 
 body {
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	position: fixed; inset: 0 0 0 0;
 	margin: 0; padding: 0;
-    background-color: #000;
     color: #fff;
-    border: 2px inset #ff0;
+    border: 1px inset #ff0;
 }
 
 header {
@@ -29,7 +28,7 @@ header >span {
 
 #grid_x {
     content: "";
-    position: absolute; top: 60px; right: 0; bottom: 60px; left: 0;
+    position: absolute; inset: 50px 0 50px 0;
     border-top: 1px solid rgba(200, 200, 200, 0.5);
     border-bottom: 1px solid rgba(200, 200, 200, 0.5);
 }
@@ -41,7 +40,7 @@ header >span {
 }
 
 .chart {
-    position: absolute; top: 50px; right: 180px; bottom: 50px; left: 0;
+    position: absolute; inset: 50px 190px 50px 0;
 }
 
 #max {
@@ -69,12 +68,12 @@ svg {
 }
 
 #graph path {
-    stroke-width: 3px;
-    fill-opacity: 0.6;
+    stroke-width: 2px;
+    fill-opacity: 0.5;
 }
 
-#pointer {
-    transition: all 0.5s;
+circle {
+    fill: #fefefe;
 }
 
 #save {
@@ -89,149 +88,39 @@ svg {
     transition: color 0.5s linear;
 }
 
-stop:nth-of-type(1) {
-    stop-color: #fcfcfc;
-}
-
-stop:nth-of-type(2) {
-    stop-color: #efeff1;
-}
-
-stop:nth-of-type(3) {
-    stop-color: #9b5050;
-}
-
 		</style>
 		<script>
 
-function Path() {
-    this.initialize(arguments);
-};
+function bezierCommand (point, i, a) {
+    const
+        [cpsX, cpsY] = controlPoint(a[i - 1], a[i - 2], point),
+        [cpeX, cpeY] = controlPoint(point, a[i - 1], a[i + 1], true);
 
-Path.NS = "http://www.w3.org/2000/svg";
-Path.COLOR = "#0084ff";
-
-Path.prototype = {
-    initialize: function (args) {
-        const color = args[1] || Path.COLOR;
-
-        this.path = document.createElementNS(Path.NS, "path");
-
-        this.beginPath();
-
-        //args[0].insertBefore(this.path, args[0].lastElementChild);
-        args[0].appendChild(this.path, args[0].lastElementChild);
-
-        this.path.setAttributeNS(null, "stroke", color);
-        this.path.setAttributeNS(null, "fill", color);
-    },
-    
-    moveTo: function (x, y) {
-        this.distance[this.distance.length] = "M"+ x +" "+ y;
-        
-        return this;
-    },
-    
-    lineTo: function (x, y) {
-        this.distance[this.distance.length] = "L"+ x +" "+ y;
-        
-        return this;
-    },
-    
-    v: function (y) {
-        this.distance[this.distance.length] = "V"+ y;
-        
-        return this;
-    },
-    
-    draw: function () {
-        this.path.setAttributeNS(null, "d", this.distance.join(" "));
-    },
-    
-    set: function (key, value) {
-        this.path.setAttributeNS(null, key, value);
-    },
-    
-    beginPath: function () {
-        this.distance = [];
-    },
-    
-    closePath: function () {
-        this.distance[this.distance.length] = "Z"
-    }
-};
-    
-function RealtimeData() {
-	this.initialize(PERIOD);
+    return `C ${cpsX},${cpsY} ${cpeX},${cpeY} ${point[0]},${point[1]}`;
 }
 
-RealtimeData.prototype = {
-	initialize: function (period) {
-		this.period = period;
-		this.valueArray = [];
-		this.dateArray = [];
-	},
-	put: function (value) {
-		var millis = new Date().getTime();
-		
-		this.dateArray.push(millis);
-		this.valueArray.push(value);
-		
-		millis -= this.period;
-		
-		while (this.dateArray[0] < millis) {
-			this.dateArray.shift();
-			this.valueArray.shift();
-		}
-		
-		this.max = Math.max.apply(undefined, this.valueArray);
-		this.min = Math.min.apply(undefined, this.valueArray);
-	},
-    draw: function (path, pointer, max, min, height, tpp) {
-        const
-            now = new Date(),
-            valueRatio = max === min? undefined: height / (max - min);
+function line (p1, p2) {
+	const
+		x = p2[0] - p1[0],
+		y = p2[1] - p1[1];
 
-        path.beginPath();
+	return {
+		length: Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)),
+		angle: Math.atan2(y, x)
+	}
+}
 
-        var x, y, value;
-
-        this.dateArray.forEach((millis, i) => {
-            value = this.valueArray[i];
-          
-            y = valueRatio? (value - min) * valueRatio: height /2;
-
-            x = (now - millis) / tpp;
-
-            if (i === 0) {
-                path.moveTo(x, 0);
-            }
-            
-            path.lineTo(x, y);
-        });
-
-        path.lineTo(x, 0);
-
-        path.draw();
-
-        pointer.setAttributeNS(null, "cy", y);
-
-        this.last = value;
-    },
-    download: function (toString, file) {
-        const rows = [];
-
-        rows.push("index,timestamp,value");
-
-        this.dateArray.forEach((millis, i) => {
-            rows.push([i, toDateTimeString(millis), toString(this.valueArray[i])].join(","));
-        });
-
-        ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
-            type: "text/csv;charset=utf-8;"
-        }), file);
-    }
-};
+function controlPoint (current, previous, next, reverse) {
+	const
+		p = previous || current,
+		n = next || current,
+		o = line(p, n),
+		smoothing = 0.2,
+		angle = o.angle + (reverse ? Math.PI : 0),
+		length = o.length * smoothing;
+	
+	return [current[0] + Math.cos(angle) * length, current[1] + Math.sin(angle) * length];
+}
 
 function toDateTimeString(millis) {
     var
@@ -247,20 +136,6 @@ function toDateTimeString(millis) {
         + (h > 9? "": "0") + h +":"+ (m > 9? "": "0") + m +":"+ (s > 9? "": "0") + s;
 }
 
-function resize() {
-    var
-        chartRect = document.getElementById("chart").getBoundingClientRect(),
-        yRect = document.getElementById("grid_x").getBoundingClientRect(),
-        xRect = document.getElementById("grid_y").getBoundingClientRect();
-
-    window.chartHeight = yRect.height,
-    window.chartWidth = xRect.width;
-    window.chartTPP = PERIOD / chartWidth;
-
-    document.getElementById("graph").transform.baseVal.getItem(0)
-       .setTranslate(chartWidth, chartHeight + yRect.top - chartRect.top);
-}
-
 		</script>
 	</head>
 	
@@ -273,16 +148,10 @@ function resize() {
             <span id="min"></span>
             <span id="cur"></span>
             <svg id="chart" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <radialGradient id="pointer_gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="90%">
-                        <stop offset="0%" />
-                        <stop offset="30%" />
-                        <stop offset="100%" />
-                    </radialGradient>
-                </defs>
                 <g id="graph" transform="translate(0) scale(-1 -1)">
-                    <g id="path" transform="translate(0)"></g>
-                    <circle id="pointer" cx="0" r="10" fill="url(#pointer_gradient)" />
+                    <g id="path" transform="translate(0) translate(0)">
+                        <path></path>
+                    </g>
                 </g>
             </svg>
         </div>
@@ -293,81 +162,183 @@ function resize() {
 		<script src="/js/object.js"></script>
 		<script>
 
-const PERIOD = 60 *1000;
-var resetAnimation = false;
+const
+    PERIOD = 60 *1000,
+    DELAY = 300,
+    COLOR = "#0084ff",
+    container = document.getElementById("path");
 
-function draw(realtimeObj) {
-    if (!realtimeObj.path) {
-        realtimeObj.path = new Path(document.getElementById("path"), realtimeObj.color || "#0084ff");
+/** public **/
+{
+    let
+        path, st, chartTPP, chartHeight,
+        resetAnimation = false,
+        fileName = "chart.csv",
+        valueArray = [],
+		dateArray = [],
+        toString = v => v;
+
+    function initialize(config = {}) {
+        path = container.querySelector("path");
+
+        const color = config.color || COLOR;
+        
+        path.setAttributeNS(null, "stroke", color);
+        path.setAttributeNS(null, "fill", color);
+
+        if (config.toString) {
+            toString = config.toString
+        }
+
+        if (config.fileName) {
+            fileName = config.fileName;
+        }
     }
 
-    resetAnimation = true;
+    function update(value) {
+        if (!isNaN(value)) {
+            const timestamp = new Date().getTime();
 
-    realtimeObj.data.draw(
-        realtimeObj.path,
-        document.getElementById("pointer"),
-        realtimeObj.data.max,
-        realtimeObj.data.min,
-        window.chartHeight,
-        window.chartTPP);
+            dateArray.push(timestamp);
+            valueArray.push(value);
+            
+            // 1.2: delay 0.1, overflow 0.1
+            while (dateArray[0] < timestamp - PERIOD *1.2) {
+                dateArray.shift();
+                valueArray.shift();
+            }
 
-    document.getElementById("cur").textContent = realtimeObj.toString(realtimeObj.data.last);
-    document.getElementById("max").textContent = realtimeObj.toString(realtimeObj.data.max);
-    document.getElementById("min").textContent = realtimeObj.toString(realtimeObj.data.min);
+            requestAnimationFrame(function animation () {
+                document.getElementById("cur").textContent = toString(value / i--);
 
-    document.getElementById("save").onclick = realtimeObj.data.download.bind(realtimeObj.data, realtimeObj.toString, realtimeObj.file);
-}
-
-// resize
-(function (delay) {
-	var start;
-	
-	function optimize(timestamp) {
-        if (!start) {
-            start = timestamp;
+                if (i > 0) {
+                    requestAnimationFrame(animation);
+                }
+            });
+        } else if (dateArray.length === 0) {
+            return;
         }
 
-		if (timestamp - start > delay) {
-			resize();
-		}
-		else {
-			requestAnimationFrame(optimize);
-		}
-	}
-	
-	window.addEventListener("resize", function() {
-        if (start) {
-            start = undefined;
+		let
+            max = Math.max.apply(undefined, valueArray),
+		    min = Math.min.apply(undefined, valueArray),
+            i = 10;
+        
+        document.getElementById("max").textContent = toString(max);
+        document.getElementById("min").textContent = toString(min);
+
+        if (max == min) {
+            max++;
+            min--;
         } else {
-            requestAnimationFrame(optimize);
-        }
-	});
-})(300);
-
-resize();
-
-function animation (start) {
-    return function (timestamp) {
-        if (!start) {
-            start = timestamp;
-        }
-
-        if (window.resetAnimation) {
-            window.resetAnimation = false;
-
-            start = undefined;
-
-            document.getElementById("path").transform.baseVal.getItem(0).setTranslate(0, 0);
-        }
-        else {
-            document.getElementById("path").transform.baseVal.getItem(0).setTranslate((timestamp - start) / window.chartTPP, 0);
+            max += (max - min) /2;
+            min -= (max - min) /2;
         }
         
-        window.requestAnimationFrame(animation(start));
-    };
-}
+        const
+            points = [],
+            now = new Date(),
+            valueRatio = max === min? undefined: chartHeight / (max - min);
 
-window.requestAnimationFrame(animation());
+        dateArray.forEach((millis, i) => {
+            const
+                x = (now - millis) / chartTPP,
+                y = valueRatio? (valueArray[i] - min) * valueRatio: chartHeight /2;
+
+            points.push([x, y]);
+        });
+
+        const d = points.reduce((acc, point, i, a) => 
+				`${acc} ${bezierCommand(point, i, a)}`
+		    );
+
+        path.setAttributeNS(null, "d", `M ${points[0][0]} 0 ${d} L ${points[points.length -1][0]} 0`);
+
+        Array.from(container.querySelectorAll("circle")).forEach(c => container.removeChild(c));
+
+        points.forEach(p => {
+            const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+
+            c.setAttribute("cx", p[0]);
+            c.setAttribute("cy", p[1]);
+            c.setAttribute("r", 3);
+
+            container.appendChild(c);
+        });
+
+        resetAnimation = true;
+    }
+
+    document.getElementById("save").onclick = e => {
+        const rows = [];
+
+        rows.push("index,timestamp,value");
+
+        dateArray.forEach((millis, i) => {
+            rows.push([i, toDateTimeString(millis), toString(valueArray[i])].join(","));
+        });
+
+        ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
+            type: "text/csv;charset=utf-8;"
+        }), fileName);
+    };
+
+    function optimize() {
+        requestAnimationFrame(resize);
+	}
+	
+    function resize() {
+        var
+            chartRect = document.getElementById("chart").getBoundingClientRect(),
+            yRect = document.getElementById("grid_x").getBoundingClientRect(),
+            xRect = document.getElementById("grid_y").getBoundingClientRect(),
+            width = xRect.width;
+
+        chartHeight = yRect.height,
+        chartTPP = PERIOD / width;
+
+        document.getElementById("graph").transform.baseVal.getItem(0)
+            .setTranslate(width, chartHeight + yRect.top - chartRect.top);
+
+        // delay
+        container.transform.baseVal.getItem(0).setTranslate(PERIOD *-0.1 / chartTPP, 0);
+
+        st = undefined;
+
+        update();
+    }
+
+	window.addEventListener("resize", e => {
+        st && clearTimeout(st);
+            
+        st = setTimeout(optimize, DELAY);
+    });
+
+    function animation (start) {
+        return function (timestamp) {
+            if (!start) {
+                start = timestamp;
+            }
+
+            if (resetAnimation) {
+                resetAnimation = false;
+
+                start = undefined;
+
+                container.transform.baseVal.getItem(1).setTranslate(0, 0);
+            }
+            else {
+                container.transform.baseVal.getItem(1).setTranslate((timestamp - start) / chartTPP, 0);
+            }
+            
+            requestAnimationFrame(animation(start));
+        };
+    }
+
+    resize();
+
+    requestAnimationFrame(animation());
+}
 
 		</script>
 	

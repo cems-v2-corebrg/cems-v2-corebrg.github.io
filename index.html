@@ -186,8 +186,14 @@ function showDialog(src, parent) {
 }
 
 function closeDialog(reset) {
+    const dialog = document.getElementById("dialog");
+
     document.body.classList.remove("dialog");
+
+    dialog.onload = undefined;
     
+    dialog.src = "about:blank";
+
     if (reset) {
         resetParent();
     }
@@ -331,26 +337,15 @@ function onTest(e) {
                     <li>
                         <b></b>
                     </li>
-                    <li title="노드">
-                        <a href="/node/viewer.html" target="main">
-                            &#xf233;
-                            <div>노드</div>
-                        </a>
-                        <ul>
-                            <li>
-                                <a href="/node/viewer.html" target="main">&#xf06e; 보기</a>
-                            </li>
-                            <li>
-                                <a href="/node/editor.html" target="main">&#xf044; 편집</a>
-                            </li>
-                        </ul>
-                    </li>
                     <li title="리스트">
                         <a>
                             &#xf0ca;
                             <div>리스트</div>
                         </a>
                         <ul>
+                            <li>
+                                <a href="/node/viewer.html" target="main">&#xf233; 노드</a>
+                            </li>
                             <li>
                                 <a href="/group.html" target="main">&#xf126; 브랜치</a>
                             </li>
@@ -362,50 +357,28 @@ function onTest(e) {
                             </li>
                         </ul>
                     </li>
-                    <!--li title="노드 목록">
-                        <a href="/node.html" target="main">
-                            &#xf233;
-                            <div>노드</div>
+                    <li title="기능">
+                        <a>
+                            &#xf141;
+                            <div>기능</div>
                         </a>
-                    </li>
-                    <li title="그룹 목록">
-                        <a href="/group.html" target="main">
-                            &#xf5fd;
-                            <div>그룹</div>
-                        </a>
-                    </li>
-                    <li title="회선 목록">
-                        <a href="/link.html" target="main">
-                            &#xf83e;
-                            <div>회선</div>
-                        </a>
-                    </li>
-                    <li title="사용자 목록">
-                        <a href="/user.html" target="main">
-                            &#xf0c0;
-                            <div>사용자</div>
-                        </a>
-                    </li-->
-                    <li>
-                        <b></b>
-                    </li>
-                    <li title="임계 관리">
-                        <a href="/critical.html" target="main">
-                            &#xf08d;
-                            <div>임계</div>
-                        </a>
-                    </li>
-                    <li title="아이콘">
-                        <a href="/icon.html" target="main">
-                            &#xf61f;
-                            <div>아이콘</div>
-                        </a>
-                    </li>
-                    <li title="설정">
-                        <a href="/setting.html" target="main">
-                            &#xf013;
-                            <div>설정</div>
-                        </a>
+                        <ul>
+                            <li>
+                                <a href="/critical.html" target="main">
+                                    &#xf08d; 임계
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/icon.html" target="main">
+                                    &#xf61f; 아이콘
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/setting.html" target="main">
+                                    &#xf013; 설정
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li>
                         <b></b>

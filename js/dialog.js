@@ -1,7 +1,7 @@
 ; "use strict";
 
 {
-    window.closeDialog = function(reset) {
+    function closeDialog(reset) {
         top.closeDialog(reset);
     }
 

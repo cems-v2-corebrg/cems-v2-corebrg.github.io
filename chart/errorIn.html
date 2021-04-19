@@ -96,7 +96,7 @@ function realtime(realtime) {
     }
 }
 
-function postRealtimeRequest(realtimeData) {
+function postRealtimeRequest() {
     $.request.execute({
         command: "get",
         target: "resource",
@@ -115,19 +115,19 @@ function postRealtimeRequest(realtimeData) {
 
         const value = JSON.parse(this.responseText);
         
-        for (let timestamp in value) {
-            realtimeData.data.put(Number(value[timestamp]));
+        if ($.realtime) {
+            try {
+                for (let timestamp in value) {
+                    $.realtime.update(Number(value[timestamp]));
+                    
+                    break;
+                }
 
-            break;
-        }
-
-        try {
-            document.getElementById("realtime").contentWindow.draw(realtimeData);
-
-            if ($.realtime) {
-                window.setTimeout(postRealtimeRequest.bind(window, realtimeData), INTERVAL);
+                window.setTimeout(postRealtimeRequest, INTERVAL);
+            } catch (e) {
+                console.error(e);
             }
-        } catch (e) {}
+        }
     });
 }
 
@@ -179,14 +179,17 @@ if (!$.id || !$.index || !$.from || !$.to) {
 }
 
 document.getElementById("realtime").onload = function (e) {
-    if (this.contentWindow.location.protocol === "http:") {
-        $.realtime = true;
-        
-        postRealtimeRequest({
-            data: new this.contentWindow.RealtimeData(),
+    const realtime = this.contentWindow;
+
+    if (realtime.location.protocol === "http:") {
+        $.realtime = realtime;
+
+        realtime.initialize({
             toString: parent.toString,
             file: "chart_error_in_realtime.csv"
         });
+
+        postRealtimeRequest();
     }
 };
 

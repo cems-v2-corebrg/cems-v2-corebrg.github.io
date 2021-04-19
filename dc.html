@@ -128,19 +128,6 @@ function resetParent() {
     }
 }
 
-function loadTexture (url) {
-    return new Promise((resolve, reject) => {
-        new THREE.TextureLoader().load(url,
-            texture => {
-                texture.minFilter = THREE.LinearFilter;
-
-                resolve(texture);
-            },
-            undefined,
-            e => reject(e));
-    });
-}
-
 function getLocationData() {
     return new Promise ((resolve, reject) => {
         $.request.execute({
@@ -155,29 +142,6 @@ function getLocationData() {
             }
 
             window.locationData = JSON.parse(this.responseText);
-
-            resolve();
-        });
-    });
-}
-
-function getSettingData() {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "setting",
-            key: "dc"
-        }, function (e) {
-            window.settingData = {};
-
-            switch(this.status) {
-            case 200:
-                window.settingData = JSON.parse(this.responseText);
-            case 204:
-                break;
-            default:
-                return reject(this);
-            }
 
             resolve();
         });
@@ -229,7 +193,7 @@ function getPositionData () {
         $.request.execute({
             command: "get",
             target: "position",
-            name: "facility"
+            name: "dc"
         }, function (e) {
             window.positionData = {};
 
@@ -289,11 +253,12 @@ function showMessage(xhr) {
         <script>
 
 const $ = {
-        request: new Request(),
-        loader: new ImageLoader(onLoadImage, loadTexture)
+        request: new Request()
     };
 
 function initAccount (account) {
+    const iframe = document.body.querySelector("iframe");
+
     if (window === top) {
         window.account = account;
     } else {
@@ -307,28 +272,6 @@ function initAccount (account) {
 
         document.body.classList.add("frame");
     }
-
-    const urls = [];
-    let makerData, model;
-
-    for (let maker in modelData) {
-        makerData = modelData[maker];
-
-        for (let name in makerData) {
-            model = makerData[name];
-
-            urls.push(model.front);
-            urls.push(model.rear);
-        }
-    }
-
-    $.loader.load(urls);
-}
-
-function onLoadImage() {
-    window.modelData = $.loader.map;
-
-    const iframe = document.body.querySelector("iframe");
 
     iframe.onload = e => {
         Channel.listen(onEvent);
@@ -344,8 +287,7 @@ Promise
         getPositionData(),
         getNodeData(),
         getFacilityData(),
-        getLocationData(),
-        getSettingData()
+        getLocationData()
     ])
     .then(() => {
         Channel.getAccount(initAccount);

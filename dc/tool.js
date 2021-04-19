@@ -233,7 +233,7 @@
         
                 selected = undefined;
         
-                document.body.classList.remove("grid");
+                document.body.classList.remove("selected");
             } else { // Select
                 const node = mouseDown.origin.parentNode;
 
@@ -260,7 +260,7 @@
 
                     moveHelper();
 
-                    document.body.classList.add("grid");
+                    document.body.classList.add("selected");
 
                     layerMap.select.appendChild(node);
                 }
@@ -268,16 +268,6 @@
         }
 
         mouseDown = undefined;
-    }
-
-    function onMenu(e) {
-        e.preventDefault();
-
-        if (e.target !== this) {
-            const node = e.target.parentNode;
-
-            top.showDialog(`/dc/dialog/location.html?facility=${node.dataset.id}`, window);
-        }
     }
 
     function moveHelper() {
@@ -317,7 +307,8 @@
         if (!pos) {
             pos = {
                 x: 0,
-                y: 0
+                y: 0,
+                z: 0
             };
 
             positionData[id] = pos;
@@ -361,7 +352,7 @@
         node.addEventListener("drop", e => {
             e.stopPropagation();
             
-            top.showDialog(`/dc/dialog/location.html?facility=${id}&device=${e.dataTransfer.getData("id")}&name=${e.dataTransfer.getData("name")}`, window);
+            top.showDialog(`/dialog/mount.html?facility=${id}&device=${e.dataTransfer.getData("id")}&name=${e.dataTransfer.getData("name")}`, window);
 
             node.classList.remove("over");
         });
@@ -377,7 +368,6 @@
     root.addEventListener("mousedown", onMouseDown);
     root.addEventListener("mouseup", onMouseUp);
     root.addEventListener("mousemove", onMouseMove);
-    root.addEventListener("contextmenu", onMenu);
 
     document.getElementById("grid").onsubmit = e => {
         e.preventDefault();

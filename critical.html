@@ -199,7 +199,7 @@ function showMessage(xhr) {
 	
 	<body class="loading">
         <main>
-            <iframe src="/util/tree.html"></iframe>
+            <iframe></iframe>
         </main>
         <form>
             <input id="limit" type="number" min="0" max="100" size="30" required>
@@ -290,9 +290,7 @@ function initNode (e) {
 }
 
 (frame => {
-    const 
-        tree = frame.contentWindow,
-        criticalData = {};
+    const criticalData = {};
 
     function add(id, oidData, root) {
         var indexData, index, oidItem, item, obj;
@@ -306,10 +304,10 @@ function initNode (e) {
                 oids: [oid]
             };
 
-            oidItem = tree.add(obj.title || oid, root);
+            oidItem = $.tree.add(obj.title || oid, root);
 
             for (let index in indexData) {
-                criticalData[tree.add(index, oidItem).id] = {
+                criticalData[$.tree.add(index, oidItem).id] = {
                     id: id,
                     oid: oid,
                     index: index,
@@ -322,7 +320,7 @@ function initNode (e) {
         }
     }
 
-    window.onItemClick = function(item) {
+    function onItemClick (item) {
         if (item) {       
             const critical = criticalData[item.id];
 
@@ -334,7 +332,7 @@ function initNode (e) {
 
                 return document.body.classList.add("popup");
             } else {
-                tree.toggle(item);
+                $.tree.toggle(item);
             }
         }
 
@@ -395,14 +393,19 @@ function initNode (e) {
                 continue;
             }
 
-            add(id, criticalData[id], tree.add(node.name || node.ip || `node.${id}`));
+            add(id, criticalData[id], $.tree.add(node.name || node.ip || `node.${id}`));
         }
 
         document.body.classList.remove("loading");
     }
 
     frame.onload = e => {
-        tree.document.body.classList.add("type2");
+        //tree.document.body.classList.add("type2");
+
+        $.tree = frame.contentWindow.getInstance({
+            onselect: item => onItemClick(item),
+            ondrop: (item, dt) => console.log(dt.getData("text/plain"))
+        });
 
         $.request.execute({
             "command": "get",

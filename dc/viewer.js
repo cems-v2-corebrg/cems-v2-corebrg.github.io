@@ -2,7 +2,7 @@
     "use strict";
 
     const
-        SCALE = 0.01,
+        SCALE = 0.02,
         UNIT_SIZE = 44.5 *SCALE,
         RACK19_WIDTH = 482.6 *SCALE,
         GUIDE_WIDTH = 15.875 *SCALE,
@@ -43,6 +43,7 @@
                 draw();
             }
         },
+        container = document.body.querySelector("main"),
         renderer = new THREE.WebGLRenderer({
             antialias: true,
             alpha: true
@@ -66,7 +67,7 @@
             
             this.label.className = "label";
 
-            document.body.insertBefore(this.label, renderer.domElement);
+            container.insertBefore(this.label, renderer.domElement);
 
             this.label.onclick = e => window.onSelectRack && onSelectRack(args[2]);
 
@@ -94,7 +95,7 @@
 
     renderer.setPixelRatio(window.devicePixelRatio);
 
-    document.body.insertBefore(renderer.domElement, document.body.firstElementChild);
+    container.appendChild(renderer.domElement);
     
     //camera.zoom = 0.1;
     camera.position.set(40, 20, 80);
@@ -105,22 +106,30 @@
     controls.maxPolarAngle = Math.PI /2 -0.1;
     //controls.maxPolarAngle = Math.PI /2;
     
-    /*Directional light*/
-    {
-        const light = new THREE.DirectionalLight(0xffffff, 1);
+    /*AmbientLight*/
+    (function (light) {
+        if (light) {
+            light.position.set(100, 100, 100);
+            scene.add(light);
+        }
+    })(new THREE.AmbientLight(0xffffff, 1));
 
-        light.position.set(100, 100, 100);
-        scene.add(light);
-    }
+    /*Directional light*/
+    (function (light) {
+        if (light) {
+            light.position.set(100, 100, 100);
+            scene.add(light);
+        }
+    }) (); //new THREE.DirectionalLight(0xffffff, 1)
 
     /*Hemisphere light*/
-    {
-        const light = new THREE.HemisphereLight(0xffffff, 0x777777, 1);
+    (function (light) {
+        if (light) {
+            light.position.set(0, 100, 0);
 
-        light.position.set(0, 100, 0);
-
-        scene.add(light);
-    }
+            scene.add(light);
+        }
+    }) (); //new THREE.HemisphereLight(0xffffff, 0x777777, 1);
 
     /*Ground*/
     window._setFloor = size => {
@@ -220,13 +229,13 @@
     }
 
     function onResize() {
-        screen = document.body.getBoundingClientRect();
+        screen = container.getBoundingClientRect();
         
+        renderer.setSize(screen.width * window.devicePixelRatio | 0, screen.height * window.devicePixelRatio | 0);
+
         camera.aspect = screen.width / screen.height;
         camera.updateProjectionMatrix();
         
-        renderer.setSize(screen.width, screen.height);
-
         draw();
     }
 

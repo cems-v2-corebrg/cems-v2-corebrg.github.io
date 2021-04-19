@@ -290,20 +290,20 @@ function postRealtimeRequest(realtimeData) {
         }
 
         const value = JSON.parse(this.responseText);
+        
+        if ($.realtime) {
+            try {
+                for (let timestamp in value) {
+                    $.realtime.update(Number(value[timestamp]));
+                    
+                    break;
+                }
 
-        for (let timestamp in value) {
-            realtimeData.data.put(Number(value[timestamp]) * $.units);
-
-            break;
-        }
-
-        try {
-            document.getElementById("realtime").contentWindow.draw(realtimeData);
-
-            if ($.realtime) {
-                window.setTimeout(postRealtimeRequest.bind(window, realtimeData), INTERVAL);
+                window.setTimeout(postRealtimeRequest, INTERVAL);
+            } catch (e) {
+                console.error(e);
             }
-        } catch (e) {}
+        }
     });
 }
 
@@ -388,14 +388,17 @@ if (top.account.level == 0) {
 }
 
 document.getElementById("realtime").onload = function (e) {
-    if (this.contentWindow.location.protocol === "http:") {
-        $.realtime = true;
+    const realtime = this.contentWindow;
 
-        postRealtimeRequest({
-            data: new this.contentWindow.RealtimeData(),
+    if (realtime.location.protocol === "http:") {
+        $.realtime = realtime;
+
+        realtime.initialize({
             toString: toString,
             file: "chart_storage_realtime.csv"
         });
+
+        postRealtimeRequest();
     }
 };
 

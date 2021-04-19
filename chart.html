@@ -24,6 +24,11 @@ nav {
     display: flex; justify-content: space-between;
 }
 
+#node {
+    color: #fefefe;
+    text-shadow: 0 2px 3px #000;
+}
+
 main {
     flex: 1;
 }
@@ -78,6 +83,7 @@ function showMessage(xhr) {
                 <span id="close" class="frame summary" title="이전으로">&#xf536;</span>
                 <span id="back" class="chart" title="이전으로">&#xf536;</span>
             </div>
+            <div id="node"></div>
             <div class="frame">
                 <span id="popup" title="새 창">&#xf2d2;</span>
             </div>
@@ -111,6 +117,8 @@ function initNode () {
             
     document.title = node.name || node.ip || "Chart";
     
+    document.getElementById("node").textContent = node.name? `${node.name}[${node.ip}]`: node.ip;
+
     if ($.chart && $.index) {
         const date = new Date();
 

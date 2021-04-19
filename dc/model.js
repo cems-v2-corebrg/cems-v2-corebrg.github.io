@@ -221,7 +221,7 @@ const modelData = {
     },
     "juniper": {
         "srx4200": {
-            name: "xs748t",
+            name: "srx4200",
             unit: 1,
             front: "/dc/img/front/juniper srx4200.jpg",
             rear: "/dc/img/rear/juniper srx4200.jpg"

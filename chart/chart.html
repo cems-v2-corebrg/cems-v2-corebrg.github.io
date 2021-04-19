@@ -66,33 +66,6 @@ footer {
     user-select: none;
 }
 
-/*
-.cursor {
-	position: absolute;	top: 0; bottom: 0;
-    background-color: #1e1f26;
-    white-space: nowrap;
-    display: flex;
-}
-
-.cursor.body {
-    cursor: move;
-}
-
-.cursor.left {
-	left: 0; width: 5px;
-	cursor: e-resize;
-    align-items: flex-start;
-    background-color: #663399;
-}
-
-.cursor.right {
-	right: 0; width: 5px;
-	cursor: e-resize;
-    align-items: flex-end;
-    direction: rtl;
-    background-color: #663399;
-}
-*/
 .label {
 	position: absolute;
 	white-space: nowrap;
@@ -110,39 +83,41 @@ footer {
 	content: attr(title);
 }
 
-.popup {
-	position: fixed; top:0; right: 0; bottom: 0; left: 0; 
-	display: flex; justify-content: center; align-items: center;
-	background-color: rgba(0, 0, 0, .6);
+/* Dialog*/
+dialog {
+    width: 320px;
+    border: 1px solid #dddddd;
 }
 
-.dialog {
-	width: 400px;
-	box-sizing: border-box;
-	padding: 20px;
-	background-color: #fff;
-	border: 3px solid #000;
+dialog h3 {
+    background-color: #424242;
+    color: #ffffff;
+    text-shadow: 0 2px 3px #000000;
+    padding: 1em;
 }
 
-.dialog >div {
-	display: flex;
+dialog table {
+    width: 100%;
 }
 
-.dialog >div >* {
-	flex: 1;
+dialog input {
+    width: 100%;
+    padding: 0.5em; box-sizing: border-box;
 }
 
-.dialog >div:last-child {
-	margin-top: 1em;
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0);
 }
 
-.dialog >div input {
-    font-family: "Font Awesome 5 Free";
-	display: block;
-	width: 100%;
-	box-sizing: border-box;
-	padding: 0.5em;
+dialog .footer {
+    display: flex;
 }
+
+dialog .footer input {
+    flex: 1;
+    font: 1em "Font Awesome 5 Free", "맑은 고딕";
+}
+/* Dialog*/
 
 #realtime_frame {
 	border: none;
@@ -170,8 +145,6 @@ nav >span:hover {
     background-color: #0084ff;
 }
 
-.layout,
-body:not(.set) .set,
 body:not(.detail) #detail {
 	display: none;
 }
@@ -389,10 +362,6 @@ Cursor.prototype = {
         </script>
 		<script>
 
-function resize() {
-	$.cursor.resize();
-}
-
 function getDateText(mills) {
 	var date = new Date(mills),
 		dd = date.getDate();
@@ -484,27 +453,29 @@ function preview(resourceData) {
             <canvas id="preview"></canvas>
 		</footer>
 		
-		<div class="popup set">
-			<form class="dialog" autocomplete="off">
-				<h2>
-                    <span  id="close" title="대화창 닫기">&#xf00d;</span>
-                    기간설정
-                </h2>
-				<div>
-					<div>
-						<p>부터</p>
-						<input type="date" id="set_start">
-					</div>
-					<div>
-						<p style="text-align: right;">까지(포함)</p>
-						<input type="date" id="set_end">
-					</div>
-				</div>
-				<div>
-					<input type="submit" value="&#xf00c; 적용">
-				</div>
-			</form>
-		</div>
+        <dialog>
+            <h3>
+                기간설정
+            </h3>
+            <form>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <input type="date" id="set_start">
+                            </td>
+                            <td>
+                                <input type="date" id="set_end">
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="footer">
+                    <input type="reset" value="&#xf00d; Cancel">
+                    <input type="submit" value="&#xf00c; Apply">
+                </div>
+            </form>
+        </dialog>
 		
 		<script src="/js/ITAhM.js"></script>
 		<script src="/js/Draggable.js"></script>
@@ -582,18 +553,35 @@ document.getElementById("save").onclick = function () {
 };
 
 document.getElementById("set").onclick = function (e) {
-	document.body.classList.add("set");
+	document.querySelector("dialog").showModal();
 };
 
-document.getElementById("close").onclick = e => document.body.classList.remove("set");
+{
+    const
+        dialog = document.querySelector("dialog"),
+        form = dialog.querySelector("form");
 
-window.addEventListener("resize", function () {
-	if ($.resizeTimer) {
-		clearTimeout($.resizeTimer);
-	}
-	
-	$.resizeTimer = setTimeout(resize, 300);
-});
+    form.onsubmit = e => {
+        e.preventDefault();
+		
+		const
+            from = getValueAsDate(inputStart),
+			to = getValueAsDate(inputEnd);
+
+		if (from > to) {
+            search.set("from", to.getTime());
+            search.set("to", from.setDate(from.getDate() +1));
+		}
+		else {
+            search.set("from", from.getTime());
+            search.set("to", to.setDate(to.getDate() +1));
+		}
+
+        window.location.search = search;
+    };
+
+    form.onreset = e => dialog.close();
+}
 
 (form => {
 	var
@@ -625,8 +613,6 @@ window.addEventListener("resize", function () {
         window.location.search = search;
 	}
 })(document.body.querySelector("form"));
-
-//$.cursor = new Cursor($.from, $.to);
 
 new Cursor(document.querySelector("footer"), {
     step: new Date($.to).getDate() - new Date($.from).getDate(),

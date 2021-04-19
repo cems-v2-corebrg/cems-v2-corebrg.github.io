@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+@import "/css/fa.css";
+
+body {
+    position: fixed; inset: 0 0 0 0;
+    padding: 0; margin: 0;
+    font-family: "맑은 고딕", Arial, Tahoma;
+}
+
+body::before,
+body::after {
+    content: "";
+    position: absolute; top: 0; left: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+body::before {
+    right: 0; height: 50%;
+    border-bottom: 1px dotted #aaaaaa;
+}
+
+body::after {
+    bottom: 0; width: 50%;
+    border-right: 1px dotted #aaaaaa;
+}
+
+nav {
+    position: absolute; inset: 5px 5px auto 5px;
+    display: flex; justify-content: space-between;
+    font: 20px "Font Awesome 5 Free";
+    color: #ffffff;
+    user-select: none;
+    pointer-events: none;
+}
+
+nav >div {
+    display: flex;
+}
+
+nav span {
+    border-radius: 50%;
+    display: flex; width: 32px; height: 32px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 132, 255, 0.5);
+    border-color: #0084ff;
+    cursor: pointer;
+    pointer-events: all;
+}
+
+nav span:hover {
+    background-color: #0084ff;
+}
+
+aside {
+    position: absolute; top:0; right: 0; bottom: 0;
+    background-color: #ffffff;
+    width: 0;
+}
+
+iframe {
+    width: 100%; height: 100%;
+    border: none;
+}
+
+body.list aside {
+    width: 500px;
+    border-left: 1px solid #777;
+    transition: width 0.5s;
+}
+
+#tab {
+    position: absolute; top: 50%; left: 0;
+    padding: 3px;
+    transform: translateX(-100%);
+    font-family: "Font Awesome 5 Free";
+    border: 1px solid #777777;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+/* */
+#size {
+    font-family: "Font Awesome 5 Free";
+    pointer-events: all;
+}
+
+#size input {
+    padding: 0.5em;
+    width: 80px;
+}
+
+#size input[type=submit] {
+    font-family: "Font Awesome 5 Free";
+    padding: 0.5em 1em;
+    width: auto;
+}
+
+/* GRID */
+#grid {
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+    pointer-events: none;
+}
+
+#grid>div {
+    position: absolute;
+}
+
+#grid>div:first-of-type {
+    height: 100%;
+    border-left: 1px solid rgba(255, 0, 0, 0.5);
+}
+
+#grid>div:last-of-type {
+    width: 100%;
+    border-top: 1px solid rgba(255, 0, 0, 0.5);
+}
+
+#grid input {
+    padding: 0.5em;
+    width: 8em;
+    pointer-events: all;
+}
+
+/* SVG */
+svg {
+    width: 100%; height: 100%;
+    user-select:none;
+}
+
+#selector >rect {
+	fill: #ddd;
+	fill-opacity: 0.5;
+	transform-origin: left top;
+}
+
+text::selection {
+	background: none;
+}
+
+g.layer *,
+body.drag #select * {
+	pointer-events: none;
+}
+
+g.node rect {
+    fill: #398439;
+    pointer-events: all;
+}
+
+g.node text {
+    fill: #ffffff;
+    font-size: 8em;
+}
+
+#select g.node rect {
+    fill: rgba(210, 50, 45, 0.5);
+}
+
+#select g.node.selected rect {
+    stroke: #ffffff;
+    stroke-width: 20px;
+    stroke-dasharray: 20px;
+    fill: #d2322d;
+}
+
+g.node.over rect,
+#select g.node.over rect {
+    fill: #337ab7;
+    stroke: #ffffff;
+    stroke-width: 20px;
+    stroke-dasharray: 20px;
+}
+
+#grid input[type=submit],
+body:not(.selected) #grid,
+body:not(.selected) .edit {
+    display: none;
+}
+
+        </style>
+        <script>
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+            
+        </script>        
+    </head>
+        
+    <body>
+        <nav>
+            <div>
+                <span title="Rack 추가" id="add">&#xf067;</span>
+                <span title="위치 저장" id="save">&#xf0c7;</span>
+                <div class="edit">
+                    <span title="선택 편집" id="edit">&#xf044;</span>
+                    <span title="선택 마운트" id="mount">&#xf124;</span>
+                </div>
+                <span title="
+==============================
+
+● Click: Rack 선택 
+● Rack 선택 후 Drag: Rack 이동
+● Right Click: Rack 편집
+● 목록에서 Drag & Drop: Rack 장착
+● Rack 위치 변동시 저장 필수
+
+==============================">&#xf128;</span>
+            </div>
+            <form id="size">
+                <input type="number" name="width">
+                &#xf00d;
+                <input type="number" name="height">
+                <input type="submit" value="&#xf00c;">
+            </form>
+        </nav>
+        <svg id="svg">
+            <defs>
+                <g class="node">
+                    <circle cx="0" cy="0" r="0"></circle>
+                    <rect x="0" y="0"></rect>
+                    <text x="50" y="50" dominant-baseline="hanging" text-anchor="start"></text>
+                </g>
+            </defs>
+            <g id="container">
+                <g id="node" class="layer"></g>
+				<g id="select" class="layer" transform="translate(0, 0)"></g>
+            </g>
+            <g id="selector" transform="matrix(0, 0, 0, 0, 0, 0)">
+				<rect x="0" y="0" width="1" height="1"></rect>
+			</g>
+        </svg>
+        <form id="grid">
+            <div>
+                <input type="number" name="x" value="0">
+            </div>
+            <div>
+                <input type="number" name="y" value="0">
+                <input type="number" name="z" value="0">
+            </div>
+            <input type="submit">
+        </form>
+        <aside>
+            <div id="tab">&#xf00b;</div>
+            <iframe id="list"></iframe>
+        </aside>
+
+        <script src="/dc/tool.js"></script>
+        <script src="/js/request.js"></script>
+        <script>
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request(),
+        name: search.get("name")
+    };
+
+document.getElementById("add").onclick = e => {
+    top.showDialog("/dialog/facility.html", window);
+};
+
+document.getElementById("tab").onclick = function (e) {
+    const frame = document.getElementById("list");
+
+    if (document.body.classList.contains("list")) {
+        document.body.classList.remove("list");
+
+        frame.onload = undefined;
+
+        frame.src = "about:blank";
+    } else {
+        frame.onload = function () {
+            document.body.classList.add("list");
+        };
+
+        frame.src = "/dc/list.html";
+    }
+};
+
+document.getElementById("save").onclick = function (e) {
+    document.body.classList.add("loading");
+
+    $.request.execute({
+        command: "set",
+        target: "position",
+        name: "dc",
+        position: parent.positionData
+    }, function () {
+        switch (this.status) {
+        case 200:
+            break;
+
+        default:
+            throw showMessage(this);
+        }
+
+        alert("Information.\n\n저장 성공.");
+
+        document.body.classList.remove("loading");
+    });
+};
+
+document.getElementById("edit").onclick = function (e) {
+    const selected = document.getElementById("select").querySelector("g.selected");
+
+    selected && top.showDialog(`/dialog/facility.html?facility=${selected.dataset.id}`, window);
+};
+
+document.getElementById("mount").onclick = function (e) {
+    const selected = document.getElementById("select").querySelector("g.selected");
+
+    selected && top.showDialog(`/dialog/mount.html?facility=${selected.dataset.id}`, window);
+};
+
+document.getElementById("size").onsubmit = function (e) {
+    e.preventDefault();
+
+    document.body.classList.add("loading");
+
+    $.positionData.size = {
+        width: Number(this.elements["width"].value),
+        height: Number(this.elements["height"].value)
+    };
+
+    $.request.execute({
+        command: "set",
+        target: "position",
+        name: "dc",
+        position: parent.positionData
+    }, function () {
+        switch (this.status) {
+        case 200:
+            break;
+
+        default:
+            throw showMessage(this);
+        }
+
+        alert("Information.\n\n저장 완료.");
+        
+        document.body.classList.remove("loading");
+    });
+};
+
+function initFacility (e) {
+    switch(this.status) {
+    case 200:
+        break;
+    default:
+        return reject(this);
+    }
+    
+    const facilityData = JSON.parse(this.responseText);
+
+    $.positionData = parent.positionData[$.name];
+
+    const
+        form = document.getElementById("size"),
+        size = $.positionData.size;
+
+    form.elements["width"].value = size.width;
+    form.elements["height"].value = size.height;
+
+    initialize($.positionData.position);
+    
+    main: for (let id in facilityData) {
+        if (id in $.positionData.position) {
+            addFacility(id, facilityData[id]);
+        } else {
+            for (let name in parent.positionData) {
+                if (id in parent.positionData[name].position) {
+                    continue main;
+                }
+            }
+
+            addFacility(id, facilityData[id]);
+        }
+    }
+
+    document.body.classList.remove("loading");
+}
+
+if ($.name) {
+    $.request.execute({
+        command: "get",
+        target: "facility"
+    }, initFacility);
+} else {
+    alert("Warning!\n\n잘못된 접근.");
+}
+
+        </script>
+    </body>
+</html>

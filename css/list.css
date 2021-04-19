@@ -6,41 +6,41 @@ body {
     display: flex; flex-direction: column;
 }
 
+header {
+    display: flex; justify-content: space-between;
+}
+
 main {
     flex: 1;
     overflow-y: auto;
 }
 
-table {
+main table {
     table-layout: fixed;
     border-collapse: collapse;
     width: 100%;
 }
 
-tbody tr {
+main tbody tr {
     border-bottom: 1px solid #ffffff;
     cursor: pointer;
 }
 
-thead th {
+main thead th {
     background-color: #34495e;
     color: #efefef;
     position: sticky; top: 0;
 }
 
-thead tr:not(:last-of-type) {
-    border-bottom: 1px solid #dddddd;
-}
-
-thead th:not(:last-of-type) {
+main thead th:not(:last-of-type) {
     border-right: 1px solid #dddddd;
 }
 
-thead th.sort {
+main thead th.sort {
     pointer-events: none;
 }
 
-thead th.sort::after {
+main thead th.sort::after {
     pointer-events: all;
     font-family: "Font Awesome 5 Free";
 	content: "\f0dc";
@@ -48,25 +48,25 @@ thead th.sort::after {
 	position: absolute; right: 3px;
 }
 
-thead th.ascend::after {
+main thead th.ascend::after {
 	content: "\f0de";
 }
 
-thead th.descend::after {
+main thead th.descend::after {
 	content: "\f0dd";
 }
 
-th,
-td {
+main th,
+main td {
     padding: 1em;
     box-sizing: border-box;
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-tbody tr {
+main tbody tr {
     background-color: #ffffff;
 }
 
-tbody tr:nth-child(odd) {
+main tbody tr:nth-child(odd) {
 	background-color: #ebebeb;
 }

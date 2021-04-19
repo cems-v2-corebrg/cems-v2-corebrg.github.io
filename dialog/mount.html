@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="no-cache">
+		
+		<title>dialog</title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/dialog.css";
+@import "/css/fa.css";
+
+:root {
+    --scale: 0.4;
+    --rack19-width: 482.6px;
+    --guide-width: 15.875px;
+    --unit-height: 44.5px;
+}
+
+main {
+    width: auto;
+    display: flex;
+    position: relative;
+}
+
+section.rack {
+    flex: none; width: auto;
+    display: flex;
+	justify-content: center;
+	align-items: center;
+    position: absolute; inset: 50% auto auto 100%;
+    transform: translateY(-50%);
+    background-color: #666666;
+}
+
+section.location {
+    flex: none; width: 400px;
+}
+
+#location {
+    align-self: end;
+}
+
+ul {
+    padding: 0 calc(var(--guide-width) * var(--scale));
+    background-color: rgba(0, 0, 0, 0.4);
+    list-style: none;
+}
+
+ul >li {
+    width: calc((var(--rack19-width) - calc(var(--guide-width) *2)) * var(--scale));
+    height: calc(var(--unit-height) * var(--scale));
+    background-color: #ffffff;
+    position: relative;
+}
+
+ul >li::before {
+    position: absolute; left:0; bottom: 0;
+    font-size: 0.8em;
+    color: #ffffff;
+    content: attr(data-position);
+    transform: translateX(-100%) translateX(calc(var(--guide-width) * var(--scale) *-1));
+    display: inline-block;
+}
+
+ul >li[data-id] {
+    background-size: cover;
+    background-position: center;
+}
+
+		</style>
+		
+		<script>
+
+function initRack (rack) {
+    const
+        size = document.querySelector("section.rack").style,
+        df = document.createDocumentFragment();
+    let location, next = 0, unit;
+
+    $.place = Array(rack.unit).fill(null);
+
+    size.width = `${rack.width * SCALE}px`;
+    size.height = `${rack.height * SCALE}px`;
+
+    for (let id in $.locationData) {
+        location = $.locationData[id];
+try {
+unit = modelData[location.maker][location.model].unit;
+} catch (e) {
+unit = 1;
+}
+        for (let i=unit, j=location.position -1; i-->0;) {
+            $.place[j + i] = id;
+        }
+    }
+
+    $.place.forEach((id, i) => {
+        if (i < next) {
+            return;
+        }
+
+        const device = document.createElement("li");
+        
+        if (id) {
+            const location = $.locationData[id];
+            let model;
+            try {
+                model = modelData[location.maker][location.model];
+            } catch (e){
+                console.error(e);
+
+                model = {
+                    unit: 1,
+                    front: "/dc/img/unknown.png"
+                }
+            };
+
+            next = i + model.unit;
+
+            device.dataset.id = id;
+            
+            device.onclick = onSelectDevice;
+            
+            device.style.height = `${UNIT_SIZE * SCALE * model.unit}px`;
+            device.style.backgroundImage = `url("${model.front}")`;
+        }
+
+        device.dataset.position = i +1;
+
+        df.insertBefore(device, df.firstChild);
+    });
+
+    document.querySelector("ul").appendChild(df);
+}
+
+function onSelectMaker (e) {
+    selectMaker(this.value);
+}
+
+function selectMaker(maker) {
+    const
+        form = document.body.querySelector("form"),
+        select = document.querySelector("select[name=model]"),
+        df = document.createDocumentFragment(),
+        map = modelData[maker];
+    let option;
+
+    [
+        select,
+        document.querySelector("select[name=position]")
+    ].forEach(select => {
+        for (let option; option = select.firstChild;) {
+            select.removeChild(option);
+        }
+    });
+    
+    form.elements["unit"].value = "";
+
+    for (let model in map) {
+        option = document.createElement("option");
+
+        option.text = model;
+        option.value = model;
+
+        df.appendChild(option);
+    }
+
+    select.appendChild(df);
+
+    select.selectedIndex = -1;
+
+    select.onchange = onSelectModel.bind(select, maker);
+}
+
+function onSelectModel(maker, e) {
+    selectModel(maker, this.value);
+}
+
+function selectModel(maker, model, id) {
+    const
+        form = document.body.querySelector("form"),
+        select = form.elements["position"],
+        location = id && $.locationData[id],
+        max = $.place.length -1,
+        df = document.createDocumentFragment();
+    var unit = 1;
+    
+    try {
+        unit = modelData[maker][model].unit;
+    } catch (e) {}
+    
+    form.elements["unit"].value = unit;
+
+    for (let option; option = select.firstChild;) {
+        select.removeChild(option);
+    }
+
+    $.place.forEach((reserved, i) =>{
+        if (reserved && reserved != id) {
+            return;
+        }
+
+        for (let j=0; j<unit; j++) {
+            if ($.place[j + i] && $.place[j + i] != id || j + i > max) {
+                return;
+            }
+        }
+
+        const option = document.createElement("option");
+
+        option.text = i +1;
+        option.value = i +1;
+
+        df.appendChild(option);
+    });
+
+    select.appendChild(df);
+
+    if (location) {
+        select.value = location.position;
+    } else {
+        select.selectedIndex = -1;
+    }
+}
+
+function onSelectDevice(e) {
+    selectDevice(this.dataset.id);
+}
+
+function selectDevice (id) {
+    const
+        form = document.body.querySelector("form"),
+        location = $.locationData[id];
+        
+    form.elements["name"].value = location.name || "";
+    
+    form.elements["maker"].value = location.maker;
+    form.elements["maker"].disabled = false;
+
+    selectMaker(location.maker);
+    
+    form.elements["model"].value = location.model;
+
+    selectModel(location.maker, location.model, id);
+    
+    $.devID = id;
+
+    form.classList.add("edit");
+}
+
+function onSubmit(e) {
+    e.preventDefault();
+
+    document.body.classList.add("loading");
+    
+    $.request.execute({
+        command: "set",
+        target: "location",
+        node: $.devID,
+        location: {
+            maker: this.elements["maker"].value,
+            model: this.elements["model"].value,
+            rack: $.id,
+            position: Number(this.elements["position"].value)
+        }
+    }, onResponse);
+}
+
+function onReset(e) {
+    e.preventDefault();
+    if (!confirm("Confirm.\n\n장치를 Rack에서 분리하겠습니까?")) {
+        return;
+    }
+
+    document.body.classList.add("loading");
+
+    $.request.execute({
+        command: "remove",
+        target: "location",
+        node: $.devID
+    }, onResponse);
+}
+
+function onResponse () {
+    switch(this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    top.resetParent();
+
+    const search = new URLSearchParams();
+
+    search.set("facility", $.id);
+    
+    window.location.search = search;
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
+		</script>
+	</head>
+	
+	<body class="loading">
+		<main>
+            <section class="location">
+                <h2>
+                    <span  id="close" title="대화창 닫기">&#xf00d;</span>
+                    <span>Location</span>
+                </h2>
+                <form>
+                    <table>
+                        <colgroup>
+                            <col width="100">
+                        </colgroup>
+                        <tbody>
+                            <tr>
+                                <th>이름</th>
+                                <td>
+                                    <input type="text" name="name" required disabled></select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>제조사</th>
+                                <td>
+                                    <select name="maker" required disabled></select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>모델</th>
+                                <td>
+                                    <select name="model" required></select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>크기</th>
+                                <td class="unit" data-unit="U">
+                                    <input name="unit" type="number" disabled>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>위치</th>
+                                <td class="unit" data-unit="U">
+                                    <select name="position" required></select>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <footer>
+                        <input type="reset" value="&#xf1f8; Remove">
+                        <input type="submit" value="&#xf0c7; Save">
+                    </footer>
+                </form>
+            </section>
+            <section class="rack">
+                <ul></ul>
+            </section>
+		</main>
+        <div class="loading mask"></div>
+        <script src="/js/request.js"></script>
+        <script src="/dc/model.js"></script>
+        <script src="/js/dialog.js"></script>
+        
+		<script>
+
+const
+    search = new URLSearchParams(window.location.search),
+    SCALE = 0.4,
+    UNIT_SIZE = 44.5,
+    $ = {
+        id: Number(search.get("facility")),
+        devID: Number(search.get("device")),
+        used: [],
+        location: document.getElementById("location"),
+        request: new Request(),
+        container: document.body.querySelector("section")
+    };
+
+document.addEventListener("keydown", function (e) {
+	switch (e.keyCode) {
+	case 27:
+        top.closeDialog();
+		
+		break;
+	}
+});
+
+document.getElementById("close").onclick = e => top.closeDialog();
+
+if (top.account.level === 0) {
+    const form = document.body.querySelector("form");
+
+    form.onsubmit = onSubmit;
+    form.onreset = onReset;
+
+    document.body.classList.add("root");
+}
+
+function initLocation() {
+    switch (this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    $.locationData = JSON.parse(this.responseText);
+
+    initRack($.facility);
+    
+    if ($.devID) {
+        const form = document.body.querySelector("form");
+
+        form.elements["maker"].disabled = false;
+        form.elements["name"].value = search.get("name") || "";
+
+        form.classList.add("add");
+    }
+
+    document.body.classList.remove("loading");
+}
+
+function initFacility() {
+    switch (this.status) {
+    case 200:
+        break;
+    default:
+        throw showMessage(this);
+    }
+
+    $.facility = JSON.parse(this.responseText);    
+
+    $.request.execute({
+        command: "get",
+        target: "location",
+        rack: $.id
+    }, initLocation);
+}
+
+{
+    const
+        df = document.createDocumentFragment(),
+        select = document.querySelector("select[name=maker]");
+
+    for (let maker in modelData) {
+        df.appendChild(document.createElement("option")).text = maker;
+    }
+
+    select.appendChild(df);
+
+    select.selectedIndex = -1;
+
+    select.onchange = onSelectMaker;
+}
+
+if ($.id) {
+    $.request.execute({
+        command: "get",
+        target: "facility",
+        id: $.id
+    }, initFacility);
+
+    document.body.classList.add("edit");
+} else {
+    document.body.classList.remove("loading");
+}
+
+	</script>
+	
+	</body>
+	
+</html>
