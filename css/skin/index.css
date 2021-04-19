@@ -10,7 +10,6 @@ body {
 }
 
 header {
-    background-color: #1e1f26;
     flex: none;
     display: flex; justify-content: space-between;
     padding: 0.5em;
@@ -48,7 +47,8 @@ iframe {
 
 #status {
     width: 400px;
-    transition: transform 0.5s linear;
+    opacity: 1;
+    transition: all 0.5s linear;
 }
 
 #tab {
@@ -74,6 +74,7 @@ body:not(.status) aside {
 
 body:not(.status) #status {
     transform: translateX(-100%);
+    opacity: 0;
 }
 
 footer {

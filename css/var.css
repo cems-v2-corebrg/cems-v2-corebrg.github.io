@@ -1,5 +1,6 @@
 @charset "utf-8";
 
 :root {
-    --var-color-bg: #424242
+    --var-color-bg: #1e1f26;
+    --var-color-bg2: #424242;
 }
