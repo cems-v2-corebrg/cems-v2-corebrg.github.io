@@ -8,57 +8,17 @@
 
 @import "/css/style.css";
 @import "/css/fa.css";
+@import "/css/list.css";
 
-body {
-    font: 10pt "맑은 고딕", Arial, Tahoma;
-    margin: 0; padding: 1em;
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-    display: flex; flex-direction: column;
-}
-
-main {
-    flex: 1;
-    overflow-y: auto;
-}
-
-input[type=date],
-input[type=text],
-input[type=button],
-input[type=submit],
-.fa {
-	font-family: "Font Awesome 5 Free", "맑은 고딕", arial, tahoma;
+header button,
+header input {
+	font-family: "Font Awesome 5 Free", "맑은 고딕";
 	padding: 0.5em;
-}
-
-table {
-    border-collapse: collapse;
-    width: 100%;
-    z-index: -1;
-}
-
-main th {
-    background-color: #34495e;
-    color: #efefef;
-    position: sticky; top: 0;
-}
-
-main th,
-main td {
-    padding: 1em;
-}
-
-#list tr {
-    border-bottom: 1px solid #ffffff;
-    background-color: #ffffff;
-}
-
-#list tr:nth-child(odd) {
-	background-color: #ebebeb;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 header {
-    /*background-color: #fefefe;*/
-    padding: 0.5em;
     color: #ffffff;
 }
 
@@ -98,6 +58,35 @@ function createItem(event) {
 	return tr;
 }
 
+function onSort (e) {
+	const
+        list = document.body.querySelector("tbody"),
+        df = document.createDocumentFragment(),
+        index = [].indexOf.call(this.parentNode.children, this);
+
+	let bias;
+
+	if (this.classList.contains("descend")) {
+		this.classList.remove("descend");
+
+		this.classList.add("ascend");
+
+		bias = 1;
+	} else {
+		this.classList.remove("ascend");
+
+		this.classList.add("descend");
+
+		bias = -1;
+	}
+	
+    [].slice.call(list.children)
+        .sort((a, b) => a.children[index].textContent.localeCompare(b.children[index].textContent) * bias)
+        .forEach(e => df.appendChild(e));
+
+	list.appendChild(df);
+}
+
 function showMessage(xhr) {
     switch (xhr.status) {
     case 401:
@@ -118,12 +107,14 @@ function showMessage(xhr) {
 	
 	<body class="loading">
         <header>
+            <div>
+                <button id="export" title="CSV 내보내기">&#xf019; Export</button>
+            </div>
             <form>
                 <input type="date" name="from">
-                <span class="fa">&#xf536;</span>
+                <b>~</b>
                 <input type="date" name="to">
-                <input type="submit" value="&#xf002; 검색">
-                <input type="button" id="export" value="&#xf019; 내보내기">
+                <input type="submit" value="&#xf002; Search">
             </form>
         </header>
         <main>
@@ -135,11 +126,11 @@ function showMessage(xhr) {
                 </colgroup>
                 <thead>
                     <tr>
-                        <th>날짜</th>
-                        <th>시간</th>
-                        <th>사용자</th>
-                        <th>명령</th>
-                        <th>데이터</th>
+                        <th class="sort">날짜</th>
+                        <th class="sort">시간</th>
+                        <th class="sort">사용자</th>
+                        <th class="sort">명령</th>
+                        <th class="sort">데이터</th>
                     </tr>
                 </thead>
                 <tbody id="list"></tbody>
@@ -179,6 +170,8 @@ $.form.onsubmit = function (e) {
     window.location.search = search;
 };
 
+[].forEach.call(document.body.querySelectorAll("th.sort"), th => th.onclick = onSort);
+
 document.getElementById("export").onclick = function (e) {
     const rows = [];
 	
@@ -203,17 +196,25 @@ document.getElementById("export").onclick = function (e) {
 };
 
 {
+    const request = {
+            command: "get",
+            target: "audit"    
+        };
     let
-        from = Number(search.get("from")),
-        to = Number(search.get("to"));
-    let date;
+        from = Number(search.get("from")) || undefined,
+        to = Number(search.get("to")) || undefined,
+        date;
 
     if (!from) {
         date = new Date();
 
-        from = date.setHours(0, 0, 0, 0);
-        to = date.setDate(date.getDate() +1);
+        from = to = date.setHours(0, 0, 0, 0);
     }
+
+    request.from = from;
+    
+    date = new Date(to);
+    request.to = date.setDate(date.getDate() +1)
 
     date = new Date(from);
     date.setHours(9, 0, 0, 0);
@@ -225,12 +226,7 @@ document.getElementById("export").onclick = function (e) {
 
     $.form.elements["to"].valueAsDate = date;
 
-    new Request().execute({
-        command: "get",
-        target: "audit",
-        from: from,
-        to: to
-    }, function () {
+    new Request().execute(request, function () {
         switch (this.status) {
         case 200:
             $.fileName = "audit.csv";
@@ -254,7 +250,7 @@ document.getElementById("export").onclick = function (e) {
     
             break;
         default:
-            showMessage(this);
+            throw showMessage(this);
         }
     });
 }

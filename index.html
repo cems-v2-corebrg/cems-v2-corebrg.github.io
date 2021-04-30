@@ -127,13 +127,11 @@ function toElapseString(millis) {
 
 function onEvent(event) {
     if (event == null) {
-        alert("Error!\n\n"+
-            "리스너 응답 없음.");
-
-        window.location.reload();
-    }
-
-    if (event.level < 0) {
+        event = {
+            name: "시스템",
+            message: "이벤트 리스너 응답 없음."
+        };
+    } else if (event.level < 0) {
         alert("Notice.\n\n"+
             "관리자가 서비스를 종료하였습니다.");
 
@@ -144,7 +142,7 @@ function onEvent(event) {
 
     div.dataset.timestamp = new Date().getTime();
     div.dataset.elapse = "지금";
-    div.dataset.message = `${event.name || event.ip || ""} ${event.message}`;
+    div.textContent = `${event.name || event.ip || ""} ${event.message}`;
 
     document.body.querySelector("footer").appendChild(div);
 
@@ -164,7 +162,7 @@ function onEvent(event) {
         break;
     }
 
-    if (event.level == 2 && $.sound) {
+    if (event.level === 2 && $.sound) {
         try {
             $.sound.play();
         } catch (e) {
@@ -272,7 +270,7 @@ function onTest(e) {
 }
         </script>
     </head>
-    <body class="status">
+    <body class="status event">
         <header>
             <nav>
                 <ul>
@@ -284,7 +282,7 @@ function onTest(e) {
                             &#xf0e8;
                             <div>토폴로지</div>
                         </a>
-                        <ul>
+                        <ul class="root">
                             <li>
                                 <a href="/topology.html" target="main">&#xf06e; 보기</a>
                             </li>
@@ -304,7 +302,7 @@ function onTest(e) {
                             &#xf64f;
                             <div>DC</div>
                         </a>
-                        <ul>
+                        <ul class="root">
                             <li>
                                 <a href="/dc.html" target="main">&#xf06e; 보기</a>
                             </li>
@@ -397,10 +395,10 @@ function onTest(e) {
                         </a>
                         <ul>
                             <li id="password">
-                                <a>&#xf084; 비밀번호</a>
+                                <a>&#xf084; Password</a>
                             </li>
                             <li id="signout">
-                                <a>&#xf2f5; 나가기</a>
+                                <a>&#xf2f5; Sign out</a>
                             </li>
                         </ul>
                     </li>

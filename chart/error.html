@@ -397,11 +397,12 @@ function initNode() {
     
     if (("resource" in nodeData) &&
         ($.index in nodeData.resource) &&
-        ((name) => {
-            document.getElementById("if_name").textContent = name || "";
+        ((name, descr) => {
+            document.getElementById("if_name").textContent = name && name.value || descr && descr.value || "";
 
             return true;
-        })(nodeData.resource[$.index][ITAhM.snmp.oid.ifDescr])) {
+        })(nodeData.resource[$.index][ITAhM.snmp.oid.ifName],
+            nodeData.resource[$.index][ITAhM.snmp.oid.ifDescr])) {
         $.request.execute({
             command: "get",
             target: "limit",

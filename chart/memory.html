@@ -294,7 +294,7 @@ function postRealtimeRequest(realtimeData) {
         if ($.realtime) {
             try {
                 for (let timestamp in value) {
-                    $.realtime.update(Number(value[timestamp]));
+                    $.realtime.update($.units * Number(value[timestamp]));
                     
                     break;
                 }

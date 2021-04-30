@@ -8,13 +8,7 @@
 
 @import "/css/style.css";
 @import "/css/fa.css";
-
-body {
-    font: 10pt "맑은 고딕", Arial, Tahoma;
-    margin: 0; padding: 1em;
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-    display: flex; flex-direction: column;
-}
+@import "/css/list.css";
 
 header {
     color: #ffffff;
@@ -34,6 +28,13 @@ header::after {
 
 header >* {
     cursor: pointer;
+}
+
+header button {
+    font-family: "맑은 고딕", "Font Awesome 5 Free";
+    padding: .5em;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 body:not(.search) nav {
@@ -208,26 +209,6 @@ footer div:nth-child(4) {
     transform: none;
 }
 
-.popup {
-    position: absolute; top: 100%; left: 0;
-    border-radius: 3px;
-    border: 1px solid rgba(27,31,35,.15);
-    box-shadow: 0 1px 15px rgba(27,31,35,.15);
-    padding: 1em;
-    margin-top: 8px;
-    background-color: #ffffff;
-    color: #24292e;
-    z-index: 1;
-}
-
-.popup::after {
-    position: absolute; top: -14px; right: auto; left: 10px;
-    display: inline-block;
-    content: "";
-    border: 7px solid transparent;
-    border-bottom-color: #fff;
-}
-
 .loading.mask {
     z-index: 9;
 }
@@ -313,14 +294,12 @@ function showMessage(xhr) {
 	
 	<body class="loading">
         <header>
-            <details class="button" title="날짜 선택">
-                <summary>&#xf073;</summary>
-                <div class="popup">
-                    <input type="date" id="date">   
-                </div>
-            </details>
-            <span id="export" class="button" title="CSV 저장">&#xf019;</span>
-            <span id="report" class="button" title="조건 검색">&#xf002;</span>
+            <div>
+                <button id="export" title="CSV 내보내기">&#xf019; Export</button>
+            </div>
+            <div>
+                <button id="report">&#xf002; 조건 검색</button>
+            </div>
         </header>
         <nav>
             <form>
@@ -396,17 +375,8 @@ const
             critical: 0,
             shutdown: 0
         },
-        date: document.getElementById("date"),
         form: document.querySelector("form")
     };
-
-$.date.onchange = function (e) {
-    const search = new URLSearchParams();
-
-    search.set("date", this.valueAsDate.setHours(0, 0, 0, 0));
-
-    window.location.search = search;
-};
 
 $.form.onsubmit = function (e) {
     e.preventDefault();
@@ -580,8 +550,6 @@ function () {
     }
 
     date.setHours(9, 0, 0, 0);
-
-    $.date.valueAsDate = date;
 
     $.form.elements["start"].valueAsDate = date;
     $.form.elements["end"].valueAsDate = date;

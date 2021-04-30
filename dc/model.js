@@ -220,6 +220,18 @@ const modelData = {
         }
     },
     "juniper": {
+        "ex3400-48t": {
+            name: "ex3400-48t",
+            unit: 1,
+            front: "/dc/img/front/juniper ex3400-48.jpg",
+            rear: "/dc/img/rear/juniper ex3400.jpg"
+        },
+        "ex4600": {
+            name: "ex4600",
+            unit: 1,
+            front: "/dc/img/front/juniper ex4600.jpg",
+            rear: "/dc/img/rear/juniper ex4600.jpg"
+        },
         "srx4200": {
             name: "srx4200",
             unit: 1,
@@ -288,11 +300,17 @@ const modelData = {
         }
     },
     "piolink": {
+        "pas-k": {
+            name: "pas-k",
+            unit: 1,
+            front: "/dc/img/front/piolink pas-k.png",
+            rear: "/dc/img/rear/piolink pas-k.png"
+        },
         "pas k1716": {
             name: "pas k1716",
             unit: 1,
             front: "/dc/img/front/piolink pas k1716.png",
-            rear: "/dc/img/unknown.png"
+            rear: "/dc/img/rear/piolink pas-k.png"
         },
         "pas 10000": {
             name: "pas 10000",

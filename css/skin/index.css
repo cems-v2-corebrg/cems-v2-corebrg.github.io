@@ -83,35 +83,35 @@ footer {
     padding: 1em;
     font-weight: bold;
     color: #fff;
+    pointer-events: none;
+}
+
+footer div {
+    background-color: #ffa500;
+    border-radius: 1.5em;
+    align-self: flex-end;
+    color: #fefefe;
+    position: relative;
+    margin: 10px;
+    padding: 1em 2em;
+    pointer-events: all;
     cursor: pointer;
 }
 
-footer >div {
-    margin: 0.5em;
-    align-self: flex-end;
-}
-
-footer >div::before,
-footer >div::after {
-    display: inline-block;
-    box-sizing: border-box;
-}
-
-footer >div::before {
+footer div::before {
     content: attr(data-elapse);
-    padding: 5px 1em;
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.5);
-    color: #424242;
+    margin-right: 2em;
+    color: #5e5e5e;
+    transform: translateY(0.5em);
+    display: inline-block;
+    font-size: 12px;
 }
 
-footer >div::after {
-    content: attr(data-message);
-    padding: 0.5em 1em;
-    background-color: #ffa500;
-    border: 1px solid #c46c00;
-    border-radius: 1em 0 0 1em;
-    margin-left: 1em;
+footer div::after {
+    position: absolute; inset: 0 -6px 0 0;
+    content: "";
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='15.515px' height='17.5px' viewBox='0 17.5 15.515 17.5'><g transform='translate(47.999, 0) scale(-1, 1)'><path fill='%23ffa500' d='M38.484,17.5c0,8.75,1,13.5-6,17.5C51.484,35,52.484,17.5,38.484,17.5z'/></g></svg>") no-repeat right bottom;
+    border: none;
 }
 
 a:link,
@@ -282,6 +282,6 @@ body:not(.authorized) header,
 body:not(.authorized) aside,
 body:not(.event) footer,
 body:not(.dialog) #dialog,
-body:not(.root) nav ul {
+body:not(.root) .root {
     display: none;
 }

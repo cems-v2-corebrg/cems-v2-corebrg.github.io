@@ -71,8 +71,16 @@ ITAhM.snmp = {
         789: {
             name: "Network Appliance Corporation"
         },
+        2636: {
+            name: "Juniper Networks, Inc.",
+            logo: "/img/enterprise/juniper.svg"
+        },
         2142: {
             name: "Future Systems, Inc."
+        },
+        10188: {
+            name: "Piolink, Inc",
+            logo: "/img/enterprise/piolink.png"
         },
         37288: {
             name: "AXGATE CO., LTD",
@@ -82,7 +90,8 @@ ITAhM.snmp = {
             name: "DASAN Co.,LTD."
         },
         8072: {
-            name: "net-snmp"
+            name: "net-snmp",
+            logo: "/img/enterprise/net-snmp.jpg"
         }
     },
     ifAdminStatus: {

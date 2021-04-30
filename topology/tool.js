@@ -31,15 +31,14 @@
 
     let
         scale = 1,
-        size, mouseDown, linkStart, timer;
+        selected, size, mouseDown, linkStart, timer;
 
     window.addEventListener("resize", onResize);
 
-    root.addEventListener("wheel", onScale);
+    root.addEventListener("wheel", onScale, {passive: false});
     root.addEventListener("mousedown", onMouseDown);
     root.addEventListener("mouseup", onMouseUp);
     root.addEventListener("mousemove", onMouseMove);
-    root.addEventListener("contextmenu", onMenu);
 
     onResize();
 
@@ -59,16 +58,6 @@
         transform.resize.setTranslate(size.width /2, size.height /2);
     }
 
-    function onMenu(e) {
-        e.preventDefault();
-
-        if (e.target !== this) {
-            const device = e.target.parentNode;
-
-            onSelect(Number(device.dataset.id), device.classList.contains("group"));
-        }
-    }
-
     function onMouseDown(e) {
         e.preventDefault();
 
@@ -84,18 +73,6 @@
             ctrlKey: e.ctrlKey,
             altKey: e.altKey
         };
-        
-        if (e.target !== this) {
-            const device = e.target.parentNode;
-            
-            if (device.classList.contains("group")) {
-                timer = setTimeout(function () {
-                    mouseDown = undefined;
-        
-                    onEnter(Number(device.dataset.id));
-                }, 600);
-            }
-        }
     }
 
     function onMouseMove(e) {
@@ -307,6 +284,7 @@
             }
         //Click
         } else {
+            // link end
             if (linkStart) {
                 linkHelper.removeAttribute("points");
 
@@ -322,8 +300,15 @@
 
                 document.body.classList.remove("link");
             }
+            // cancel
             else if (mouseDown.origin === this) {
                 [].forEach.call(layerMap.select.querySelectorAll("g"), device => layerMap.device.appendChild(device));
+
+                selected && selected.classList.remove("selected");
+
+                selected = undefined;
+
+                document.body.classList.remove("selected", "group");
             } else {
                 const device = mouseDown.origin.parentNode;
 
@@ -347,10 +332,21 @@
                     };
 
                     document.body.classList.add("link");
+                // select
                 } else {
                     [].forEach.call(layerMap.select.querySelectorAll("g"), device => layerMap.device.appendChild(device));
 
-                    layerMap.select.appendChild(device);
+                    selected && selected.classList.remove("selected");
+
+                    selected = device;
+
+                    selected.classList.add("selected");
+
+                    document.body.classList[selected.classList.contains("group")? "add": "remove"]("group");
+
+                    layerMap.select.appendChild(selected);
+
+                    document.body.classList.add("selected");
                 }
             }
         }
@@ -387,11 +383,7 @@
         
         device.dataset.id = args.id;
 
-        if (args.group) {
-            device.classList.add("group");
-            
-            /*svgIcon.ondblclick = e => {console.log("!!!"); onEnter(Number(args.id));};*/
-        }
+        args.group && device.classList.add("group");
         
         svgName.textContent = args.name;
         svgAddr.textContent = args.ip;
@@ -593,7 +585,7 @@
             pathData.labelFrom.setAttribute("x", 0);
             pathData.labelFrom.setAttribute("y", -100 /3);
         }
-
+console.log("from", pathData);
         pathData.path.setAttribute("transform", `translate(${xFrom},${yFrom})`);
         
         pathData.line.setAttribute("points", "0,0 0,-100");
@@ -616,7 +608,7 @@
             pathData.labelFrom.setAttribute("x", 0);
             pathData.labelFrom.setAttribute("y", -100 *2 /3);
         }
-
+console.log("to", pathData);
         pathData.path.setAttribute("transform", `translate(${xFrom},${yFrom})`);
 
         pathData.line.setAttribute("points", "0,0 0,-100");

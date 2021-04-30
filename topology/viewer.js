@@ -22,6 +22,7 @@
         nodeMap = {},
         pathMap = {},
         linkMap = {},
+        upLinkMap = {},
         shutdown = [],
         critical = [];
     let
@@ -42,7 +43,9 @@
     
     window.addEventListener("resize", onResize);
 
-    root.addEventListener("wheel", onScale);
+    root.addEventListener("wheel", onScale, {
+        passive: false
+    });
     root.addEventListener("mousedown", onMouseDown);
     root.addEventListener("mouseup", onMouseUp);
     root.addEventListener("mousemove", onMouseMove);
@@ -185,163 +188,157 @@
         return svgDevice;
     };
 
-    const addPath = function (args) {
-        const
-            nodeFrom = args.nodeFrom,
-            nodeTo = args.nodeTo,
-            labelFrom = args.labelFrom,
-            labelTo = args.labelTo,
-            option = args.option,
-            svgPath = document.createElementNS(SVG_NS_URI, "g"),
-            svgLine = document.createElementNS(SVG_NS_URI, "polyline");
-        let textFrom, textTo;
-
-        svgPath.classList.add("path");
-
-        svgLine.setAttribute("stroke", option.color);
-        svgLine.setAttribute("stroke-width", option.size);
-
-        svgPath.appendChild(svgLine);
-
-        if (labelFrom) {
-            textFrom = document.createElementNS(SVG_NS_URI, "text");
-
-            labelFrom.forEach(label => {
-                const tspan = document.createElementNS(SVG_NS_URI, "tspan");
-
-                tspan.textContent = " "+ (label.name.length >= TEXT_TRIM?
-                    label.name.substring(0, TEXT_TRIM) +"...":
-                    label.name) +" ";
-
-                if (label.click) {
-                    tspan.onclick = e => label.click(nodeFrom, label.index);
-                }
-
-                textFrom.appendChild(tspan);
-            });
-
-            if (textFrom.querySelector("tspan")) {
-                svgPath.appendChild(textFrom);
-            } else {
-                textFrom = undefined;
-            }
-        }
-
-        if (labelTo) {
-            textTo = document.createElementNS(SVG_NS_URI, "text");
-
-            labelTo.forEach(label => {
-                const tspan = document.createElementNS(SVG_NS_URI, "tspan");
-
-                tspan.textContent = " "+ (label.name.length >= TEXT_TRIM?
-                    label.name.substring(0, TEXT_TRIM) +"...":
-                    label.name) +" ";
-                
-                if (label.click) {
-                    tspan.onclick = e => label.click(nodeTo, label.index);
-                }
-
-                textTo.appendChild(tspan);
-            });
-
-            if (textTo.querySelector("tspan")) {
-                svgPath.appendChild(textTo);
-            } else {
-                textTo = undefined;
-            }
-        }
-
-        if (args.posFrom && args.posTo) {
+    const draw = {
+        clock: (container, from, to) => {
             const
-                x1 = args.posFrom.x,
-                y1 = args.posFrom.y,
-                x = args.posTo.x - x1,
-                y = args.posTo.y - y1;
-
-            switch (option.type) {
-            case "clock":
-                svgLine.setAttribute("points", `0,0 ${x},0 ${x},${y}`);
-
-                if (textFrom) {
-                    textFrom.setAttribute("x", x /2);
-                    textFrom.setAttribute("y", 0);
-                }
-
-                if (textTo) {
-                    textTo.setAttribute("x", x);
-                    textTo.setAttribute("y", y /2);
-                }
-
-                break;
-            case "counter":
-                svgLine.setAttribute("points", `0,0 0,${y} ${x},${y}`);
-
-                if (textFrom) {
-                    textFrom.setAttribute("x", 0);
-                    textFrom.setAttribute("y", y /2);
-                }
-
-                if (textTo) {
-                    textTo.setAttribute("x", x /2);
-                    textTo.setAttribute("y", y);
-                }
-
-                break;
-            default:
-                svgLine.setAttribute("points", `0,0 ${x},${y}`);
-
-                if (textFrom) {
-                    textFrom.setAttribute("x", x /3);
-                    textFrom.setAttribute("y", y /3);
-                }
-
-                if (textTo) {
-                    textTo.setAttribute("x", x *2/3);
-                    textTo.setAttribute("y", y *2/3);
-                }
-            }
-
-            svgPath.setAttribute("transform", `translate(${x1},${y1})`);
-        } else {
-            const
-                pos = args.posFrom || args.posTo,
-                peer = document.createElementNS(SVG_NS_URI, "circle")
+                svgLine = container.querySelector("polyline"),
+                labels = container.querySelectorAll("text"),
+                x1 = from.x,
+                y1 = from.y,
+                x = to.x - x1,
+                y = to.y - y1;
             
-            x = 0;
-            y = -100;
+            svgLine.setAttribute("points", `0,0 ${x},0 ${x},${y}`);
+
+            labels[0].setAttribute("x", x /2);
+            labels[0].setAttribute("y", 0);
+
+            labels[1].setAttribute("x", x);
+            labels[1].setAttribute("y", y /2);
+
+            container.setAttribute("transform", `translate(${x1},${y1})`);
+        },
+        counter: (container, from, to) => {
+            const
+                svgLine = container.querySelector("polyline"),
+                labels = container.querySelectorAll("text"),
+                x1 = from.x,
+                y1 = from.y,
+                x = to.x - x1,
+                y = to.y - y1;
+            
+            svgLine.setAttribute("points", `0,0 0,${y} ${x},${y}`);
+
+            labels[0].setAttribute("x", 0);
+            labels[0].setAttribute("y", y /2);
+
+            labels[1].setAttribute("x", x /2);
+            labels[1].setAttribute("y", y);
+            
+            container.setAttribute("transform", `translate(${x1},${y1})`);
+        },
+        line: (container, from, to) => {
+            const
+                svgLine = container.querySelector("polyline"),
+                labels = container.querySelectorAll("text"),
+                x1 = from.x,
+                y1 = from.y,
+                x = to.x - x1,
+                y = to.y - y1;
 
             svgLine.setAttribute("points", `0,0 ${x},${y}`);
+
+            labels[0].setAttribute("x", x /3);
+            labels[0].setAttribute("y", y /3);
+
+            labels[1].setAttribute("x", x *2/3);
+            labels[1].setAttribute("y", y *2/3);
+
+            container.setAttribute("transform", `translate(${x1},${y1})`);
+        },
+        upLink: (container, from, to) => {
+            const
+                svgLine = container.querySelector("polyline"),
+                labels = container.querySelectorAll("text"),
+                peer = document.createElementNS(SVG_NS_URI, "circle"),
+                x = 0,
+                y = -100,
+                pos = from || to;
 
             peer.setAttribute("cx", x);
             peer.setAttribute("cy", y);
             peer.setAttribute("r", 10);
 
-            svgPath.appendChild(peer);
+            svgLine.setAttribute("points", `0,0 ${x},${y}`);
 
-            if (textFrom) {
-                textFrom.setAttribute("x", x);
+            labels[0].setAttribute("x", x);
+            labels[0].setAttribute("y", y /3);
 
-                if (args.posFrom) {
-                    textFrom.setAttribute("y", y /3);
-                } else {
-                    textFrom.setAttribute("y", y *2/3);
-                }
-            }
+            labels[1].setAttribute("x", x);
+            labels[1].setAttribute("y", y *2/3);
 
-            if (textTo) {
-                textTo.setAttribute("x", x);
-                
-                if (args.posTo) {
-                    textTo.setAttribute("y", y /3);
-                } else {
-                    textTo.setAttribute("y", y *2/3);
-                }
-            }
+            container.appendChild(peer);
 
-            svgPath.setAttribute("transform", `translate(${pos.x},${pos.y})`);
+            container.setAttribute("transform", `translate(${pos.x},${pos.y})`);
         }
+    };
 
+    const setLabel = (container, id, labels = []) => {
+        labels.forEach(label => {
+            const tspan = document.createElementNS(SVG_NS_URI, "tspan");
+
+            tspan.textContent = " "+ (label.name.length >= TEXT_TRIM?
+                label.name.substring(0, TEXT_TRIM) +"...":
+                label.name) +" ";
+
+            if (label.click) {
+                tspan.onclick = e => label.click(id, label.index);
+            }
+
+            container.appendChild(tspan);
+        });
+    };
+
+    const createPath2 = function (args, func) {
+        const
+            svgPath = document.createElementNS(SVG_NS_URI, "g"),
+            svgLine = document.createElementNS(SVG_NS_URI, "polyline"),
+            labelFrom = document.createElementNS(SVG_NS_URI, "text"),
+            labelTo = document.createElementNS(SVG_NS_URI, "text");
+        
+        svgPath.classList.add("path");
+
+        svgPath.appendChild(svgLine);
+        svgPath.appendChild(labelFrom);
+        svgPath.appendChild(labelTo);
+
+        svgLine.setAttribute("stroke", args.option.color);
+        svgLine.setAttribute("stroke-width", args.option.size);
+        
+        setLabel(labelFrom, args.from.id, args.from.label);
+        setLabel(labelTo, args.to.id, args.to.label);
+
+        draw[func](svgPath, args.from.pos, args.to.pos);
+        
         return svgPath;
+    };
+
+    const createPath = function (args) {
+        if (args.from.pos && args.to.pos) {
+            return createPath2(args, args.option.type || "line");
+        } else {
+            let id;
+
+            if (!args.from.pos) {
+                const tmp = args.to;
+
+                args.to = args.from;
+                args.from = tmp;
+            }
+
+            id = String(args.from.id); 
+            
+            if (id in upLinkMap) {
+                const
+                    svgPath = upLinkMap[id],
+                    labels = svgPath.querySelectorAll("text");
+
+                setLabel(labels[0], args.from.id, args.from.label);
+                setLabel(labels[1], args.to.id, args.to.label);
+            } else {
+                return upLinkMap[id] = createPath2(args, "upLink");
+            }
+        }
     };
 
     function findBranch(id) {
@@ -551,30 +548,34 @@
     
             for (let nodeTo in peerMap) {
                 args = {
-                    nodeFrom: nodeFrom,
-                    nodeTo: nodeTo,
+                    from: {
+                        id: nodeFrom,
+                        label: []
+                    },
+                    to: {
+                        id: nodeTo,
+                        label: []
+                    },
                     option: peerMap[nodeTo],
-                    labelFrom: [],
-                    labelTo: []
                 };
                 
                 id = findBranch(nodeFrom);
     
                 if (id) {
-                    args.posFrom = parent.positionData[id];
+                    args.from.pos = parent.positionData[id];
                 }
                 
                 id = findBranch(nodeTo);
     
                 if (id) {
-                    args.posTo = parent.positionData[id];
+                    args.to.pos = parent.positionData[id];
                 }
     
-                if ((args.posFrom === args.posTo)) {
+                if ((args.from.pos === args.to.pos)) {
                     continue;
                 }
 
-                if (!args.posFrom && !args.posTo) {
+                if (!args.from.pos && !args.to.pos) {
                     continue;
                 }
 
@@ -596,7 +597,7 @@
                             const link = parent.linkData[id];
     
                             if (link.indexFrom) {
-                                args.labelFrom.push({
+                                args.from.label.push({
                                     index: link.indexFrom,
                                     name: link.indexFromName,
                                     click: showChart
@@ -604,7 +605,7 @@
                             }
                             
                             if (link.indexTo) {
-                                args.labelTo.push({
+                                args.to.label.push({
                                     index: link.indexTo,
                                     name: link.indexToName,
                                     click: showChart
@@ -614,7 +615,9 @@
                     }
                 }
 
-                df.appendChild(addPath(args));
+                path = createPath(args);
+
+                path && df.appendChild(path);
             }
         }
 

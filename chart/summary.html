@@ -66,6 +66,10 @@ section li {
     display: flex;
 }
 
+#storage {
+    overflow-x: auto;
+}
+
 #processor li {
     width: 120px; 
 }
@@ -98,6 +102,26 @@ section li {
     flex: none; width: 80px;
 }
 
+#portmap li label {
+    position: absolute; top: 0; right: 0;
+    display: none;
+    cursor: pointer;
+}
+
+#portmap li label::before {
+    font: 2em "Font Awesome 5 Free";
+    content: "\f071";
+}
+
+#portmap li.error label {
+    color: #ff0000;
+    display: initial;
+}
+
+#portmap li:hover label {
+    display: initial;
+}
+
 section.enterprise {
     flex: none; width: 160px;
 }
@@ -116,6 +140,11 @@ section.type ul {
 
 section.information {
     flex: 1 0;
+}
+
+section.storage {
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 section.portmap {
@@ -339,6 +368,12 @@ function PortMap() {
                     Ethernet.STATUS_NORMAL
             });
 
+            container.appendChild(document.createElement("label")).onclick = e => {
+                e.stopPropagation();
+                
+                onSelectResource("/chart/error.html", index);
+            };
+
             container.classList.add("selectable");
             
             container.onclick = e => onSelectResource("/chart/throughput.html", index);
@@ -380,6 +415,8 @@ function PortMap() {
                     ifOperStatus = Number(indexData[ITAhM.snmp.oid.ifOperStatus].value),
                     inBPS = indexData[ITAhM.snmp.oid.inBPS],
                     outBPS = indexData[ITAhM.snmp.oid.outBPS],
+                    inErrors = indexData[ITAhM.snmp.oid.inErrs],
+                    outErrors = indexData[ITAhM.snmp.oid.outErrs],
                     status = ifAdminStatus !== 1?
                         Ethernet.STATUS_DISABLED: ifOperStatus !==1?
                         Ethernet.STATUS_SHUTDOWN: inBPS.critical || outBPS.critical?
@@ -398,6 +435,12 @@ function PortMap() {
                     } else {
                         port.set();
                     }
+                }
+
+                if (inErrors && Number(inErrors.value) > 0 || outErrors && Number(outErrors.value) > 0) {
+                    port.container.classList.add("error");
+                } else {
+                    port.container.classList.remove("error");
                 }
             } catch (e) {
                 console.error(e);
@@ -722,6 +765,7 @@ function initialize(node) {
         (function(sysObjectID) {
             if (sysObjectID) {
                 const enterprise = ITAhM.util.enterpriseFromOID(sysObjectID.value);
+                //const enterprise = ITAhM.util.enterpriseFromOID("1.3.6.1.4.1.2636");
 
                 if (enterprise && enterprise.logo) {
                     document.body.querySelector("section.enterprise ul").style.backgroundImage = `url(${enterprise.logo})`;
@@ -752,6 +796,7 @@ function initialize(node) {
                     document.body.classList.add("storage");
 
                     $.storage.add(index, indexData);
+                    //$.storage.add(index, indexData);$.storage.add(index, indexData);$.storage.add(index, indexData);$.storage.add(index, indexData);$.storage.add(index, indexData);
 
                     break;
                 }
