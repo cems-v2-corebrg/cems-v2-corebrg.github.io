@@ -38,7 +38,7 @@ function Request() {
 
             const xhr = new XMLHttpRequest();
 
-            xhr.open("POST", this.agent, true);
+            xhr.open("POST", `${this.agent}/request`, true);
             xhr.withCredentials = true;
 
             if (this.session) {
@@ -57,7 +57,7 @@ function Request() {
         connect: function (agent, callback) {
             const xhr = new XMLHttpRequest();
 
-            xhr.open("POST", agent, true);
+            xhr.open("POST", `${agent}/request`, true);
             xhr.withCredentials = true;
             xhr.timeout = TIMEOUT;
 
@@ -90,7 +90,7 @@ function Request() {
 
             const xhr = new XMLHttpRequest();
 
-            xhr.open("POST", this.agent, true);
+            xhr.open("POST", `${this.agent}/request`, true);
             xhr.withCredentials = true;
             xhr.timeout = TIMEOUT;
 
@@ -126,7 +126,7 @@ function Request() {
 
             const xhr = new XMLHttpRequest();
                 
-            xhr.open("POST", this.agent, true);
+            xhr.open("POST", `${this.agent}/request`, true);
             xhr.withCredentials = true;
 
             xhr.setRequestHeader("Session", this.session);
@@ -144,7 +144,7 @@ function Request() {
 
             const xhr = new XMLHttpRequest();
                 
-            xhr.open("POST", this.agent, true);
+            xhr.open("POST", `${this.agent}/request`, true);
             xhr.withCredentials = true;
 
             xhr.setRequestHeader("Session", this.session);
@@ -174,7 +174,7 @@ function Request() {
 
             const xhr = new XMLHttpRequest();
                 
-            xhr.open("POST", this.agent, true);
+            xhr.open("POST", `${this.agent}/request`, true);
             xhr.withCredentials = true;
 
             xhr.setRequestHeader("Session", this.session);
