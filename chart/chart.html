@@ -191,7 +191,7 @@ Cursor.prototype = {
                     this.calcRightPos = Math.round(this.calcRightPos * size / this.size);
                 }
 
-                this.step = this.config.step || size
+                this.step = this.config.step || size;
                 this.size = size;
 
                 drawHandle();
@@ -294,7 +294,7 @@ Cursor.prototype = {
                     rightPos: this.handleRightPos
                 };
             }
-
+            
             switch (this.dragHandle) {
             case body:
                 if (e.clientX > this.dragOrigin.x) {
@@ -359,6 +359,11 @@ Cursor.prototype = {
         resize();
     }
 };
+
+Date.prototype.diff = function (d) {
+    return Math.round(Math.abs(new Date(this.getTime()).setHours(0, 0, 0, 0) - new Date(d.getTime()).setHours(0, 0, 0, 0)) / (1000 *3600 *24));
+}
+
         </script>
 		<script>
 
@@ -615,7 +620,7 @@ document.getElementById("set").onclick = function (e) {
 })(document.body.querySelector("form"));
 
 new Cursor(document.querySelector("footer"), {
-    step: new Date($.to).getDate() - new Date($.from).getDate(),
+    step: new Date($.to).diff(new Date($.from)),
     maskColor: "rgba(0, 0, 0, 0.5)",
     handleColor: "rgba(0, 0, 0, 0.8)",
     onchange: (f, t) => {
@@ -635,7 +640,7 @@ if ($.id && $.from && $.to && $.name) {
     ticks.max = $.to;
     ticks.min = $.from;
 
-    document.body.classList[new Date($.to).getDate() - new Date($.from).getDate() === 1? "add": "remove"]("detail");
+    document.body.classList[new Date($.to).diff(new Date($.from)) === 1? "add": "remove"]("detail");
 
     $.chart.location.replace(`${$.name}?id=${$.id}&index=${$.index}&from=${$.from}&to=${$.to}`);
 }
