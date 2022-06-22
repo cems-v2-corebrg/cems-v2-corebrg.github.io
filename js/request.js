@@ -130,7 +130,7 @@ function Request() {
             xhr.withCredentials = true;
 
             xhr.setRequestHeader("Session", this.session);
-
+            xhr.setRequestHeader("Access-Control-Request-Private-Network", true);
             xhr.onloadend = callback;
 
             xhr.send(JSON.stringify(request));
