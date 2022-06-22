@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <title>test</title>
+		<meta charset="UTF-8">		
+		<style>
+
+@import "/css/style.css";
+@import "/css/list.css";
+@import "/css/fa.css";
+
+.sync tbody :is(th, td) {
+	padding: 5px;
+}
+
+header {
+	line-height: 3em;
+}
+
+header :is(input, select) {
+	font-family: "Font Awesome 5 Free", "맑은 고딕";
+	height: 100%;
+	padding: 0 0.5em;
+}
+
+main.sync {
+	flex: 0.5;
+}
+
+table {
+	
+}
+
+		</style>
+		<script>
+function createSyncItem (name, oid) {
+	const
+		tr = document.createElement("tr"),
+		checkbox = document.createElement("input");
+
+	checkbox.type = "checkbox";
+
+	tr.appendChild(document.createElement("th")).appendChild(checkbox);
+	tr.appendChild(document.createElement("td")).textContent = name;
+	tr.appendChild(document.createElement("td")).textContent = oid.type;
+	tr.appendChild(document.createElement("td")).textContent = oid.value;
+	tr.appendChild(document.createElement("td")).textContent = oid.log? "Y": "";
+
+	checkbox.dataset.name = name;
+	checkbox.dataset.type = oid.type;
+	checkbox.dataset.value = oid.value;
+	
+	if (oid.log) {
+		checkbox.dataset.log = true;
+	}
+
+	return tr;
+}
+
+function createListItem (name, oid) {
+	const tr = document.createElement("tr");
+
+	tr.appendChild(document.createElement("td")).textContent = name;
+	tr.appendChild(document.createElement("td")).textContent = oid.type;
+	tr.appendChild(document.createElement("td")).textContent = oid.value;
+	tr.appendChild(document.createElement("td")).textContent = oid.log? "Y": "";
+
+	tr.dataset.name = name;
+
+	tr.onclick = onSelectItem;
+
+	return tr;
+}
+
+function onSelectItem () {
+	top.showDialog(`/dialog/oid.html?name=${this.dataset.name}`, window);
+}
+
+function onCheckAll () {
+	const checked = this.checked;
+
+	document.getElementById("sync").disabled = checked? false: true;
+
+	Array
+		.from(document.body.querySelectorAll(".sync tbody input[type=checkbox]"))
+		.forEach(checkbox => checkbox.checked = checked);
+}
+
+function onCheckItem () {
+	if (this.checked) {
+		document.getElementById("sync").disabled = false;
+
+		if (document.body.querySelectorAll(".sync tbody input[type=checkbox]:not(:checked)").length === 0) {
+			document.body.querySelector(".sync thead input[type=checkbox]").checked = true;
+		}
+	} else {
+		document.body.querySelector(".sync thead input[type=checkbox]").checked = false;
+
+		if (document.body.querySelectorAll(".sync tbody input[type=checkbox]:checked").length === 0) {
+			document.getElementById("sync").disabled = true;
+		}
+	}
+}
+
+function sync(array) {
+	const request = array.pop();
+
+	if (request) {
+		$.request.query({
+			"command": "set",
+			"target": "oid",
+			"value": value
+		})
+		.then(oidData => {
+			sync(array);
+		})
+		.catch(showMessage);
+	} else {
+		alert("Information.\n\nOID 동기화 완료.");
+
+		window.location.reload();
+	}
+}
+
+function onSync() {
+	const checked = document.body.querySelectorAll(".sync tbody input[type=checkbox]:checked");
+
+	if (!confirm(`Confirm.\n\n선택한 ${checked.length} 개의 OID를 동기화 하겠습니까?`)) {
+		return;
+	}
+
+	const value = {};
+
+	Array
+		.from(checked)
+		.forEach(checkbox => value[checkbox.dataset.name] = {
+				type: checkbox.dataset.type,
+				value: checkbox.dataset.value,
+				log: checkbox.dataset.log? true: undefined
+			}
+		);
+		
+	$.request.query({
+		"command": "set",
+		"target": "oid",
+		"value": value
+	})
+	.then(oidData => {
+		alert("Information.\n\nOID 동기화 성공.");
+
+		window.location.reload();
+	})
+	.catch(showMessage);
+}
+
+function showMessage (xhr) {
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
+
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
+    }
+}
+		</script>
+	</head>
+	
+	<body class="loading">
+		<header>
+			<div>
+				<input type="button" value="&#xf2f1; Sync" id="sync" title="동기화" disabled>
+			</div>
+		</header>
+		<main class="sync">
+			<table>
+				<colgroup>
+					<col width="50">
+				</colgroup>
+				<thead>
+					<tr>
+						<th>
+							<input type="checkbox">
+						</th>
+						<th>Name</th>
+						<th>Type</th>
+						<th>OID</th>
+						<th>Logging</th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</main>
+		<header>
+			<div>
+				<input type="button" value="&#xf067; Add" id="add" title="OID 추가">
+			</div>
+		</header>
+		<main class="list">
+			<table>
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Type</th>
+						<th>OID</th>
+						<th>Logging</th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</main>
+		<div class="loading mask"></div>
+
+		<script src="/js/request.js"></script>
+		<script src="/js/query.js"></script>
+		<script src="/js/constants.js"></script>
+        <script>
+const
+	$ = {
+		request: new Request()
+	};
+
+$.request.query({
+    command: "get",
+    target: "oid"
+})
+.then(data => {
+	const df = document.createDocumentFragment();
+
+	Object.keys(oidData)
+		.sort()
+		.forEach(name => (!(name in data)) && df.appendChild(createSyncItem(name, oidData[name])));
+	
+	if (df.children.length > 0) {
+		document.body.querySelector(".sync thead input[type=checkbox]").onclick = onCheckAll;
+	}
+
+	document.body.querySelector(".sync tbody").appendChild(df);
+
+	Object.keys(data)
+		.sort()
+		.forEach(name => df.appendChild(createListItem(name, data[name])));
+	
+	document.body.querySelector(".list tbody").appendChild(df);
+})
+.then(() => {
+	Array
+		.from(document.body.querySelectorAll(".sync tbody input[type=checkbox]"))
+		.forEach(checkbox => checkbox.onclick = onCheckItem);
+
+	document.getElementById("sync").onclick = onSync;
+	document.getElementById("add").onclick = e=> top.showDialog("/dialog/oid.html", window);
+
+	document.body.classList.remove("loading");
+})
+.catch(showMessage);
+
+		</script>
+	
+	</body>
+	
+</html>

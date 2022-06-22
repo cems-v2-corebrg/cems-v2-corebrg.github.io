@@ -27,9 +27,6 @@
         critical = [];
     let
         stage,
-        moveStage,
-        positionData,
-        branchData,
         scale = 1,
         intersect, size, dragOrigin;
 
@@ -280,11 +277,11 @@
             tspan.textContent = " "+ (label.name.length >= TEXT_TRIM?
                 label.name.substring(0, TEXT_TRIM) +"...":
                 label.name) +" ";
-
+/*
             if (label.click) {
                 tspan.onclick = e => label.click(id, label.index);
             }
-
+*/
             container.appendChild(tspan);
         });
     };
@@ -344,7 +341,7 @@
     function findBranch(id) {
         id = String(id);
 
-        for (let pos; pos = positionData[id]; id = String(pos.parent)) {
+        for (let pos; pos = window.positionData[id]; id = String(pos.parent)) {
             if (pos.parent === stage) {
                 return id;
             }
@@ -408,20 +405,20 @@
             linkMap = {};
         let node, pos, group, link, peerMap, args, id;
         
-        for (let id in branchData) {
-            node = branchData[id];
-            pos = positionData[id];
+        for (let id in window.branchData) {
+            node = window.branchData[id];
+            pos = window.positionData[id];
             
             // 동기화 안된 node의 pos 정보가 없음
             if (!pos) {
-                positionData[id] = pos = {
+                window.positionData[id] = pos = {
                     x: 0,
                     y: 0
                 };
             }
             
             // 상위 그룹이 삭제 되었음
-            if (pos.parent && !(pos.parent in branchData)) {
+            if (pos.parent && !(pos.parent in window.branchData)) {
                 pos.parent = undefined;
             }
             
@@ -431,8 +428,8 @@
             
             args = {
                 node: node,
-                icon: parent.iconData[node.type || "unknown"] || parent.iconData["unknown"],
-                position: positionData[id],
+                icon: window.iconData[node.type || "unknown"] || window.iconData["unknown"],
+                position: window.positionData[id],
                 click: moveStage,
                 path: shutdown.indexOf(id) !== -1? "shutdown": critical.indexOf(id) !== -1? "critical": "src",
                 size: 60
@@ -448,30 +445,30 @@
         const
             df = document.createDocumentFragment(),
             linkMap = {};
-        let node, pos, branch, link, peerMap, args, id;
+        let node, pos, branch, args;
         
-        for (let id in nodeData) {
-            node = nodeData[id];
-            pos = positionData[id];
+        for (let id in window.nodeData) {
+            node = window.nodeData[id];
+            pos = window.positionData[id];
             
             // 동기화 안된 node의 pos 정보가 없음
             if (!pos) {
-                positionData[id] = pos = {
+                window.positionData[id] = pos = {
                     x: 0,
                     y: 0
                 };
             }
             
             // 상위 그룹이 삭제 되었음
-            if (pos.parent && !(pos.parent in branchData)) {
+            if (pos.parent && !(pos.parent in window.branchData)) {
                 pos.parent = undefined;
             }
             
             if (pos.parent === stage) {
                 args = {
                     node: node,
-                    icon: parent.iconData[node.type || "unknown"] || parent.iconData["unknown"],
-                    position: parent.positionData[id],
+                    icon: window.iconData[node.type || "unknown"] || window.iconData["unknown"],
+                    position: window.positionData[id],
                     path: "disabled"
                 };
     
@@ -481,7 +478,7 @@
                     if ("status" in node && !node.status) {
                         args.path = "shutdown";
                     }
-                    else if ("critical" in node && node.critical) {
+                    else if ("critical" in node && !node.critical) {
                         args.path = "critical";
                     } else {
                         args.path = "src";
@@ -496,7 +493,7 @@
                     if ("status" in node && !node.status) {
                         shutdown.push(branch);
                     }
-                    else if ("critical" in node && node.critical) {
+                    else if ("critical" in node && !node.critical) {
                         critical.push(branch);
                     }
                 }
@@ -506,9 +503,9 @@
         layerMap.device.appendChild(df);
     }
 
-    function initLink(linkData) {
-        for (let id in linkData) {
-            link = linkData[id];
+    function initLink() {
+        for (let id in window.linkData) {
+            link = window.linkData[id];
 
             if (!linkMap[link.nodeFrom]) {
                 linkMap[link.nodeFrom] = {};
@@ -527,12 +524,12 @@
         }
     }
 
-    function initPath(pathData) {
+    function initPath() {
         const df = document.createDocumentFragment();
         let path, from;
     
-        for (let id in pathData) {
-            path = pathData[id];
+        for (let id in window.pathData) {
+            path = window.pathData[id];
     
             from = String(path.from);
     
@@ -562,13 +559,13 @@
                 id = findBranch(nodeFrom);
     
                 if (id) {
-                    args.from.pos = parent.positionData[id];
+                    args.from.pos = window.positionData[id];
                 }
                 
                 id = findBranch(nodeTo);
     
                 if (id) {
-                    args.to.pos = parent.positionData[id];
+                    args.to.pos = window.positionData[id];
                 }
     
                 if ((args.from.pos === args.to.pos)) {
@@ -580,11 +577,11 @@
                 }
 
                 if (!args.option.color) {
-                    args.option.color = parent.settingData.linkColor || "#ffffff";
+                    args.option.color = window.settingData["LINKCOLOR"];
                 }
     
                 if (!args.option.size) {
-                    args.option.size = parent.settingData.linkSize || 1;
+                    args.option.size = window.settingData["LINKSIZE"];
                 }
     
                 link = linkMap[nodeFrom];
@@ -594,7 +591,7 @@
     
                     if (link) {
                         link.forEach(id => {
-                            const link = parent.linkData[id];
+                            const link = window.linkData[id];
     
                             if (link.indexFrom) {
                                 args.from.label.push({
@@ -624,16 +621,12 @@
         layerMap.path.appendChild(df);
     }
 
-    function initialize(id, args) {
+    function initialize(id) {
         stage = id;
-        moveStage = args.moveStage;
-        positionData = args.positionData;
-        nodeData = args.nodeData;
-        branchData = args.branchData;
         
         initNode();
         initBranch();
-        initLink(args.linkData);
-        initPath(args.pathData);
+        initLink();
+        initPath();
     }
 }

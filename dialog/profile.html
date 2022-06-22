@@ -87,7 +87,6 @@ function onSubmit (e) {
         request = {
             target: "profile",
             command: "add",
-            name: name,
             profile: {
                 name: name,
                 protocol: "udp",
@@ -201,18 +200,24 @@ function onReset (e) {
 }
     
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert("Notice!\n\n"+ "세션 만료.");
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace(xhr);
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
 		</script>
@@ -305,6 +310,7 @@ function showMessage(xhr) {
         </main>
         
         <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
 		<script>
 
 const

@@ -187,29 +187,20 @@ function onCloseDetails (e) {
 function onCreatePath (e) {
     document.body.classList.add("loading");
 
-    $.request.execute({
+    $.request.query ({
         command: "add",
         target: "path",
         path: {
-            from: $.idFrom,
-            to: $.idTo
+            nodeFrom: $.idFrom,
+            nodeTo: $.idTo
         }
-    }, function () {
-        switch(this.status) {
-        case 200:
-            top.resetParent();
+    })
+    .then(path => {
+        top.resetParent();
 
-            window.location.reload();
-
-            break;
-        case 409:
-            alert("Error!\n\n경로 생성 실패.");
-
-            break;
-        default:
-            throw showMessage(this);
-        }
-    });
+        window.location.reload();
+    })
+    .catch(showMessage);
 }
 
 function onSaveLink (e) {
@@ -325,7 +316,9 @@ function onAddLink (e) {
     $.request.execute({
         command: "add",
         target: "link",
-        path: $.id
+        link: {
+            path: $.id
+        }
     }, function () {
         switch(this.status) {
         case 409:                
@@ -420,21 +413,48 @@ function onReset (e) {
     });
 }
 
-function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert(NOTICE_SESS_EXPIRE["kr"]);
+function initCustom(customArray) {
+    const
+        df = document.createDocumentFragment(),
+        details = document.body.querySelector(".details");
+    
+    customArray.forEach((custom, i) => {
+        const
+            li = df.appendChild(document.createElement("li")),
+            input = document.createElement("input");
 
-        break;
-    default:
-        alert(ERROR_RES_CODE(xhr.status)["kr"]);
-    }
+        li.appendChild(document.createElement("span")).textContent = custom;
+        
+        input.type = "text";
 
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
+        $.customInputMap[custom] = input;
+    
+        li.appendChild(input);
+    });
+    
+    details.insertBefore(df, details.querySelector("nav"));
 }
 
+function showMessage(xhr) {
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
+
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
+    }
+}
         </script>
 	</head>
 	
@@ -560,35 +580,6 @@ $.options.forEach(name => {
     };
 });
 
-function initPath() {
-    switch (this.status) {
-    case 200:
-        const path = JSON.parse(this.responseText);
-        
-        $.id = path.id;
-
-        $.options.forEach(name => {
-            if (path[name]) {
-                $.form.elements[name].value = path[name];
-                $.form.elements[name].disabled = false;
-                $.form.elements["use_"+ name].checked = true;
-            }
-        });
-        
-        initLink(JSON.parse(this.responseText));
-
-        document.body.classList.add("initialized", "edit");
-
-        break;
-    case 204:
-        document.body.classList.remove("loading");
-
-        break;
-    default:
-        throw showMessage(this);
-    }
-}
-
 function initLink(path) {
     $.request.execute({
         command: "get",
@@ -611,73 +602,31 @@ function initLink(path) {
         }
     });
 }
-/*
-function initNode() {
-    [{
-        node: $.nodeFrom,
-        select: document.getElementById("index_from")
-    }, {
-        node: $.nodeTo,
-        select: document.getElementById("index_to")
-    }].forEach(args => {
-        if (args.node.resource) {
-            const df = document.createDocumentFragment();
-            let indexData, option;
 
-            for (let index in args.node.resource) {
-                indexData = args.node.resource[index];
-
-                if (ITAhM.snmp.oid.ifAdminStatus in indexData &&
-                    indexData[ITAhM.snmp.oid.ifAdminStatus].value === "1" &&
-                    indexData[ITAhM.snmp.oid.ifSpeed] &&
-                    Number(indexData[ITAhM.snmp.oid.ifSpeed].value) > 0) {
-                    option = document.createElement("option");
-                    
-                    option.value = index;
-                    
-                    option.text = indexData[ITAhM.snmp.oid.ifName] && indexData[ITAhM.snmp.oid.ifName].value ||
-                        indexData[ITAhM.snmp.oid.ifDescr] && indexData[ITAhM.snmp.oid.ifDescr].value;
-
-                    option.title = indexData[ITAhM.snmp.oid.ifDescr] && indexData[ITAhM.snmp.oid.ifDescr].value ||
-                        indexData[ITAhM.snmp.oid.ifAlias] && indexData[ITAhM.snmp.oid.ifAlias].value;
-
-                    df.appendChild(option);
-                }
-            }
-
-            args.select.appendChild(df);
-
-            args.select.selectedIndex = -1;
-
-            args.select.disabled = false;
-        }
-    });
-
-    initPath();
-}
-*/
 function initResource(resource, select) {
     const df = document.createDocumentFragment();
-    let indexData, option;
+    let indexData, option, names;
 
     for (let index in resource) {
         indexData = resource[index];
 
-        if (ITAhM.snmp.oid.ifAdminStatus in indexData &&
-            indexData[ITAhM.snmp.oid.ifAdminStatus].value === "1" &&
-            indexData[ITAhM.snmp.oid.ifSpeed] &&
-            Number(indexData[ITAhM.snmp.oid.ifSpeed].value) > 0) {
+        if (Number(indexData[ITAhM.snmp.oid.ifAdminStatus]) === 1 && Number(indexData[ITAhM.snmp.oid.ifType]) === 6) {
             option = document.createElement("option");
             
             option.value = index;
             
-            option.text = indexData[ITAhM.snmp.oid.ifName] && indexData[ITAhM.snmp.oid.ifName].value ||
-                indexData[ITAhM.snmp.oid.ifDescr] && indexData[ITAhM.snmp.oid.ifDescr].value;
+            names = [];
 
-            option.title = indexData[ITAhM.snmp.oid.ifDescr] && indexData[ITAhM.snmp.oid.ifDescr].value ||
-                indexData[ITAhM.snmp.oid.ifAlias] && indexData[ITAhM.snmp.oid.ifAlias].value;
+            [ITAhM.snmp.oid.ifName, ITAhM.snmp.oid.ifDescr, ITAhM.snmp.oid.ifAlias].forEach(name => indexData[name] && names.push(indexData[name]));
 
-            df.appendChild(option);
+            names.sort((n1, n2) => n1.length - n2.length);
+
+            if (names.length > 0) {
+                option.text = names[0];
+                option.title = names.pop();
+
+                df.appendChild(option);
+            }
         }
     }
 
@@ -688,99 +637,73 @@ function initResource(resource, select) {
     select.disabled = false;
 }
 
-function initNodeTo() {
-    switch(this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
+$.request.query({
+    command: "get",
+    target: "config",
+    key: "customLink".toUpperCase(),
+})
+.then(configData => {
+    if (configData) {
+        initCustom(configData["customLink".toUpperCase()].split(','));
     }
 
-    $.nodeTo = JSON.parse(this.responseText);
-    
-    document.getElementById("node_to").textContent = $.nodeTo.name || $.nodeTo.ip || "노드.2";
-
-    $.nodeTo.resource && initResource($.nodeTo.resource, document.getElementById("index_to"));
-
-    $.request.execute({
+    return $.request.query({
         command: "get",
-        target: "path",
-        nodeFrom: $.idFrom,
-        nodeTo: $.idTo
-    }, initPath);
-}
-
-function initNodeFrom() {
-    switch(this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
-    }
-
-    $.nodeFrom = JSON.parse(this.responseText);
+        target: "node",
+        id: $.idFrom,
+        resource: true
+    });
+})
+.then(data => {
+    $.nodeFrom = data;
 
     document.getElementById("node_from").textContent = $.nodeFrom.name || $.nodeFrom.ip || "노드.1";
 
     $.nodeFrom.resource && initResource($.nodeFrom.resource, document.getElementById("index_from"));
 
-    $.request.execute({
+    return $.request.query({
         command: "get",
         target: "node",
         id: $.idTo,
         resource: true
-    }, initNodeTo);
-}
-
-function initCustom(customArray) {
-    const
-        df = document.createDocumentFragment(),
-        details = document.body.querySelector(".details");
-    
-    customArray.forEach((custom, i) => {
-        const
-            li = df.appendChild(document.createElement("li")),
-            input = document.createElement("input");
-
-        li.appendChild(document.createElement("span")).textContent = custom;
-        
-        input.type = "text";
-
-        $.customInputMap[custom] = input;
-    
-        li.appendChild(input);
     });
+})
+.then(data => {
+    $.nodeTo = data;
     
-    details.insertBefore(df, details.querySelector("nav"));
-}
-    
-function initSetting (e) {
-    switch(this.status) {
-    case 200:
-        const settingData = JSON.parse(this.responseText);
+    document.getElementById("node_to").textContent = $.nodeTo.name || $.nodeTo.ip || "노드.2";
 
-        if ("customLink" in settingData) {
-            initCustom(settingData.customLink.split(','));
-        }
-    case 204:
-        break;
-    default:
-        throw showMessage(this);
-    }
+    $.nodeTo.resource && initResource($.nodeTo.resource, document.getElementById("index_to"));
 
-    $.request.execute({
+    return $.request.query({
         command: "get",
-        target: "node",
-        id: $.idFrom,
-        resource: true
-    }, initNodeFrom);
-}
+        target: "path",
+        nodeFrom: $.idFrom,
+        nodeTo: $.idTo
+    });
+})
+.then(data => {
+    if (data) {
+        const path = data;
+        
+        $.id = path.id;
 
-$.request.execute({
-    command: "get",
-    target: "setting",
-    key: "customLink",
-}, initSetting);
+        $.options.forEach(name => {
+            if (path[name]) {
+                $.form.elements[name].value = path[name];
+                $.form.elements[name].disabled = false;
+                $.form.elements["use_"+ name].checked = true;
+            }
+        });
+        
+        initLink(data);
+
+        document.body.classList.add("initialized", "edit");
+    }
+    
+    document.body.classList.remove("loading");
+})
+.catch(showMessage);
 
 		</script>
 	

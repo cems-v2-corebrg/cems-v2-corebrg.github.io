@@ -150,7 +150,7 @@ function onEvent(e) {
         return;
     }
     
-    if (event.id) {
+    if (event.node) {
         if ($.timer) {
             clearTimeout($.timer);
         }
@@ -169,7 +169,7 @@ function onEvent(e) {
 
                 window.nodeData = JSON.parse(this.responseText);
 
-                const pos = window.positionData[String(event.id)];
+                const pos = window.positionData[String(event.node)];
 
                 document.body.querySelector("iframe").contentWindow.location
                     .replace(`/topology/viewer.html?group=${pos && pos.parent || ""}&focus=${event.id}`);
@@ -211,160 +211,47 @@ function moveStage (group, id) {
         .contentWindow.location.replace(`/topology/viewer.html?group=${group || ""}&focus=${id || ""}`);
 }
 
-function getBranchData () {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "branch"
-        }, function (e) {
-            switch(this.status) {
-            case 200:
-                break;
-            default:
-                reject(this);
-            }
+function initAccount (account) {
+    if (window === top) {
+        window.account = account;
+    } else {
+        document.getElementById("popup").onclick = e => {
+            const popup = window.open();
 
-            window.branchData = JSON.parse(this.responseText);
+            popup.onload = e => popup.focus();
 
-            resolve();
-        });
-    });
-}
+            popup.location.replace(window.location.pathname);
+        };
 
-function getNodeData () {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "node"
-        }, function (e) {
-            switch(this.status) {
-            case 200:
-                break;
-            default:
-                reject(this);
-            }
+        document.body.classList.add("frame");
+    }
 
-            window.nodeData = JSON.parse(this.responseText);
-
-            resolve();
-        });
-    });
-}
-
-function getPositionData () {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "position",
-            name: "position"
-        }, function (e) {
-            switch(this.status) {
-            case 200:
-                window.positionData = JSON.parse(this.responseText);
-            case 204:
-                break;
-            default:
-                reject(this);
-            }
-            
-            resolve();
-        });
-    });
-}
-
-function getPathData() {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "path"
-        }, function (e) {
-            switch(this.status) {
-            case 200:
-                break;
-            default:
-                reject(this);
-            }
-
-            window.pathData = JSON.parse(this.responseText);
-
-            resolve();
-        });
-    });
-}
-
-function getSettingData() {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "setting"
-        }, function (e) {
-            switch(this.status) {
-            case 200:
-                break;
-            default:
-                reject(this);
-            }
-
-            window.settingData = JSON.parse(this.responseText);
-
-            resolve();
-        });
-    });
-}
-
-function getLinkData () {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "link"
-        }, function (e) {
-            switch(this.status) {
-            case 200:    
-                break;
-            default:
-                reject(this);
-            }
-
-            window.linkData = JSON.parse(this.responseText);
+    document.body.querySelector("iframe").src = "/topology/viewer.html";
     
-            resolve();
-        });
-    });
-}
+    Channel.listen(onEvent);
 
-function getIconData () {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "icon"
-        }, function (e) {
-            switch(this.status) {
-            case 200:    
-                break;
-            default:
-                reject(this);
-            }
-
-            window.iconData = JSON.parse(this.responseText);
-    
-            resolve();
-        });
-    });
+    document.body.classList.remove("loading");
 }
 
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert(NOTICE_SESS_EXPIRE["kr"]);
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace(xhr);
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
             </script>
@@ -386,61 +273,82 @@ function showMessage(xhr) {
 
             <script src="/js/request.js"></script>
             <script src="/js/icon.js"></script>
+            <script src="/js/setting.js"></script>
             <script src="/js/constants.js"></script>
             <script src="/js/channel.js"></script>
             <script>
 const
-    search = new URLSearchParams(window.location.search),
     $ = {
         request: new Request()
     };
-var positionData = {};
 
-function initAccount (account) {
-    if (window === top) {
-        window.account = account;
-    } else {
-        document.getElementById("popup").onclick = e => {
-            const popup = window.open();
+$.request.query({
+    command: "get",
+    target: "position",
+    name: "position"
+})
+.then(data => {
+    window.positionData = data || {};
 
-            popup.onload = e => popup.focus();
+    return $.request.query({
+        command: "get",
+        target: "node"
+    });
+})
+.then(data => {
+    window.nodeData = data || {};
 
-            popup.location.replace(window.location.pathname);
-        };
+    return $.request.query({
+        command: "get",
+        target: "branch"
+    });
+})
+.then(data => {
+    window.branchData = data || {};
 
-        document.body.classList.add("frame");
+    return $.request.query({
+        command: "get",
+        target: "link"
+    });
+})
+.then(data => {
+    window.linkData = data || {};
+
+    return $.request.query({
+        command: "get",
+        target: "path"
+    });
+})
+.then(data => {
+    window.pathData = data || {};
+
+    return $.request.query({
+        command: "get",
+        target: "icon"
+    });
+})
+.then(data => {
+    window.iconData = ITAhM.iconData;
+
+    for (let type in data) {
+        window.iconData[key] = data[type];
     }
 
-    const iconData = ITAhM.iconData;
+    return $.request.query({
+        command: "get",
+        target: "config"
+    });
+})
+.then(data => {
+    window.settingData = settingData;
 
-    for (let type in window.iconData) {
-        iconData[type] = window.iconData[type];
+    for (let key in data) {
+        window.settingData[key] = data[key];
     }
 
-    window.iconData = iconData;
-
-    document.body.querySelector("iframe").src = "/topology/viewer.html";
-    
-    Channel.listen(onEvent);
-
-    document.body.classList.remove("loading");
-}
-
-Promise
-    .all([
-        getPositionData(),
-        getNodeData(),
-        getBranchData(),
-        getLinkData(),
-        getPathData(),
-        getSettingData(),
-        getIconData()
-    ])
-    .then(() => {
-        Channel.getAccount(initAccount);
-    })
-    .catch(xhr => showMessage(xhr));
-
+    Channel.getAccount(initAccount);
+})
+.catch(showMessage);
         </script>
     </body>
 </html>

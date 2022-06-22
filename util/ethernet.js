@@ -142,6 +142,8 @@ function Ethernet() {
             this.background = new Background(this.config);
             this.gauge = new Gauge(this.config);
 
+            this.config.label && this.label(this.config.label);
+            
             this.update();
 
             this.container.appendChild(this.canvas);

@@ -197,25 +197,25 @@ function findPosFromStage(id) {
     }
 }
 
-function uuidv4() {
-    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-    );
-}
-
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert(NOTICE_SESS_EXPIRE["kr"]);
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
 		</script>
@@ -279,8 +279,6 @@ function showMessage(xhr) {
                         &#xf2f6;
                     </span>
                 </div>
-            </div>
-            <div>
                 <span title="
 =======================================
 
@@ -291,11 +289,11 @@ function showMessage(xhr) {
  ● Crl + Drag: 선택 영역 반전
  ● Alt + Click 1 + Click 2: 1과 2 링크
 
-=======================================
-                ">
+=======================================">
                     &#xf128;
                 </span>
             </div>
+            <div></div>
 		</nav>
 		<div class="loading mask"></div>
 
@@ -361,29 +359,66 @@ document.getElementById("enter").onclick = function (e) {
     selected && onEnter(selected.dataset.id);
 };
 
-function initialize() {
-    let node, pos, icon, link, linkMap = {}, nodeToMap, args;
+$.request.query({
+    command: "get",
+    target: "icon",
+})
+.then(iconData => {
+    for (let type in iconData) {
+        $.iconData[type] = iconData[type];
+    }
 
-    if ($.upper) {
-        const
-            upper = parent.positionData[String($.upper)].parent;
+    return $.request.query({
+        command: "get",
+        target: "branch"
+    });
+})
+.then(branchData => {
+    let node, pos, icon
+    $.branchData = branchData;
+    
+    for (let id in branchData) {
+        pos = parent.positionData[id];
+        
+        if (!pos) {
+            pos = {
+                x: 0,
+                y: 0,
+                parent: $.upper
+            };
 
-        if (upper) {
-            const search = new URLSearchParams();
-            
-            search.set("group", upper);            
-
-            document.getElementById("up").dataset.id = upper;
-
-            document.getElementById("exit").onclick = e => window.location.search = search;
-        } else {
-            document.getElementById("exit").onclick = e => window.location.replace("/topology/tool.html");
+            parent.positionData[id] = pos;
+        } else if (pos.parent && !(pos.parent in branchData)) {
+            pos.parent = $.upper;
         }
 
-        document.body.classList.add("exit");
+        if (pos.parent !== $.upper) {
+            continue;
+        }
+
+        node = branchData[id];
+        icon = $.iconData[node.type || "unknown"] || $.iconData["unknown"];
+
+        $.deviceMap[id] = createDevice({
+            id: id,
+            scale: 1.5,
+            icon: icon.src,
+            name: node.name,
+            ip: node.name,
+            pos: pos,
+            group: true
+        });
     }
+
+    return $.request.query({
+        command: "get",
+        target: "node"
+    });
+})
+.then(nodeData => {
+    let node, pos, icon;
     
-    for (let id in $.nodeData) {
+    for (let id in nodeData) {
         pos = parent.positionData[id];
 
         if (!pos) {
@@ -402,7 +437,7 @@ function initialize() {
             continue;
         }
 
-        node = $.nodeData[id];
+        node = nodeData[id];
         icon = $.iconData[node.type || "unknown"] || $.iconData["unknown"];
 
         $.deviceMap[id] = createDevice({
@@ -414,41 +449,37 @@ function initialize() {
         });
     }
 
-    for (let id in $.branchData) {
-        pos = parent.positionData[id];
+    return $.request.query({
+        command: "get",
+        target: "path"
+    });
+})
+.then(pathData => {
+    let path, from;
 
-        if (!pos) {
-            pos = {
-                x: 0,
-                y: 0,
-                parent: $.upper
-            };
+    for (let id in pathData) {
+        path = pathData[id];
 
-            parent.positionData[id] = pos;
-        } else if (pos.parent && !(pos.parent in $.branchData)) {console.log("!");
-            pos.parent = $.upper;
+        from = String(path.from);
+
+        if (!(from in $.pathData)) {
+            $.pathData[from] = {};
         }
-
-        if (pos.parent !== $.upper) {
-            continue;
-        }
-
-        node = $.branchData[id];
-        icon = $.iconData[node.type || "unknown"] || $.iconData["unknown"];
-
-        $.deviceMap[id] = createDevice({
-            id: id,
-            scale: 1.5,
-            icon: icon.src,
-            name: node.name,
-            ip: node.name,
-            pos: pos,
-            group: true
-        });
+        
+        $.pathData[from][String(path.to)] = path;
     }
 
-    for (let id in $.linkData) {
-        link = $.linkData[id];
+    return $.request.query({
+        command: "get",
+        target: "link"
+    });
+})
+.then(linkData => {
+    const linkMap = {};
+    let link, nodeToMap, args;
+
+    for (let id in linkData) {
+        link = linkData[id];
 
         if (!linkMap[link.nodeFrom]) {
             linkMap[link.nodeFrom] = {};
@@ -465,7 +496,7 @@ function initialize() {
             linkMap[link.nodeTo][link.nodeFrom] = [link];
         } 
     }
-
+    
     for (let nodeFrom in $.pathData) {
         nodeToMap = $.pathData[nodeFrom];
 
@@ -485,134 +516,44 @@ function initialize() {
 
     movePath();
 
-    document.body.classList.remove("loading");
-}
-
-function initBranch(e) {
-    switch(this.status) {
-        case 200:
-            $.branchData = JSON.parse(this.responseText);
-
-            $.request.execute({
-                command: "get",
-                target: "path"
-            }, initPath);
-            
-            break;
-        default:
-            showMessage(this);
-    }
-}
-
-function initNode(e) {
-    switch(this.status) {
-        case 200:
-            $.nodeData = JSON.parse(this.responseText);
-
-            $.request.execute({
-                command: "get",
-                target: "branch"
-            }, initBranch);
-            
-            break;
-        default:
-            showMessage(this);
-    }
-}
-
-function initPath(e) {
-    switch(this.status) {
-        case 200: break;
-        default:
-            return showMessage(this);
-    }
-
-    const pathData = JSON.parse(this.responseText);
-    var path, from;
-
-    for (let id in pathData) {
-        path = pathData[id];
-
-        from = String(path.from);
-
-        if (!(from in $.pathData)) {
-            $.pathData[from] = {};
-        }
-        
-        $.pathData[from][String(path.to)] = path;
-    }
-
-    $.request.execute({
+    return $.request.query({
         command: "get",
-        target: "link"
-    }, initLink);
-}
-
-function initLink(e) {
-    switch(this.status) {
-        case 200:
-            $.linkData = JSON.parse(this.responseText);
-            
-            $.request.execute({
-                command: "get",
-                target: "icon"
-            }, initIcon);
-        
-            break;
-        default:
-            showMessage(this);
+        target: "config"
+    });
+})
+.then(settingData => {
+    if ("display" in settingData) {
+        document.body.classList["display" in settingData && settingData.display === "name"? "add": "remove"]("name");
     }
-}
-
-function initIcon(e) {
-    switch(this.status) {
-        case 200:
-            const iconData = JSON.parse(this.responseText);
-
-            for (let type in iconData) {
-                $.iconData[type] = iconData[type];
-            }
-
-            $.request.execute({
-                command: "get",
-                target: "setting"
-            }, initSetting);
-
-            break;
-        default:
-            showMessage(this);
+    
+    if ("linkColor" in settingData) {
+        //Path.COLOR = settingData.linkColor;
     }
-}
 
-function initSetting(e) {
-    switch(this.status) {
-        case 200:
-            const settingData = JSON.parse(this.responseText);
-
-            if ("display" in settingData) {
-                document.body.classList["display" in settingData && settingData.display === "name"? "add": "remove"]("name");
-            }
-            
-            if ("linkColor" in settingData) {
-                //Path.COLOR = settingData.linkColor;
-            }
-
-            if ("linkSize" in settingData) {
-                //Path.WIDTH = settingData.linkSize;
-            }
-            
-            initialize();
-            
-            break;
-        default:
-            showMessage(this);
+    if ("linkSize" in settingData) {
+        //Path.WIDTH = settingData.linkSize;
     }
-}
+})
+.then(() => {
+    if ($.upper) {
+        const
+            upper = parent.positionData[String($.upper)].parent,
+            search = new URLSearchParams();
 
-$.request.execute({
-    command: "get",
-    target: "node",
-}, initNode);
+        if (upper) {
+            search.set("group", upper);            
+
+            document.getElementById("up").dataset.id = upper;    
+        }
+
+        document.getElementById("exit").onclick = e => window.location.search = search;
+
+        document.body.classList.add("exit");
+    }
+
+    document.body.classList.remove("loading");
+})
+.catch(showMessage);
 
 		</script>
 	

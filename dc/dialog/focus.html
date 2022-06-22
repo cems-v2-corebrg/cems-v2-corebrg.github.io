@@ -20,28 +20,13 @@ canvas {
 }
 
 .label {
+    font-weight: bold;
     font-size: 12px;
     position: absolute;
     color: #ffffff;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.8);
     cursor: pointer;
-}
-
-#close {
-    position: absolute;
-    font: 20px "Font Awesome 5 Free";
-    border-radius: 50%;
-    display: inline-flex; width: 32px; height: 32px;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 132, 255, 0.5);
-    color: #000000;
-    border-color: #0084ff;
-    cursor: pointer;
-}
-
-#close:hover {
-    background-color: #0084ff;
+    padding: 0.5em 2em;
 }
 
             </style>
@@ -67,7 +52,6 @@ RealDC3D.prototype = {
         this.camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 2000);
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         this.screen = document.body.getBoundingClientRect();
-        this.label = document.getElementById("close");
         this.labels = [];
         this.status = [];
 
@@ -125,7 +109,7 @@ RealDC3D.prototype = {
         this.renderer.render(this.scene, this.camera);
 
         if (this.rackObject) {
-            this.move(this.label, new THREE.Vector3(), new THREE.Box3().setFromObject(this.rackObject));
+            //this.move(this.label, new THREE.Vector3(), new THREE.Box3().setFromObject(this.rackObject));
         }
 
         this.labels.forEach(label => {
@@ -284,6 +268,8 @@ RealDC3D.prototype = {
         if (args.label) {
             const name = document.createElement("span");
 
+            args.address && (name.title = args.address);
+
             name.textContent = args.label;
             name.className = "label";
 
@@ -318,27 +304,30 @@ RealDC3D.prototype = {
 };
 
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert("Notice!\n\n"+ "세션 만료.");
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace(xhr);
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
             </script>
         </head>
         
         <body class="loading">
-            <span id="close" title="닫기">
-                &#xf00d;
-            </span>
 
             <div class="loading mask"></div>
             <script src="/js/import/three.js"></script>
@@ -350,10 +339,6 @@ const
     search = new URLSearchParams(window.location.search),
     $ = {
     };
-
-document.getElementById("close").onclick = function (e) {
-    parent.document.body.classList.remove("focus");
-}
 
 function initialize(config) {
     $.realDC = new RealDC3D(config.facility);
@@ -387,6 +372,7 @@ function initialize(config) {
                 rear: config.modelData[model.rear]
             },
             label: location.node_name || location.node_ip || undefined,
+            address: location.node_ip || location.node_name || undefined,
             id: location.node,
             status: status
         });

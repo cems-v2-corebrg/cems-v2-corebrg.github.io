@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="no-cache">
+		
+		<title>dialog</title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/dialog.css";
+@import "/css/fa.css";
+
+td {
+    padding: 5px;
+}
+
+table h3 {
+    margin: unset;
+    padding: 1em;
+    border: 1px solid #dddddd;
+    text-align: center;
+}
+
+body:not(.monitor) table h3:hover {
+    cursor: pointer;
+    background-color: #ffa0b2;
+}
+
+table h3.selected {
+    background-color: #dd3a7e !important;
+    color: #efefef;
+}
+
+table h3.selected::before {
+    font-family: "Font Awesome 5 Free";
+    color: #efefef;
+    content: "\f00c";
+    display: inline-block;
+    padding: 0 1em 0 0;
+}
+
+table h3:not(.selected)~select,
+body.tcp tr:not(.tcp),
+body:not(.tcp) tr.tcp,
+body.monitor :is([type=submit], [name=profile]),
+body:not(.monitor) [type=reset] {
+    display: none;
+}
+
+		</style>
+		
+		<script>
+		// static function
+const REGEXP_IPV4 = new RegExp("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+	+ "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+	+ "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+	+ "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+
+function isTCP(s) {
+    if (s.indexOf(":") === -1) {
+        return false;
+    }
+
+    const addrs = s.split(":");
+
+    if (addrs.length !== 2) {
+        return false;
+    }
+
+    if (!REGEXP_IPV4.test(addrs[0])) {
+        return false;
+    }
+
+    const tcp = Number(addrs[1]);
+
+    return !isNaN(tcp) && tcp > 0 && tcp < 65535;
+}
+
+function selectMonitor (monitor) {
+    if ($.selected) {
+        $.selected.classList.remove("selected");
+    }
+
+    if (monitor) {
+        monitor.classList.add("selected");
+    }
+
+    $.selected = monitor;
+}
+
+function onReset (e) {
+    if (!confirm("Confirm.\n\n선택한 모니터를 중지 하겠습니까?")) {
+        return;
+    }
+
+    document.body.classList.add("loading");
+
+    $.request.query({
+        command: "remove",
+        target: "monitor",
+        id: $.id
+    })
+    .then(() => {
+        alert("Notice.\n\n모니터 중지 요청 정상.");
+
+        top.closeDialog(true);
+    })
+    .catch(showMessage);
+}
+
+function onSubmit (e) {
+    e.preventDefault();
+
+    if (!$.selected) {
+        return alert("Information\n\n먼저 모니터를 선택하세요.");
+    }
+    
+    const
+        request = {
+            command: "set",
+            target: "monitor",
+            id: $.id,
+            ip: $.ip,
+            protocol: $.selected.textContent.toLowerCase()
+        };
+
+    if (request.protocol === "snmp") {
+        const select = document.body.querySelector("form").elements["profile"];
+        if (select.options.length > 1) {
+            if (select.value) {
+                request.protocol = select.value;
+            }
+        } else if (confirm("Warning.\n\n등록된 SNMP 프로파일이 없습니다.\n\n등록화면으로 이동 하겠습니까?")) {
+            return top.showDialog("/dialog/profile.html");
+        } else {
+            return;
+        }
+    }
+    
+    if (!confirm("Confirm.\n\n선택한 모니터를 적용 하겠습니까?")) {
+        return selectMonitor();
+    }
+
+    document.body.classList.add("loading");
+
+    $.request.query(request)
+    .then(() => {
+        alert("Notice.\n\n모니터 적용 요청 정상.");
+
+        top.closeDialog(true);
+    })
+    .catch(showMessage);
+}
+
+function showMessage(xhr) {
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
+
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
+    }
+}
+
+		</script>
+	</head>
+	
+	<body class="loading edit">
+	
+		<main>
+			<h2>
+                <span  id="close" title="대화창 닫기">&#xf00d;</span>
+				모니터 설정
+            </h2>
+            <form>
+                <table>
+                    <tbody>
+                        <tr class="icmp">
+                            <td>
+                                <h3>ICMP</h3>
+                            </td>
+                        </tr>
+                        <tr class="tcp">
+                            <td>
+                                <h3>TCP</h3>
+                            </td>
+                        </tr>
+                        <tr class="snmp">
+                            <td>
+                                <h3>SNMP</h3>
+                                <select name="profile">
+                                    <optgroup label="Profile">
+                                    </optgroup>
+                                    <optgroup>
+                                        <option value="" selected>auto</option>
+                                    </optgroup>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <footer>
+                    <button type="reset">&#xf04d; Stop monitor</button>
+                    <button type="submit">&#xf04b; Start monitor</button>
+                </footer>
+
+                <div class="loading mask"></div>
+			</form>
+		</main>
+        
+        <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+        <script src="/js/channel.js"></script>
+        <script src="/js/dialog.js"></script>
+        <script src="/js/query.js"></script>
+		<script>
+
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request(),
+        id: Number(search.get("id")) || undefined,
+        form: document.querySelector("form")
+    };
+
+if (top.account.level === 0) {
+    $.form.onsubmit = onSubmit;
+    $.form.onreset = onReset;
+    
+    document.body.classList.add("root");
+}
+
+$.id &&
+$.request.query({
+    command: "get",
+    target: "profile"
+})
+.then(profileData => {
+    const df = document.createDocumentFragment();
+
+    for (let name in profileData) {
+        df.appendChild(document.createElement("option")).text = name;
+    }
+
+    document.querySelector("optgroup").appendChild(df);
+
+    return $.request.query({
+        command: "get",
+        target: "node",
+        id: $.id
+    })
+})
+.then(node => {
+    if (!node || !node.ip) {
+        throw {
+            status: -1
+        };
+    }
+
+    if (!node.type) {
+        node.type = "unknown";
+    }
+
+    $.ip = node.ip;
+
+    if (isTCP(node.ip)) {
+        document.body.classList.add("tcp");
+    }
+    
+    if (node.protocol) {
+        document.body.classList.add("monitor");
+
+        switch(node.protocol.toUpperCase()) {
+        case "SNMP":
+            break;
+        case "ICMP":
+        case "TCP":
+        }
+
+        selectMonitor(document.body.querySelector(`tr.${node.protocol.toLowerCase()} h3`));
+    } else {
+        Array
+        .from(document.querySelectorAll("tr h3"))
+        .forEach(h => 
+            h.onclick = e => selectMonitor(h)
+        );
+    }
+})
+.then(()=> {
+    document.body.classList.remove("loading");
+})
+.catch(showMessage);
+
+	</script>
+	
+	</body>
+	
+</html>

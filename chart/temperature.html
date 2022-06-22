@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="No-Cache">
+		
+		<title>CHART_TEMPERATURE</title>
+		
+		<style>
+		
+@import "/css/style.css";
+@import "/css/fa.css";
+@import "/chart/chart.css";
+
+        </style>
+        
+		<script>
+
+function toString(value) {
+    return value.toFixed(2) +String.fromCodePoint("0x2103");
+}
+
+		</script>
+	</head>
+	
+	<body class="loading">
+        <h2><i>"</i> Temperature <i>"</i></h2>
+		<header>
+            <form title="입력값 초과시 임계 (Greater than)">
+                <span>임계</span>
+                <input name="limit" type="number" min="0" required>
+                <span>&#x2103;</span>
+                <button type="submit">설정</button>
+                <button type="reset">해제</button>
+            </form>
+
+        </header>
+		<main>
+            <iframe id="chart"></iframe>
+            <dialog>
+                <iframe id="realtime"></iframe>
+            </dialog>
+            <div class="loading mask"></div>
+        </main>
+		<script src="/js/ITAhM.js"></script>	
+        <script src="/js/object.js"></script>
+        <script src="/js/snmp.js"></script>
+        <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+        <script src="/chart/chart.js"></script>
+		<script>
+
+const search = new URLSearchParams(window.location.search);
+
+initialize(search.get("oid"), search.get("index"));
+
+        </script>
+	
+	</body>
+	
+</html>

@@ -5,8 +5,7 @@ input,
 button,
 textarea,
 select  {
-	font-family: "맑은 고딕", arial, tahoma;
-	font-size: 10pt;
+	font: 10pt "맑은 고딕", arial, tahoma;
 }
 
 .btn_close {

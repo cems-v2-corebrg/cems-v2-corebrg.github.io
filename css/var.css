@@ -3,4 +3,8 @@
 :root {
     --var-color-bg: #1e1f26;
     --var-color-bg2: #424242;
+    --var-color-shutdown: #a62c2b;
+    --var-color-critical: #da680f;
+    --var-color-normal: #296e01;
+    --var-color-disabled: #6c757d;;
 }

@@ -10,23 +10,18 @@
 @import "/css/fa.css";
 @import "/css/list.css";
 
-header {
-    color: #ffffff;
-}
-
 header input,
 header select {
+    font-family: "Font Awesome 5 Free";
 	padding: .5em;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 #count {
 	font-size: 30px; font-weight: bold;
 	display: inline-block;
 	margin: 0 30px;
-}
-
-header input {
-    font-family: "Font Awesome 5 Free";
 }
 
 body.keyword #list> tr:not(.keyword) {
@@ -58,23 +53,6 @@ function IP2Int(s) {
 		
 		<script>
 
-function initList() {
-	const df = document.createDocumentFragment();
-	var link;
-
-    for (let id in $.linkData) {
-        link = $.linkData[id];
-
-        df.appendChild(createRow(id, link.nodeFrom, link.nodeTo, [link.indexFromName, link.indexToName], link.extra));
-    }
-
-	$.list.appendChild(df);
-	
-	document.body.classList.remove("loading");
-
-	document.getElementById("count").textContent = count();
-}
-
 function createRow(id, nodeFrom, nodeTo, ifName, extra) {
 	const row = document.createElement("tr");
 
@@ -95,29 +73,38 @@ function createRow(id, nodeFrom, nodeTo, ifName, extra) {
 	return row;
 }
 
-function onSave() {
-    const data = [];
-    var record = [];
+function save(name) {
+    const
+        headers = document.body.querySelector("main thead tr").children,
+        trs = document.body.querySelector("main tbody").children,
+        rows = [];
+    let cols = [];
 
-    [].forEach.call($.header.children, function (col) {
-        record.push(col.textContent);
-    });
+    document.body.classList.add("loading");
+    
+    for (let i=0; i<headers.length; i++) {
+        cols.push(`"${headers[i].textContent.replace(/\"/g, "'")}"`)
+    }
 
-    data[0] = record.join(",");
+    rows.push(cols.join(","));
 
-    [].forEach.call($.list.children, function (row) {
-        record = [];
+    for (let i=0, tds; i<trs.length; i++) {
+        tds = trs[i].children;
 
-        [].forEach.call(row.children, function (col) {
-            record.push(col.textContent);
-        });
+        cols = [];
 
-        data.push(record.join(","));
-    });
+        for (let j=0; j<tds.length; j++) {
+            cols.push(`"${tds[j].textContent.replace(/\"/g, "'")}"`);
+        }
 
-    ITAhM.util.download(new Blob(["\ufeff", data.join("\n")] ,{
+        rows.push(cols.join(","));
+    }
+
+    ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
 		type: "text/csv;charset=utf-8;"
-	}), "line.csv");
+	}), name);
+
+    document.body.classList.remove("loading");
 }
 
 function count() {
@@ -218,18 +205,24 @@ function onReset(e) {
 }
     
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert("Notice!\n\n"+ "세션 만료.");
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace(xhr);
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 		</script>
 		
@@ -243,8 +236,8 @@ function showMessage(xhr) {
             <i id="count"></i>
             <form>
                 <input type="text" name="keyword" placeholder="Keyword">
-                <input type="submit" value="&#xf002; 찾기">
-                <input type="reset" value="&#xf2f9; 초기화">
+                <input type="submit" value="&#xf002; Search">
+                <input type="reset" value="&#xf2f9; Reset">
             </form>
         </header>     
         <main>
@@ -276,6 +269,7 @@ function showMessage(xhr) {
 		<script src="/js/ITAhM.js"></script>
 		<script src="/js/object.js"></script>
 		<script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
 		<script>
 
 const $ = {
@@ -285,7 +279,7 @@ const $ = {
         form: document.querySelector("form")
     };
 
-document.getElementById("export").onclick = onSave;
+document.getElementById("export").onclick = e => save("line.csv");
 
 [].forEach.call(document.body.querySelectorAll("th.sort"), th =>
     th.onclick = onSort);
@@ -293,67 +287,58 @@ document.getElementById("export").onclick = onSave;
 $.form.onsubmit = onSearch;
 $.form.onreset =  onReset;
 
-function initNode() {
-    switch(this.status) {
-    case 200:
-        $.nodeData = JSON.parse(this.responseText);
-            
-        initList();
-        
-        break;
-    default:
-        showMessage(this);
-    }
-}
-
-function initLink() {
-    switch(this.status) {
-    case 200:
-        $.linkData = JSON.parse(this.responseText);
-        
-        $.request.execute({
-            command: "get",
-            target: "node"
-        }, initNode);
-
-        break;
-    default:
-        showMessage(this);
-    }
-}
-
-function initSetting() {
-    switch(this.status) {
-    case 200:
+$.request.query({
+    "command": "get",
+    "target": "config",
+    key: "CUSTOMLINK".toUpperCase()
+})
+.then(configData => {
+    if (configData) {
         const
             df = document.createDocumentFragment(),
-            customs = JSON.parse(this.responseText).customLink;
+            customs = configData["CUSTOMLINK".toUpperCase()];
         
-        if (customs) {
-            $.customData = customs.split(",");
+        $.customData = customs.split(",");
+    
+        $.customData.forEach(function (custom) {
+            df.appendChild(document.createElement("th")).textContent = custom;
+        });
         
-            $.customData.forEach(function (custom) {
-                df.appendChild(document.createElement("th")).textContent = custom;
-            });
-            
-            $.header.appendChild(df);
-        }
-    case 204:
-        $.request.execute({
-            command: "get",
-            target: "link"
-        }, initLink);
-
-        break;
-    default:
-        showMessage(this);
+        $.header.appendChild(df);
     }
-}
 
-$.request.execute({
-    "command": "get",
-    "target": "setting"
-}, initSetting);
+    return $.request.query({
+        command: "get",
+        target: "link"
+    });
+})
+.then(linkData => {
+    $.linkData = linkData;
+        
+    return $.request.query({
+        command: "get",
+        target: "node"
+    });
+})
+.then(nodeData => {
+    $.nodeData = nodeData;
+            
+    const df = document.createDocumentFragment();
+    var link;
+
+    for (let id in $.linkData) {
+        link = $.linkData[id];
+
+        df.appendChild(createRow(id, link.nodeFrom, link.nodeTo, [link.indexFromName, link.indexToName], link.extra));
+    }
+
+    $.list.appendChild(df);
+    
+    document.body.classList.remove("loading");
+
+    document.getElementById("count").textContent = count();
+})
+.catch(showMessage);
 
         </script>
 	

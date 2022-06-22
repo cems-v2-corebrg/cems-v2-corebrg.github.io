@@ -14,6 +14,15 @@ body {
     display: flex; flex-direction: column;
 }
 
+header {
+    padding: 0.5em;
+    flex: none;
+}
+
+header select {
+    padding: 0.5em;
+}
+
 main {
     flex: 1;
     position: relative;
@@ -25,35 +34,10 @@ iframe {
     border: none;
 }
 
-nav {
-    position: absolute; inset: 0 0 0 0;
-    padding: 5px;
-    display: flex; justify-content: space-between;
-    pointer-events: none;
-}
-
-nav span {
-    font: 20px "Font Awesome 5 Free";
-    border-radius: 50%;
-    display: inline-flex; width: 32px; height: 32px;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 132, 255, 0.5);
-    border-color: #0084ff;
-    color: #ffffff;
-    cursor: pointer;
-    pointer-events: all;
-}
-
-nav span:hover {
-    background-color: #0084ff;
-}
-
 #dialog {
 	position: fixed; inset: 0 0 0 0;
 }
 
-body:not(.frame) .frame,
 body:not(.dialog) #dialog {
     display: none;
 }
@@ -66,178 +50,67 @@ body:not(.dialog) #dialog {
 function onEvent (e) {
     const event = e.data;
 
-    if (event == null || event.level < 0) {
-        return;
-    }
-    
-    if (event.id) {
+    if (event && event.node) {
         if ($.timer) {
             clearTimeout($.timer);
         }
         
-        const location = window.locationData[String(event.id)];
+        $.timer = setTimeout(() => window.requestAnimationFrame(t => {
+            $.request.query({
+                command: "get",
+                target: "node"
+            })
+            .then(data => {
+                window.nodeData = data;
 
-        if (location) {
-            $.timer = setTimeout(() => window.requestAnimationFrame(t => {
-                $.request.execute({
-                    command: "get",
-                    target: "node"
-                }, function (e) {
-                    switch(this.status) {
-                    case 200:
-                        break;
-                    default:
-                        throw showMessage(this);
-                    }
+                focusNode(event.node);
+            })
+            .catch(showMessage);
+        }), 1000);
+    }
+}
 
-                    window.nodeData = JSON.parse(this.responseText);
-                    
-                    document.body.querySelector("iframe").contentWindow.location.replace(`/dc/viewer.html?focus=${location.rack}`);
-                })
-            }), 1000);
+function focusNode(id) {
+    const location = window.locationData[String(id)];
+        
+    if (location) {
+        const
+            facility = String(location.rack),
+            branch = window.facilityData[facility]?.branch;
+
+        if (branch) {
+            document.body.querySelector("iframe").contentWindow.location.replace(`/dc/viewer.html?branch=${branch}&focus=${facility}`);
         }
     }
 }
 
-function showDialog(src, parent) {
-    const dialog = document.getElementById("dialog");
-
-    dialog.onload = function () {
-        $.parent = parent;
-
-		document.body.classList.add("dialog");
-	};
-
-    dialog.src = src;
-}
-
-function closeDialog(reset) {
-    document.body.classList.remove("dialog");
-    
-    if (reset) {
-        resetParent();
-    }
-
-    delete $.parent;
-}
-
-function resetParent() {
-    if ($.parent) {
-        $.parent.location.reload();
-    }
-}
-
-function getLocationData() {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "location"
-        }, function (e) {
-            switch(this.status) {
-            case 200:
-                break;
-            default:
-                return reject(this);
-            }
-
-            window.locationData = JSON.parse(this.responseText);
-
-            resolve();
-        });
-    });
-}
-
-function getFacilityData () {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "facility"
-        }, function (e) {
-            switch(this.status) {
-            case 200:
-                break;
-            default:
-                return reject(this);
-            }
-            
-            window.facilityData = JSON.parse(this.responseText);
-
-            resolve();
-        });
-    });
-}
-
-function getNodeData () {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "node"
-        }, function (e) {
-            switch(this.status) {
-            case 200:
-                break;
-            default:
-                return reject(this);
-            }
-            
-            window.nodeData = JSON.parse(this.responseText);
-
-            resolve();
-        });
-    });
-}
-
-function getPositionData () {
-    return new Promise ((resolve, reject) => {
-        $.request.execute({
-            command: "get",
-            target: "position",
-            name: "dc"
-        }, function (e) {
-            window.positionData = {};
-
-            switch(this.status) {
-            case 200:
-                window.positionData = JSON.parse(this.responseText);
-            case 204:
-                break;
-            default:
-                return reject(this);
-            }
-            
-            resolve();
-        });
-    });
-}
-
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert(NOTICE_SESS_EXPIRE["kr"]);
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
         </script>
 
         <body class="loading">
             <main>
-                <iframe id="frame"></iframe>
+                <iframe></iframe>
             </main>
-            <nav>
-                <div>
-                </div>
-                <div class="frame">
-                    <span id="popup" title="새 창">&#xf2d2;</span>
-                </div>
-            </nav>
             <iframe id="dialog"></iframe>
 
             <div class="loading mask"></div>
@@ -255,45 +128,70 @@ const $ = {
         request: new Request()
     };
 
-function initAccount (account) {
-    const iframe = document.body.querySelector("iframe");
-
-    if (window === top) {
-        window.account = account;
-    } else {
-        document.getElementById("popup").onclick = e => {
-            const popup = window.open();
-
-            popup.onload = e => popup.focus();
-
-            popup.location.replace(window.location.pathname);
-        };
-
-        document.body.classList.add("frame");
-    }
-
-    iframe.onload = e => {
-        Channel.listen(onEvent);
-
-        document.body.classList.remove("loading");
-    };
-    
-    iframe.src = "/dc/viewer.html";
+function reload(id) {
+    loadData(() => document.body.querySelector("iframe").src = `/dc/viewer.html?branch=${id}`);
 }
 
-Promise
-    .all([
-        getPositionData(),
-        getNodeData(),
-        getFacilityData(),
-        getLocationData()
-    ])
-    .then(() => {
-        Channel.getAccount(initAccount);
+function loadData(onload) {
+    const request = new Request();
+
+    request.query({
+        command: "get",
+        target: "position",
+        name: "dc"
     })
-    .catch(xhr => {
-        showMessage(xhr)
+    .then(data => {
+        window.positionData = data || {};
+
+        return request.query({
+            command: "get",
+            target: "node"
+        });
+    })
+    .then(data => {
+        window.nodeData = data;
+
+        return request.query({
+            command: "get",
+            target: "branch"
+        });
+    })
+    .then(data => {
+        window.branchData = data;
+
+        return request.query({
+            command: "get",
+            target: "facility"
+        });
+    })
+    .then(data => {
+        window.facilityData = data;
+
+        return request.query({
+            command: "get",
+            target: "location"
+        });
+    })
+    .then(data => {
+        window.locationData = data;
+
+        onload();
+    })
+    .catch(showMessage);
+}
+
+loadData(() => {
+    Channel.getAccount(account => {
+        window.account = account;
+        
+        Channel.listen(onEvent);
+    
+        document.body.querySelector("iframe").src = "/dc/viewer.html";
+    
+        document.body.classList.remove("loading");
     });
+});
+
         </script>
     </body>
 </html>

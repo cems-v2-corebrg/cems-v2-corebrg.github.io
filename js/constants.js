@@ -4,6 +4,9 @@ const
     ALERT_NO_PERMISSION = {
         kr: "Warning.\n\n권한 없음."
     },
+    ALERT_NO_PROFILE = {
+        kr: "Warning.\n\n하나 이상의 SNMP 프로파일이 필요합니다."
+    },
     CONFIRM_SIGNOUT = {
         kr: "Confirm.\n\n로그 아웃 하겠습니까?"
     },

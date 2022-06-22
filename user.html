@@ -46,23 +46,75 @@ function createItem(user) {
 	return tr;
 }
 
-function onAddUser (e) {
-    top.showDialog("/dialog/user.html", window);
-}
+function save(name) {
+    const
+        headers = document.body.querySelector("main thead tr").children,
+        trs = document.body.querySelector("main tbody").children,
+        rows = [];
+    let cols = [];
 
-function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert("Notice!\n\n"+ "세션 만료.");
-
-        break;
-    default:
-        alert(`Error!\n\n오류코드: ${xhr.status}.`);
+    document.body.classList.add("loading");
+    
+    for (let i=0; i<headers.length; i++) {
+        cols.push(`"${headers[i].textContent.replace(/\"/g, "'")}"`)
     }
 
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
+    rows.push(cols.join(","));
+
+    for (let i=0, tds; i<trs.length; i++) {
+        tds = trs[i].children;
+
+        cols = [];
+
+        for (let j=0; j<tds.length; j++) {
+            cols.push(`"${tds[j].textContent.replace(/\"/g, "'")}"`);
+        }
+
+        rows.push(cols.join(","));
+    }
+
+    ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
+		type: "text/csv;charset=utf-8;"
+	}), name);
+
+    document.body.classList.remove("loading");
+}
+
+function sendRequest (request) {
+    return new Promise ((resolve, reject) => {
+        $.request.execute(request, function (e) {
+            switch(this.status) {
+            case 200:
+                resolve(JSON.parse(this.responseText));
+
+                break;
+            default:
+                reject(this);
+            }
+        });
+    });
+}
+
+
+function showMessage(xhr) {
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
+
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace(xhr);
+    }
 }
             
         </script>
@@ -101,75 +153,42 @@ function showMessage(xhr) {
         
         <script src="/js/ITAhM.js"></script>
         <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
 		<script>
 
 const
     $ = {
-        list: document.getElementById("list")
+        request: new Request()
     };
 
 if (top.account.level === 0) {
     document.body.classList.add("root");
 
-    document.getElementById("add").onclick = onAddUser;
+    document.getElementById("add").onclick = e => top.showDialog("/dialog/user.html", window);
 }
 
-document.getElementById("export").onclick = function (e) {
-    const rows = [];
-	
-	rows[0] = "Index,ID,Level,Name,Email,Mobile";
+document.getElementById("export").onclick = e => save("user.csv");
 
-    {
-        let user, count=0;
+sendRequest({
+    command: "get",
+    target: "user"
+})
+.then(userData => {
+    const df = document.createDocumentFragment();
+    let item;
 
-        for (let key in $.userData) {
-            user = $.userData[key];
-
-            rows.push([
-                count++,
-                `"${user.id.replace(/\"/g, "'")}"`,
-                user.level === 0? "관리자": user.level === 1? "사용자": "수신자",
-                `"${user.name.replace(/\"/g, "'")}"`,
-                user.email || "",
-                user.sms && user.sms.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/,"$1-$2-$3") || ""
-            ].join(","));    
+    for (let key in userData) {
+        if (item = createItem(userData[key])) {
+            df.appendChild(item);
         }
     }
     
-    ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
-		type: "text/csv;charset=utf-8;"
-	}), $.fileName);
-};
-
-{
-    new Request().execute({
-        command: "get",
-        target: "user"
-    }, function () {
-        switch (this.status) {
-        case 200:
-            $.fileName = "user.csv";
-            $.userData = JSON.parse(this.responseText);
-            
-            const df = document.createDocumentFragment();
-            let item;
-
-            for (let key in $.userData) {
-                if (item = createItem($.userData[key])) {
-                    df.appendChild(item);
-                }
-            }
-            
-            $.list.appendChild(df);
-            
-            document.body.classList.remove("loading");
-    
-            break;
-        default:
-            showMessage(this);
-        }
-    });
-}
+    document.getElementById("list").appendChild(df);
+})
+.then(() => {
+    document.body.classList.remove("loading");
+})
+.catch(showMessage);
 
 		</script>
 	

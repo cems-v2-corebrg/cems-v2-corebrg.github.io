@@ -8,6 +8,7 @@
 
 @import "/css/style.css";
 @import "/css/fa.css";
+@import "/css/var.css";
 @import "/css/list.css";
 
 header {
@@ -18,16 +19,8 @@ header {
     z-index: 9;
 }
 
-header::after {
-    font-weight: bold;
-    font-size: 1.2em;
-    content: attr(data-date);
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-header >* {
-    cursor: pointer;
+header >:is(div, form) {
+    height: 3em;
 }
 
 header button {
@@ -35,10 +28,27 @@ header button {
     padding: .5em;
     height: 100%;
     box-sizing: border-box;
+    vertical-align: top;
 }
 
-body:not(.search) nav {
-    display: none;
+header span.status {
+    height: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: inline-flex; justify-content: center; align-items: center;
+    font-weight: bold;
+}
+
+header span.normal {
+    background-color: var(--var-color-normal);
+}
+
+header span.critical {
+    background-color: var(--var-color-critical);
+}
+
+header span.shutdown {
+    background-color: var(--var-color-shutdown);
 }
 
 main {
@@ -46,14 +56,9 @@ main {
     overflow-y: auto;
 }
 
-body.search #report {
-    color: #fcba30;
-}
-
 input[type=date],
 input[type=text],
 input[type=submit] {
-	font-family: "맑은 고딕", arial, tahoma;
 	padding: 0.5em;
 }
 
@@ -73,45 +78,33 @@ main th,
 main td {
     padding: 1em;
 }
-
+/*
 #list tr {
     border-bottom: 1px solid #ffffff;
-    background-color: #ffffff;
 }
-
-#list tr:hover {
-    outline: 3px dotted #0084ff;
+*/
+tbody tr:hover {
     cursor: pointer;
 }
 
-#list tr:nth-child(odd) {
-	background-color: #ebebeb;
-}
-
-#list tr >td:first-child {
-    text-align: center;
+tbody tr >td:first-child {
     color: #efefef;
-    background-color: #2ecb70;
+    position: relative;
 }
 
-#list tr >td:first-child::before {
-    content: "정상";
+tbody tr >td:first-child span {
+    position: absolute; inset: 0.5em;
+    border-radius: 1em 1em 1em 1em;
+    display: inline-flex; justify-content: center; align-items: center;
+    background-color: var(--var-color-normal);
 }
 
-#list tr.shutdown >td:first-child {
-    background-color: #e64d3f;
+tbody tr.shutdown >td:first-child span {
+    background-color: var(--var-color-shutdown);
 }
 
-#list tr.shutdown >td:first-child::before {
-    content: "장애";
-}
-
-#list tr.critical >td:first-child {
-    background-color: #f39b13;
-}
-
-#list tr.critical >td:first-child::before {
-    content: "주의";
+tbody tr.critical >td:first-child span {
+    background-color: var(--var-color-critical);
 }
 
 nav {
@@ -130,67 +123,17 @@ nav td {
     padding: 0.5em;
 }
 
-details {
-    position: relative;
-    display: inline-block;
-}
-
-details[open] summary::before {
-    content: "";
-    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-    background-color: transparent;
-}
-
-summary {
-    outline: none;
-}
-
-summary::marker {
-    content: "";
-    display: none;
-}
-
-.sort::after {
+#sort::after {
     font-family: "Font Awesome 5 Free";
     content: "\f0dd";
 	cursor: pointer;
     position: absolute; right: 3px;
 }
 
-.sort.reverse::after {
+#sort.reverse::after {
     content: "\f0de";
 }
-
-footer {
-    display: flex;
-    margin-top: 1em;
-    color: #ffffff;
-    font-weight: bold;
-    text-align: center;
-}
-
-footer div {
-    flex: 1;
-    padding: 1em;
-    text-shadow: 0 0 3px #000;
-}
-
-footer div:nth-child(1) {
-    background-color: rgb(0, 137, 123);;
-}
-
-footer div:nth-child(2) {
-    background-color: rgb(246, 191, 38);
-}
-
-footer div:nth-child(3) {
-    background-color: rgb(142, 36, 170)
-}
-
-footer div:nth-child(4) {
-    background-color: #777777;
-}
-
+/*
 .button {
     font: 20px "Font Awesome 5 Free";
     display: inline-block;
@@ -208,10 +151,35 @@ footer div:nth-child(4) {
 .button[open]:hover {
     transform: none;
 }
+*/
 
 .loading.mask {
     z-index: 9;
 }
+
+/** toggle **/
+#toggle,
+#toggle:checked ~#date,
+#toggle:not(:checked) ~:is(#start, #end, [type=submit]) {
+    display: none;
+}
+
+#toggle ~label::before {
+    font: 1.6em 'Font Awesome 5 Free';
+	content: "\f204";
+    color: #aaaaaa;
+}
+
+#toggle:checked ~label::before {
+	content: "\f205";
+    color: #ffffff;
+}
+
+#toggle:not(:checked) ~label {
+    color: #aaaaaa;
+}
+
+/** toggle **/
 		</style>
 		<script>
         
@@ -242,51 +210,201 @@ function toTimeString(millis) {
     return (hh > 9? "": "0") + hh +":"+ (mm > 9? "": "0") + mm +":"+ (ss > 9? "": "0") + ss;
 }
 
-function createItem(event) {
+function createItem(event, count) {
     const
         tr = document.createElement("tr"),
-		status = tr.appendChild(document.createElement("td"));
+		status = tr.appendChild(document.createElement("td")).appendChild(document.createElement("span"));
     
+    tr.dataset.id = event.id;
+
     tr.appendChild(document.createElement("td")).textContent = toDateString(event.timestamp);
     tr.appendChild(document.createElement("td")).textContent = toTimeString(event.timestamp);
     tr.appendChild(document.createElement("td")).textContent = event.ip || "";
 	tr.appendChild(document.createElement("td")).textContent = event.name || "";
-	tr.appendChild(document.createElement("td")).textContent = event.message;
-    
-    if (event.level > 0) {
-        if (event.level > 1) {
-            tr.classList.add("shutdown");
 
-            $.count.shutdown++;
-        } else {
-            tr.classList.add("critical");
+    if (event.level === 0) {
+        status.textContent = "정상";
 
-            $.count.critical++;
-        }
-    } else {
-        $.count.normal++;
+        count.normal++;
     }
 
-    if (event.id) {
-        tr.onclick = e => top.showDialog(`/chart.html?id=${event.id}`);
+    switch(event.origin.toUpperCase()) {
+    case "CRITICAL":
+        tr.appendChild(document.createElement("td")).textContent
+            = `${event.name || event.ip || ""} ${getNameOfOID(event.oid) || event.oid || ""} 임계 ${event.level === 0? "정상": "초과"}`;
+        
+        if (event.level !== 0) {
+            tr.classList.add("critical");
+
+            status.textContent = "주의";
+
+            count.critical++;
+        }
+
+        break;
+    case "MATCH":
+        tr.appendChild(document.createElement("td")).textContent
+            = `${event.name || event.ip || ""} ${getNameOfOID(event.oid) || event.oid || ""} 상태 ${event.level === 0? "정상": "오류"}`;
+        
+        if (event.level !== 0) {
+            tr.classList.add("critical");
+
+            status.textContent = "주의";
+
+            count.critical++;
+        }
+
+        break;
+    case "STATUS":
+        tr.appendChild(document.createElement("td")).textContent
+            = `${event.name || event.ip || ""} 응답 ${event.level === 0? "정상": "없음"}`;
+
+        if (event.level !== 0) {
+            tr.classList.add("shutdown");
+
+            status.textContent = "장애";
+
+            count.shutdown++;
+        }
+
+        break;
+    case "SNMP":
+        tr.appendChild(document.createElement("td")).textContent
+            = `${event.name || event.ip || ""} SNMP ${event.level === 0? "정상": ("오류코드 "+ event.level)}`;
+
+        if (event.level !== 0) {
+            tr.classList.add("critical");
+
+            status.textContent = "주의";
+
+            count.critical++;
+        }
+
+        break;
+    case "REGISTER":
+        tr.appendChild(document.createElement("td")).textContent
+            = `${event.name || event.ip || ""} 등록 ${event.level === 0? "성공": "실패"}`;
+
+        if (event.level !== 0) {
+            tr.classList.add("critical");
+
+            status.textContent = "주의";
+
+            count.critical++;
+        }
+
+        break;
+    case "SEARCH":
+        tr.appendChild(document.createElement("td")).textContent
+            = `${event.name || event.ip || ""} 스마트서치 통보`;
+
+        break;
+    default:
+        tr.appendChild(document.createElement("td")).textContent = "";
+    }
+
+    if (event.node) {
+        tr.onclick = e => top.showDialog(`/chart.html?id=${event.node}`);
     }
 
 	return tr;
 }
 
-function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert("Notice!\n\n"+ "세션 만료.");
+function onSearch (keyword) {
+    const
+        list = document.body.querySelector("tbody"),
+        cache = document.getElementById("cache"),
+        df = document.createDocumentFragment();
 
-        break;
-    default:
-        alert(`Error!\n\n오류코드: ${xhr.status}.`);
+    document.body.classList.add("loading");
+
+    Array.from(cache.children).forEach(tr => {
+        if (Array.from(tr.children).find(td => td.textContent.toLowerCase().indexOf(keyword) !== -1)) {
+            df.appendChild(tr);
+        }
+    });
+
+    Array.from(list.children).forEach(tr => {
+        if (Array.from(tr.children).find(td => td.textContent.toLowerCase().indexOf(keyword) !== -1)) {
+            df.appendChild(tr);
+        } else {
+            cache.appendChild(tr);
+        }
+    });
+
+    list.appendChild(onSort(df, document.getElementById("sort").classList.contains("reverse")));
+
+    document.body.classList.remove("loading");
+}
+
+function onReset () {
+    const
+        list = document.body.querySelector("tbody"),
+        df = document.createDocumentFragment();
+    
+    document.body.classList.add("loading");
+
+    Array.from(document.getElementById("cache").children).forEach(tr => df.appendChild(tr));
+    Array.from(list.children).forEach(tr => df.appendChild(tr));
+
+    list.appendChild(onSort(df, document.getElementById("sort").classList.contains("reverse")));
+
+    document.body.classList.remove("loading");
+}
+
+function save() {
+    const
+        headers = document.body.querySelector("main thead tr").children,
+        trs = document.body.querySelector("main tbody").children,
+        rows = [];
+    let cols = [];
+
+    document.body.classList.add("loading");
+    
+    for (let i=0; i<headers.length; i++) {
+        cols.push(`"${headers[i].textContent.replace(/\"/g, "'")}"`)
     }
 
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
+    rows.push(cols.join(","));
+
+    for (let i=0, tds; i<trs.length; i++) {
+        tds = trs[i].children;
+
+        cols = [];
+
+        for (let j=0; j<tds.length; j++) {
+            cols.push(`"${tds[j].textContent.replace(/\"/g, "'")}"`);
+        }
+
+        rows.push(cols.join(","));
+    }
+
+    ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
+		type: "text/csv;charset=utf-8;"
+	}), "EVENT.csv");
+
+    document.body.classList.remove("loading");
+}
+
+function showMessage(xhr) {
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
+
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
+    }
 }
             
         </script>
@@ -294,44 +412,24 @@ function showMessage(xhr) {
 	
 	<body class="loading">
         <header>
-            <div>
-                <button id="export" title="CSV 내보내기">&#xf019; Export</button>
-            </div>
-            <div>
-                <button id="report">&#xf002; 조건 검색</button>
-            </div>
-        </header>
-        <nav>
-            <form>
-                <table>
-                    <tbody>
-                        <tr>
-                            <th>조회기간</th>
-                            <td>
-                                <input type="date" name="start">
-                                ~
-                                <input type="date" name="end">
-                                <input type="submit" value="검색">
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>이름 | IP</th>
-                            <td>
-                                <input type="text" name="keyword">
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>상태</th>
-                            <td>
-                                <input type="checkbox" name="shutdown" checked>장애
-                                <input type="checkbox" name="critical" checked>임계
-                                <input type="checkbox" name="normal" checked>정상
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <form class="filter">
+                <button id="export" type="button" title="CSV 내보내기">&#xf019; Export</button>
+                <span class="normal status"></span>
+                <span class="critical status"></span>
+                <span class="shutdown status"></span>
+                필터: <input type="text" name="keyword">
             </form>
-        </nav>
+            <form class="search">
+                <input type="checkbox" id="toggle">
+                <input type="date" id="date">
+                <input type="date" id="start">
+                <input type="date" id="end">
+                <button type="submit">&#xf002; 조회</button>
+                <label for="toggle">
+                    기간
+                </label>
+            </form>
+        </header>
         <main>
             <table>
                 <colgroup>
@@ -345,263 +443,172 @@ function showMessage(xhr) {
                 <thead>
                     <tr>
                         <th>상태</th>
-                        <th class="sort">날짜</th>
-                        <th>시간</th>
+                        <th colspan="2" id="sort">일시</th>
+                        <th hidden></th>
                         <th>주소</th>
                         <th>이름</th>
                         <th>메세지 (<i id="count"></i>)</th>
                     </tr>
                 </thead>
-                <tbody id="list"></tbody>
+                <tbody></tbody>
+                <tbody id="cache" hidden></tbody>
             </table>
         </main>
-        <footer>
-            <div>정상</div>
-            <div>주의</div>
-            <div>장애</div>
-        </footer>
+
 		<div class="loading mask"></div>
         
         <script src="/js/ITAhM.js"></script>
         <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+        <script src="/js/snmp.js"></script>
 		<script>
 
-const
-    search = new URLSearchParams(window.location.search),
-    $ = {
-        list: document.getElementById("list"),
-        count: {
-            normal: 0,
-            critical: 0,
-            shutdown: 0
-        },
-        form: document.querySelector("form")
-    };
+const search = new URLSearchParams(window.location.search);
 
-$.form.onsubmit = function (e) {
+document.body.querySelector("form.filter").onsubmit = function (e) {
+    e.preventDefault();
+    
+    const keyword = this.elements["keyword"].value.toLowerCase();
+
+    if (keyword) {
+        onSearch(keyword);
+    } else {
+        onReset();
+    }
+};
+
+document.getElementById("date").onchange = 
+document.body.querySelector("form.search").onsubmit = function (e) {
     e.preventDefault();
 
-    const
-        search = new URLSearchParams(),
-        start = this.elements["start"].valueAsDate.setHours(0, 0, 0, 0),
-        end = this.elements["end"].valueAsDate.setHours(0, 0, 0, 0);
+    const search = new URLSearchParams();
+    var start, end;
 
-    search.set("search", true);    
+    if (document.getElementById("toggle").checked) {
+        search.set("search", true);
+
+        start = document.getElementById("start").valueAsDate.setHours(0, 0, 0, 0);
+        end = document.getElementById("end").valueAsDate.setHours(0, 0, 0, 0);
+    } else {
+        start = end = document.getElementById("date").valueAsDate.setHours(0, 0, 0, 0);
+    }
+    
     search.set("start", Math.min(start, end));
     search.set("end", Math.max(start, end));
-    
-    if (this.elements["keyword"].value) {
-        search.set("keyword", this.elements["keyword"].value);
-    }
-
-    if (this.elements["shutdown"].checked) {
-        search.set("shutdown", true);
-    }
-
-    if (this.elements["critical"].checked) {
-        search.set("critical", true);
-    }
-
-    if (this.elements["normal"].checked) {
-        search.set("normal", true);
-    }
 
     window.location.search = search;
 };
 
-document.body.querySelector(".sort").onclick = function (e) {
-    const df = document.createDocumentFragment();
+function onSort(list, reverse) {
+    const
+        df = document.createDocumentFragment(),
+        children = Array.from(list.children)
+            .sort((tr1, tr2) => Number(tr2.dataset.id) - Number(tr1.dataset.id));
+    
+    if (reverse) {
+        children.reverse();
+    }
 
+    children.forEach(tr => df.appendChild(tr));
+
+    return df;
+}
+
+document.getElementById("sort").onclick = function (e) {
     document.body.classList.add("loading");
 
-    [].slice.call($.list.children).reverse().forEach(row => df.appendChild(row));
-
-    $.list.appendChild(df);
-
-    this.classList.toggle("reverse");
-
+    document.body.querySelector("tbody").appendChild(onSort(document.body.querySelector("tbody"), this.classList.toggle("reverse")));
+    
     document.body.classList.remove("loading");
 };
 
-document.getElementById("report").onclick = function (e) {
-    document.body.classList.toggle("search");
-};
-
-document.getElementById("export").onclick = function (e) {
-    const rows = [];
-	
-	rows[0] = "Index,Date,Time,Status,IP,Name,Message";
-
-    for (let i=0, count=$.indexArray.length, event; i<count; i++) {
-        event = $.eventData[$.indexArray[i]];
-
-        if (event.origin === "exception") {
-            continue;
-        }
-
-        rows.push([
-            event.eventID,
-            toDateString(event.timestamp),
-            toTimeString(event.timestamp),
-            event.level == 1? "주의": event.level == 2? "장애": "정상",
-            event.ip || "",
-            event.name || "",
-            event.message
-        ].join(","));
+document.getElementById("toggle").onclick = function (e) {
+    if (!this.checked) {
+        document.body.querySelector("form.search").submit();
     }
-
-    ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
-		type: "text/csv;charset=utf-8;"
-	}), $.fileName);
 };
 
-(search.get("search")?
-function () {
-    const
+document.getElementById("export").onclick = save;
+
+{
+    let
         start = Number(search.get("start")),
         end = Number(search.get("end"));
-    let date;
-
-    date = new Date(start);
-    date.setHours(9, 0, 0, 0);
-
-    $.form.elements["start"].valueAsDate = date;
-
-    date = new Date(end);
-    date.setHours(9, 0, 0, 0);
-
-    $.form.elements["end"].valueAsDate = date;
-
-    if (search.get("keyword")) {
-        $.form.elements["keyword"].value = search.get("keyword");
-    }
-
-    if (!search.get("shutdown")) {
-        $.form.elements["shutdown"].checked = false;
-    }
-
-    if (!search.get("critical")) {
-        $.form.elements["critical"].checked = false;
-    }
-
-    if (!search.get("normal")) {
-        $.form.elements["normal"].checked = false;
-    }
-
-    new Request().execute({
-        command: "get",
-        target: "event",
-        search: {
-            start: start,
-            end: end,
-            keyword: search.get("keyword") || undefined,
-            shutdown: search.get("shutdown") || undefined,
-            critical: search.get("critical") || undefined,
-            normal: search.get("normal") || undefined
-        }
-    }, function () {
-        switch (this.status) {
-        case 200:
-            $.fileName = "Search.csv";
-
-            document.body.querySelector("header").dataset.date = "Search";
-            $.eventData = JSON.parse(this.responseText);
-            $.indexArray = Object.keys($.eventData).sort(function (a, b) {
-                return parseInt(b) - parseInt(a);
-            });
-
-            const
-                df = document.createDocumentFragment(),
-                count = $.indexArray.length;
-            
-            for (let i=0, item; i<count; i++) {
-                if (item = createItem($.eventData[$.indexArray[i]])) {
-                    df.appendChild(item);
-                }
-            }
-            
-            $.list.appendChild(df);
-            
-            document.querySelector("footer div:nth-child(1)").textContent = $.count.normal;
-            document.querySelector("footer div:nth-child(2)").textContent = $.count.critical;
-            document.querySelector("footer div:nth-child(3)").textContent = $.count.shutdown;
-            
-            document.getElementById("count").textContent = count;
-
-            document.body.classList.remove("loading");
     
-            break;
-        default:
-            showMessage(this);
-        }
-    });
-}:
-function () {
-    let
-        millis = Number(search.get("date")),
-        date;
+    if (!start || !end) {
+        let date = new Date();
 
-    if (millis) {
-        date = new Date(millis);
+        start = end = date.setHours(0, 0, 0, 0);
+    }
+
+    if (start === end) {
+        let date = new Date(start);
+        
+        date.setHours(9, 0, 0, 0);
+
+        document.getElementById("date").valueAsDate = date;
+        document.getElementById("start").valueAsDate = date;
+        document.getElementById("end").valueAsDate = date;
     } else {
-        date = new Date();
+        let date;
 
-        millis = date.setHours(0, 0, 0, 0);
+        document.getElementById("toggle").checked = true;
+
+        date = new Date(start);
+        date.setHours(9, 0, 0, 0);
+
+        document.getElementById("start").valueAsDate = date;
+
+        date = new Date(end);
+        date.setHours(9, 0, 0, 0);
+
+        document.getElementById("end").valueAsDate = date;
+
+        date = new Date();
+        date.setHours(9, 0, 0, 0);
+
+        document.getElementById("date").valueAsDate = date;
     }
 
-    date.setHours(9, 0, 0, 0);
-
-    $.form.elements["start"].valueAsDate = date;
-    $.form.elements["end"].valueAsDate = date;
-
-    new Request().execute({
+    new Request().query({
         command: "get",
         target: "event",
-        date: millis
-    }, function () {
-        switch (this.status) {
-        case 200:
-            const date = getDateString(millis);
-
-            $.fileName = `${date}.csv`;
-
-            document.body.querySelector("header").dataset.date = date;
-
-            $.eventData = JSON.parse(this.responseText);
-            $.indexArray = Object.keys($.eventData).sort(function (a, b) {
-                return parseInt(b) - parseInt(a);
-            });
-
-            const
-                df = document.createDocumentFragment(),
-                count = $.indexArray.length;
-            
-            
-            for (let i=0, item; i<count; i++) {
-                if (item = createItem($.eventData[$.indexArray[i]])) {
-                    df.appendChild(item);
-                }
-            }
-            
-            $.list.appendChild(df);
-            
-            document.querySelector("footer div:nth-child(1)").textContent = $.count.normal;
-            document.querySelector("footer div:nth-child(2)").textContent = $.count.critical;
-            document.querySelector("footer div:nth-child(3)").textContent = $.count.shutdown;
-
-            document.getElementById("count").textContent = count;
-
-            document.body.classList.remove("loading");
-    
-            break;
-        default:
-            showMessage(this);
+        options: {
+            start: start,
+            end: end
         }
-    });
-})();
+    })
+    .then(eventData => {
+        const indexArray = Object.keys(eventData).sort(function (a, b) {
+            return parseInt(b) - parseInt(a);
+        });
 
+        const
+            df = document.createDocumentFragment(),
+            count = {
+                normal: 0,
+                critical: 0,
+                shutdown: 0
+            };
+        
+        for (let i=0, _i=indexArray.length, item; i<_i; i++) {
+            if (item = createItem(eventData[indexArray[i]], count)) {
+                df.appendChild(item);
+            }
+        }
+        
+        document.body.querySelector("tbody").appendChild(df);
+        
+        document.body.querySelector("header span:nth-of-type(1)").textContent = count.normal;
+        document.body.querySelector("header span:nth-of-type(2)").textContent = count.critical;
+        document.body.querySelector("header span:nth-of-type(3)").textContent = count.shutdown;
+    
+        document.getElementById("count").textContent = count.normal + count.critical + count.shutdown;
 
-
+        document.body.classList.remove("loading");
+    })
+    .catch(showMessage);
+}
 
 		</script>
 	

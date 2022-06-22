@@ -37,5 +37,5 @@ function Channel() {
     Channel.sendEvent = e => event.postMessage(e);
 
     Channel.listen = callback =>
-        (new BroadcastChannel("bc_event").onmessage = callback);
+        (event.onmessage = callback);
 }

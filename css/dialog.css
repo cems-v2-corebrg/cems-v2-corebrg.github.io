@@ -23,33 +23,33 @@ footer {
     display: flex;
 }
 
-footer >input {
+footer >:is(input, button) {
     flex: 1;
     padding: 1em;
-    font: 1.1em 'Font Awesome 5 Free';
+    font: bold 1.2em "Font Awesome 5 Free", "맑은 고딕";
     color: #ffffff;
     text-shadow: 0 2px 3px #000000;
     border: 1px solid transparent;
 }
 
-footer >input[type=submit] {
+footer >[type=submit] {
     background-color: #5cb85c;
     border-color: #4cae4c;
 }
 
-footer >input[type=submit]:hover,
-footer >input[type=submit]:focus {
+footer >[type=submit]:hover,
+footer >[type=submit]:focus {
     background-color: #47a447;
     border-color: #398439;
 }
 
-footer >input[type=reset] {
+footer >[type=reset] {
     background-color: #d9534f;
     border-color: #d43f3a;
 }
 
-footer >input[type=reset]:hover,
-footer >input[type=reset]:focus {
+footer >[type=reset]:hover,
+footer >[type=reset]:focus {
     background-color: #d2322d;
     border-color: #ac2925;
 }
@@ -99,6 +99,8 @@ main {
     padding: 1em;
     border: 1px solid #777777;
     background-color: #fefefe;
+    box-shadow: 0 0 10px #ffffff;
+    border-radius: 5px;
 }
 
 form {
@@ -113,7 +115,7 @@ body:not(.root) form {
     pointer-events: none;
 }
 
-body:not(.edit) input[type=reset],
+body:not(.edit) [type=reset],
 body:not(.root) footer {
     display: none;
 }

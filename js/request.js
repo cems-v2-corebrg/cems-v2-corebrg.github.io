@@ -52,7 +52,7 @@ function Request() {
             return true;
         },
         // if session 200
-        // if !session 400
+        // if !session 401
         // else fail
         connect: function (agent, callback) {
             const xhr = new XMLHttpRequest();
@@ -68,7 +68,7 @@ function Request() {
             xhr.onloadend = e => {
                 switch (xhr.status) {
                 case 200:
-                case 400:
+                case 401:
                     this.agent = agent;
 
                     window.localStorage.setItem("agent", agent);
@@ -137,6 +137,26 @@ function Request() {
 
             return true;
         },
+        query: function (request) {
+            return new Promise ((resolve, reject) => {
+                this.execute(request, function (e) {
+                    switch(this.status) {
+                    case 200:
+                        try {
+                            resolve(JSON.parse(this.responseText));
+        
+                            break;
+                        } catch {}
+                    case 204:
+                        resolve();
+        
+                        break;
+                    default:
+                        reject(this);
+                    }
+                });
+            });
+        },
         listen: function (callback) {
             if (!this.agent || !this.session) {
                 return false;
@@ -155,11 +175,11 @@ function Request() {
 
                     callback(event);
                     
-                    listener.eventID = event.eventID +1;
+                    listener.id = event.id +1;
 
                     this.listen(callback);
                 } else {
-                    callback();
+                    callback(null, xhr.status);
                 }
             };
             
@@ -192,6 +212,36 @@ function Request() {
             } catch (e) {}
 
             return true;
+        },
+        download: function (request) {
+            const xhr = new XMLHttpRequest();
+                
+            xhr.open("POST", `${this.agent}/request`, true);
+            xhr.withCredentials = true;
+            xhr.responseType = "blob";
+    
+            xhr.setRequestHeader("Session", this.session);
+            
+            return new Promise ((resolve, reject) => {
+                xhr.onloadend = function (e) {
+                    if (xhr.status == 200) {
+                        const
+                            a = document.createElement("a"),
+                            event = new MouseEvent("click");
+                        
+                        a.setAttribute("download", request.name);
+                        a.setAttribute("href", URL.createObjectURL(new Blob([xhr.response] ,{})));
+                        
+                        a.dispatchEvent(event);
+
+                        resolve();
+                    } else {
+                        reject(this);
+                    }
+                };
+
+                xhr.send(JSON.stringify(request));
+            });
         }
     };
 }

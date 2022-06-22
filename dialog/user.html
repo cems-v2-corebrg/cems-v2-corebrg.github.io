@@ -106,7 +106,6 @@ function onSubmit(e) {
     const
         request = {
             target: "user",
-            id: $.form.elements["id"].value,
             user: {
                 id: $.form.elements["id"].value
             }
@@ -153,7 +152,8 @@ function onChangeLevel (e) {
     }
 
     $.auth = {
-        level: this.value
+        level: this.value,
+        id: $.id
     };
 
     if ($.level > 1) {
@@ -161,60 +161,6 @@ function onChangeLevel (e) {
     } else  {
         setAuth();
     }
-}
-
-function onChangeBranch (e) {
-    if (!confirm("Confirm.\n\n브랜치의 권한을 설정하겠습니까?")) {
-        this.selectedIndex = -1;
-
-        return;
-    }
-
-    document.body.classList.add("loading");
-    
-    $.request.execute({
-        command: "add",
-        target: "view",
-        view: {
-            user: $.id,
-            branch: Number(this.value)
-        }
-    }, function (e) {
-        switch (this.status) {
-        case 200:
-            break;
-        default:
-            throw showMessage(this);
-        }
-
-        window.location.reload();
-    });
-}
-
-function onChangeView (e) {
-    if (!confirm("Confirm.\n\n브랜치의 권한을 삭제하겠습니까?")) {
-        this.selectedIndex = -1;
-
-        return;
-    }
-
-    document.body.classList.add("loading");
-    
-    $.request.execute({
-        command: "remove",
-        target: "view",
-        user: $.id,
-        branch: Number(this.value)
-    }, function (e) {
-        switch (this.status) {
-        case 200:
-            break;
-        default:
-            throw showMessage(this);
-        }
-
-        window.location.reload();
-    });
 }
 
 function onSubmitLevel (e) {
@@ -233,7 +179,6 @@ function setAuth() {
     $.request.execute({
         target: "user",
         command: "set",
-        id: $.id,
         auth: $.auth
     }, function () {
         switch (this.status) {
@@ -252,18 +197,24 @@ function setAuth() {
 }
 
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert(NOTICE_SESS_EXPIRE["kr"]);
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace(xhr);
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
         </script>
@@ -280,7 +231,6 @@ function showMessage(xhr) {
                     <colgroup>
                         <col width="120">
                         <col>
-                        <col width="80">
                     </colgroup>
                     <tbody>
                         <tr>
@@ -320,18 +270,6 @@ function showMessage(xhr) {
                                     <option value="1">사용자</option>
                                     <option value="2">수신자</option>
                                 </select>
-                            </td>
-                        </tr>
-                        <tr class="edit">
-                            <th>브랜치</th>
-                            <td>
-                                <select name="branch"></select>
-                            </td>
-                        </tr>
-                        <tr class="edit">
-                            <th></th>
-                            <td>
-                                <select size="3" name="view"></select>
                             </td>
                         </tr>
                     </tbody>
@@ -391,9 +329,6 @@ if (top.account.level === 0) {
     $.form.onreset = onReset;
     
     $.form.elements["level"].onchange = onChangeLevel;
-    $.form.elements["branch"].onchange = onChangeBranch;
-    $.form.elements["view"].onchange = onChangeView;
-
     document.getElementById("dialog").onsubmit = onSubmitLevel;
 
     document.body.classList.add("root");
@@ -420,94 +355,14 @@ document.getElementById("dialog").onreset = function (e) {
     $.dialog.close();
 };
 
-function initUser () {
-    switch (this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
-    }
-
-    initialize(JSON.parse(this.responseText));
-}
-
-function initView () {
-    switch (this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
-    }
-
-    const
-        df = document.createDocumentFragment(),
-        viewData = JSON.parse(this.responseText);
-    let branch, option;
-
-    for (let id in viewData) {
-        branch = viewData[id];
-
-        option = document.createElement("option");
-
-        option.value = id;
-        option.text = branch.name;
-
-        df.appendChild(option);
-    };
-
-    $.form.elements["view"].appendChild(df);
-    $.form.elements["view"].selectedIndex = -1;
-
-    $.request.execute({
-        command: "get",
-        target: "user",
-        id: $.id
-    }, initUser);
-}
-
-function initBranch () {
-    switch (this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
-    }
-
-    const
-        df = document.createDocumentFragment(),
-        branchData = JSON.parse(this.responseText);
-    let branch, option;
-
-    for (let id in branchData) {
-        branch = branchData[id];
-
-        option = document.createElement("option");
-
-        option.value = id;
-        option.text = branch.name;
-
-        df.appendChild(option);
-    }
-
-    $.form.elements["branch"].appendChild(df);
-    $.form.elements["branch"].selectedIndex = -1;
-
-    if ($.id) {
-        $.request.execute({
-            command: "get",
-            target: "view",
-            user: $.id
-        }, initView);
-    } else {
-        initialize();
-    }
-}
-
-$.request.execute({
+$.id &&
+$.request.query({
     command: "get",
-    target: "branch"
-}, initBranch);
-
+    target: "user",
+    id: $.id
+})
+.then(user => initialize(user))
+.catch(showMessage) || initialize();
 		</script>
 	
 	</body>

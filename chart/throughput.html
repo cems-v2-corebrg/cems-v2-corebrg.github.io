@@ -15,8 +15,7 @@ body {
 	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
 	margin: 0; padding: 0;
 	display: flex; flex-direction: column;
-	color: #fff;
-    background-color: #424242;
+	color: #ffffff;
 }
 
 header {
@@ -25,43 +24,11 @@ header {
 
 main {
     flex: 1;
-    position: relative;
-}
-
-.address {
-    position: absolute; top: 0; bottom: 0; left: -100%;
-    width: 400px;
-    padding: 1em;
-    box-sizing: border-box;
-    overflow: hidden;
-    overflow-y: auto;
-    transition: all 1s linear;
-    background: #cdcdcd;
-    color: #333;
-}
-
-.address.show {
-    left: 0;
-}
-
-.chart {
-    height: 100%;
     display: flex; flex-direction: column;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th, td {
-    padding: 0.5em;
-    border: 1px solid #555;
-}
-
-th {
-    background-color: #555;
-    color: #ccc;
+.chart {
+    flex: 1;
 }
 
 iframe {
@@ -78,318 +45,12 @@ h2 {
     text-shadow: 0 2px 3px #000;
 }
 
-form.bandwidth {
-    display: inline-block;
-    height: 100%;
-}
-
-.legend {
-    line-height: 2em;
-    display: flex;
-    justify-content: space-between;
-}
-
-.legend .critical input,
-.legend .critical span  {
-    height: 100%;
-    box-sizing: border-box;
-}
-
-.legend .block {
-    box-sizing: border-box;
-    height: 100%;
-    display: inline-block;
-    vertical-align: middle;
-}
-
-/*button glyphicon*/
-.glyph {
-    height: 100%;
-    display: inline-block;
-    color: #fff;
-    vertical-align: middle;
-    position: relative;
-    cursor: pointer;
-}
-
-.glyph.set {
-    width: 7em;
-}
-
-.glyph.apply {
-    width: 7em;
-}
-
-.glyph.cancel {
-    width: 8em;
-}
-
-.glyph::before,
-.glyph::after {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: absolute;
-}
-
-.glyph::before {
-    font-family: "Font Awesome 5 Free";
-    background: rgba(0,0,0,0.15);
-    top: 0; bottom: 0; left: 0; width: 3em;
-}
-
-.glyph::after {
-    top: 0; right: 0; bottom: 0; left: 3em;
-}
-
-.glyph.set::after {
-    content: "설정";
-}
-
-.glyph.apply::after {
-    content: "변경";
-}
-
-.glyph.cancel::after {
-    content: "초기화";
-}
-
-.glyph.set {
-    background-color: #f0ad4e;;
-    border-color: #eea236;
-}
-
-.glyph.apply {
-    background-color: #5cb85c;
-    border-color: #4cae4c;
-}
-
-.glyph.cancel {
-    background-color: #d9534f;
-    border-color: #d43f3a;
-}
-
-.glyph.apply:hover,
-.glyph.apply:focus {
-    background-color: #47a447;
-    border-color: #398439;
-}
-
-.glyph.cancel:hover,
-.glyph.cancel:focus {
-    background-color: #d2322d;
-    border-color: #ac2925;
-}
-
-.glyph.set:hover,
-.glyph.set:focus {
-    background-color: #ed9c28;
-    border-color: #d58512;
-}
-
-.glyph:active {
-    box-shadow: inset 0 3px 5px rgba(0,0,0,0.125);
-}
-
-.glyph.set::before {
-    content: "\f08d";
-}
-
-.glyph.apply::before {
-    content: "\f00c";
-}
-
-.glyph.cancel::before {
-    content: "\f2ea";
-}
-
-body:not(.custom) .cancel {
-    display: none;
-}
-
-.switch {
-    vertical-align: middle;
-}
-
-/* switch button*/
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 2em;
-    height: 1em;
-    font-size: 2em;
-}
-
-.switch >input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.switch >.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 0.5em;
-}
-
-.switch >.slider:before {
-    position: absolute;
-    content: "";
-    height: 0.6em;
-    width: 0.6em;
-    left: 0.2em;
-    bottom: 0.2em;
-    background-color: #fff;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked +.slider {
-    background-color: #242424/*#424242*/;
-}
-
-input:focus +.slider {
-    box-shadow: 0 0 1px  #242424/* #424242*/;
-}
-
-input:checked + .slider:before {
-    transform: translateX(1em);
-}
-
-body:not(.root) form,
-body.root #bandwidth {
+body:not(.root) form {
     display: none;
 }
         </style>
         
 		<script>
-
-function SummaryData() {
-    this.initialize(arguments);
-}
-
-SummaryData.prototype = {
-    initialize: function(args) {
-        this.data = args[0];
-    },
-    parse: function (from, to) {
-        var resultKeyArray = [],
-            blockKeyArrary = [],
-            date = new Date(from),
-            mills = date.setMinutes(0, 0, 0),
-            value, high, low, max = [], min = [];
-        
-        do {
-            value = this.data[String(mills)];
-            
-            if (value) {
-                blockKeyArrary.push(mills);
-                
-                max.push(value.max);
-                min.push(value.min);
-            }
-            else if (blockKeyArrary.length > 0){
-                resultKeyArray.push(blockKeyArrary);
-                
-                blockKeyArrary = [];
-            }
-
-            mills = date.setHours(date.getHours() +1);
-        } while (mills < to);
-        
-        if (blockKeyArrary.length > 0) {
-            resultKeyArray.push(blockKeyArrary);
-        }
-        
-        high = max.length > 0? max.reduce((a, b) => a>b? a: b): 0;
-        low = min.length > 0? min.reduce((a, b) => a>b? b: a): 0;
-        
-        if (high === low) {
-            high++;
-            low--;
-        }
-        
-        return resultKeyArray.length > 0? {
-            high: high *8,
-            low: low *8,
-            keys: resultKeyArray
-        }: undefined;
-    },
-    get: function (millis) {
-        const value = this.data[String(millis)];
-
-        return value? {
-            max: value.max *8,
-            avg: value.avg *8,
-            min: value.min *8
-        }: undefined;
-    }
-};
-
-function ChartData() {
-    this.initialize(arguments);
-}
-
-ChartData.prototype = {
-    initialize: function(args) {
-        this.data = args[0];
-    },
-    forEach: function (f, sort) {
-        delete this.last;
-
-        if (sort) {
-            const keys = Object.keys(this.data).sort((a, b) => Number(a) - Number(b));
-
-            keys.forEach(key => {
-                this.each(key, f);
-            });
-        } else {
-            for (let key in this.data) {
-                this.each(key, f);
-            }
-        }
-    },
-    each: function (key, f) {
-        const value = {
-                timestamp: Number(key),
-                value: Number(this.data[key])
-            };
-        
-        if (this.last) {
-            const
-                diff = value.value - this.last.value,
-                t = value.timestamp - this.last.timestamp;
-//if (diff<0) console.log(diff);
-if (t<0) console.log(t);
-            if (diff >= 0 && t > 0) {
-                f(value.timestamp, diff *8000 / t);
-            }
-        }
-
-        this.last = value;
-    }
-}
-
-function toDateTimeString(millis) {
-    var
-        date = new Date(millis),
-        year = date.getFullYear(), 
-        month = date.getMonth() + 1,
-        day  = date.getDate(),
-        h = date.getHours(),
-        m = date.getMinutes(),
-        s = date.getSeconds();
-    
-    return year +"-"+ (month > 9? "": "0") + month +"-"+ (day > 9? "": "0") + day +" "
-        + (h > 9? "": "0") + h +":"+ (m > 9? "": "0") + m +":"+ (s > 9? "": "0") + s;
-}
-
 /**
  * public
  */
@@ -413,42 +74,8 @@ function draw (from, to) {
     document.getElementById("chart_out").contentWindow.draw(from, to);
 }
 
-function toString(value) {
-    if (isNaN(value)) {
-        return "0bps";
-    }
-    
-    var unit = ["bps", "Kbps", "Mbps", "Gbps", "Tbps"];
-    
-    for(var i=0, _i=unit.length -1; i<_i; i++) {
-        if (value > 999) {
-            value /= 1000;
-        }
-        else {
-            break;
-        }
-    }
-    
-    return value.toFixed(2) + unit[i];
-}
-
 function preview (resourceData) {
     parent.preview(resourceData);
-}
-
-function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert(NOTICE_SESS_EXPIRE["kr"]);
-
-        break;
-    default:
-        alert(ERROR_RES_CODE(xhr.status)["kr"]);
-    }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
 		</script>
@@ -456,57 +83,21 @@ function showMessage(xhr) {
 	
 	<body class="loading">
         <header>
-			<h2>Interface throughput: <i>"</i> <span id="if_name"></span> <i>"</i></h2>
-			<div class="legend">
-                <form class="critical" title="임계 설정 해제시 0 입력">
-                    <span>임계</span>
-                    <input id="limit" type="number" min="0" max="100" required>
-                    <span>%</span>
-                    <span class="glyph set"></span>
-                    <label class="switch" title="주소 표시">
-                        <input type="checkbox" id="switch">
-                        <span class="slider"></span>
-                    </label>
-                </form>
-                <div>
-                    Bandwidth:
-                    <form class="bandwidth">
-                        <input name="bandwidth" type="number" class="block" required>
-                        <select name="units" class="block">
-                            <option value="1000000000000">Tbps</option>
-                            <option value="1000000000">Gbps</option>
-                            <option value="1000000" selected>Mbps</option>
-                            <option value="1000">Kbps</option>
-                            <option value="1">bps</option>
-                        </select>
-                        <span class="glyph apply block"></span>
-                        <span class="glyph cancel block"></span>
-                    </form>
-                    <span id="bandwidth"></span>
-                </div>
-            </div>
+			<h2>Interface throughput: <i>"</i> <span id="if_name">인터페이스</span> <i>"</i></h2>
         </header>
         <main>
-            <div class="address">
-                <table>
-                    <tr>
-                        <th>IP Address</th>
-                        <th>MAC Address</th>
-                    </tr>
-                </table>
-            </div>
             <div class="chart">
                 <iframe id="chart_in"></iframe>
+            </div>
+            <div class="chart">
                 <iframe id="chart_out"></iframe>
             </div>
         </main>
         <div class="loading mask"></div>
 
-		<script src="/js/ITAhM.js"></script>
-        <script src="/js/object.js"></script>
+        <script src="/js/ITAhM.js"></script>
         <script src="/js/snmp.js"></script>
         <script src="/js/request.js"></script>
-        <script src="/js/constants.js"></script>
 		<script>
 
 const
@@ -515,218 +106,30 @@ const
     $ = {
         request: new Request(),
         id: Number(search.get("id")),
+        oid: search.get("oid"),
         index: search.get("index"),
+        max: Number(search.get("max")),
+        title: search.get("title"),
         from: Number(search.get("from")),
         to: Number(search.get("to"))
     };
-    
-if (!$.id || !$.index || !$.from || !$.to) {
-    throw top.location.replace("/warning.html");
-}
 
 if (top.account.level == 0) {
     document.body.classList.add("root");
 }
 
-document.getElementById("switch").onclick = function (e) {
-    document.querySelector(".address").classList[this.checked? "add": "remove"]("show");
-};
+$.title && (document.getElementById("if_name").textContent =  $.title);
 
-document.querySelector("form.bandwidth").onsubmit =
-document.querySelector(".apply").onclick = function (e) {
-    document.body.classList.add("loading");
-    
-    if (!confirm("Confirm.\n\nBandwidth를 수정 하겠습니까?")) {
-        return document.body.classList.remove("loading");
-    }
+search.delete ("title");
+//search.set("unit", 8);
 
-    const
-        bandwidth = Number(document.querySelector("input[name=bandwidth]").value) *
-            Number(document.querySelector("select[name=units]").value);
+search.set("oid", ITAhM.snmp.oid[`${$.oid}InOctets`]);
+document.getElementById("chart_in").src=`/chart/throughputIn.html?${search.toString()}`;
 
-    $.request.execute({
-        command: "set",
-        target: "bandwidth",
-        id: $.id,
-        index: $.index,
-        oid: ITAhM.snmp.oid.bandwidth,
-        value: String(bandwidth)
-    }, function () {
-        switch (this.status) {
-        case 200:
-            break;
-        default:
-            return showMessage(this);
-        }
+search.set("oid", ITAhM.snmp.oid[`${$.oid}OutOctets`]);
+document.getElementById("chart_out").src=`/chart/throughputOut.html?${search.toString()}`;
 
-        window.location.reload();
-    });
-};
-
-document.querySelector(".cancel").onclick = function (e) {
-    document.body.classList.add("loading");
-
-    if (!confirm("Confirm.\n\nBandwidth를 초기화 하겠습니까?")) {
-        return document.body.classList.remove("loading");
-    }
-
-    $.request.execute({
-        command: "set",
-        target: "bandwidth",
-        id: $.id,
-        index: $.index,
-        oid: ITAhM.snmp.oid.bandwidth
-    }, function () {
-        switch (this.status) {
-        case 200:
-            break;
-        default:
-            return showMessage(this);
-        }
-
-        window.location.reload();
-    });
-}
-
-document.querySelector("form.critical").onsubmit = 
-document.querySelector(".glyph").onclick = function (e) {
-    e.preventDefault();
-
-    const
-        request = {
-            command: "set",
-            target: "limit",
-            id: $.id,
-            index: $.index,
-            limit: Number(document.getElementById("limit").value) || 0
-        },
-        oid = [ITAhM.snmp.oid.inBPS, ITAhM.snmp.oid.outBPS];
-
-    function onResponse () {
-        switch (this.status) {
-        case 200:
-            break;
-        default:
-            return showMessage(this);
-        }
-
-        request.oid = oid.pop();
-
-        if (request.oid) {
-            $.request.execute(request, onResponse);
-        } else {
-            alert(INFO_SET_CRITICAL["kr"]);
-        }
-    }
-
-    request.oid = oid.pop();
-
-    $.request.execute(request, onResponse);
-};
-
-function initialize() {
-    switch (this.status) {
-    case 200:
-        break;
-    default:
-        return showMessage(this);
-    }
-    
-    document.getElementById("limit").value = JSON.parse(this.responseText).limit;
-        
-    document.getElementById("chart_in").src=`/chart/throughputIn.html?id=${$.id}&index=${$.index}&from=${$.from}&to=${$.to}&max=${$.max}`;
-    document.getElementById("chart_out").src=`/chart/throughputOut.html?id=${$.id}&index=${$.index}&from=${$.from}&to=${$.to}&max=${$.max}`;
-
-    document.body.classList.remove("loading");
-}
-
-function initNode() {
-    switch (this.status) {
-    case 200:
-        break;
-    default:
-        return showMessage(this);
-    }
-
-    const nodeData = JSON.parse(this.responseText);
-    
-    if (("resource" in nodeData) &&
-        ($.index in nodeData.resource) &&
-        ((bandwidth, ifHighSpeed, ifSpeed, name, alias) => {
-            if (!bandwidth && !ifHighSpeed && !ifSpeed) {
-                return false;
-            }
-
-            $.max = Number(bandwidth && bandwidth.value || ifHighSpeed && ifHighSpeed.value *1000000 || ifSpeed && ifSpeed.value);
-
-            document.getElementById("if_name").textContent = name && name.value|| alias && alias.value || "";
-            document.getElementById("bandwidth").textContent = toString($.max);
-
-            (n => {
-                for (var pow = 0; n > 999; pow++) {
-                    n /= 1000;
-                }
-
-                document.querySelector("input[name=bandwidth]").value = Math.round(n);
-                document.querySelector("select[name=units]").value = Math.pow(1000, pow);
-            })($.max);
-
-            if (bandwidth) {
-                document.body.classList.add("custom");
-            }
-
-            const table = document.createDocumentFragment();
-
-            for (let address in nodeData.resource) {
-                (indexData => {
-                    const mac = indexData[ITAhM.snmp.oid.ipNetToMediaPhysAddress];
-
-                    if (mac && Number(indexData[ITAhM.snmp.oid.ipNetToMediaType]) === 3) {
-                        const i = address.indexOf(".");
-
-                        if (i > -1 && address.substring(0, i) === $.index) {
-                            const
-                                tr = document.createElement("tr");
-
-                            table.appendChild(tr);
-
-                            tr.appendChild(document.createElement("td")).textContent = address.substring(i +1);
-                            tr.appendChild(document.createElement("td")).textContent = mac;
-                        }
-                    }
-                })(nodeData.resource[address]);
-            }
-
-            if (table.hasChildNodes()) {
-                document.querySelector("table").appendChild(table);
-            }
-            
-            return true;
-        })(nodeData.resource[$.index][ITAhM.snmp.oid.bandwidth],
-            nodeData.resource[$.index][ITAhM.snmp.oid.ifHighSpeed],
-            nodeData.resource[$.index][ITAhM.snmp.oid.ifSpeed],
-            nodeData.resource[$.index][ITAhM.snmp.oid.ifName],
-            nodeData.resource[$.index][ITAhM.snmp.oid.ifAlias])) {
-        $.request.execute({
-            command: "get",
-            target: "limit",
-            id: $.id,
-            index: $.index,
-            oid: ITAhM.snmp.oid.inBPS
-        }, initialize);
-    } else {
-        alert (ERROR_CHART_NOSUP["kr"]);
-
-        top.showDialog(`/chart.html?id=${$.id}`);
-    }
-}
-
-$.request.execute({
-    command: "get",
-    target: "node",
-    id: $.id,
-    resource: true
-}, initNode);
+document.body.classList.remove("loading");
 		</script>
 	
 	</body>

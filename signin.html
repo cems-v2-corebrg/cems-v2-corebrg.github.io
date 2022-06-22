@@ -23,7 +23,9 @@ main {
 
 section {
     padding: 1em;
-    background-color: #fff;
+    background-color: #1b1c2e;
+    color: #fefefe;
+    /*box-shadow: 0 0 10px #3e54d3;*/
 }
 
 form {
@@ -41,6 +43,7 @@ h1, h2 {
     padding: 1em;
     border: 1px solid #ddd;
     border-radius: 3px;
+    background-color: #fefefe;
 }
 
 .input >span {
@@ -130,12 +133,12 @@ function onSignIn() {
                     <p>Username</p>
                     <div class="input">
                         <span class="glyph">&#xf007;</span>
-                        <input type="text" name="id" required>
+                        <input type="text" name="id" required value="root">
                     </div>
                     <p>Password</p>
                     <div class="input">
                         <span class="glyph">&#xf023;</span>
-                        <input type="password" name="password" required>
+                        <input type="password" name="password" required value="root">
                     </div>
                     <div class="footer">
                         <input type="reset" value="Cancel" class="button" lang="en">

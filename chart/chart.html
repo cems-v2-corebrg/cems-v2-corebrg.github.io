@@ -14,9 +14,11 @@
 :root {
     --footer-height: 60px;
 }
+
 body {
 	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
 	margin: 0; padding: 0;
+    background-color: #1e1e1e;
 }
 
 header {
@@ -219,6 +221,8 @@ Cursor.prototype = {
         body.style.inset = "0 0 0 0";
         body.style.display = "flex";
         body.style.justifyContent = "space-between";
+        body.style.borderTop = `1px solid ${this.config.handleColor}`;
+        body.style.borderBottom = `1px solid ${this.config.handleColor}`;
 
         leftHandle.style.borderLeft = `5px solid ${this.config.handleColor}`;
         leftHandle.classList.add("handle", "left");
@@ -402,16 +406,9 @@ function getValueAsDate(e) {
 
 /** public **/
 function preview(resourceData) {
-    const data = [];
-    let labels = $.preview.config.data.labels;
-
-    if (!labels || labels.length === 0) {
-        labels = Object.keys(resourceData)
-            .sort((a, b) => Number(a) - Number(b))
-            .map(key => Number(key));
-
-        $.preview.config.data.labels = labels;
-    }
+    const
+        data = [],
+        labels = Object.keys(resourceData).sort((a, b) => Number(a) - Number(b));
     
     labels.forEach(key => {
         data.push(resourceData[key].max);
@@ -421,9 +418,10 @@ function preview(resourceData) {
         data: data
     });
     
+    $.preview.config.data.labels = labels.map(label => Number(label));
+    
     $.preview.update();
 }
-
 		</script>
 	</head>
 	
@@ -488,7 +486,7 @@ Chart.defaults.global.tooltips.enabled = false;
 Chart.defaults.global.legend.display = false;
 Chart.defaults.global.elements.line.borderWidth = 0;
 Chart.defaults.global.elements.point.radius = 0;
-Chart.defaults.global.elements.line.backgroundColor = "#dddddd";
+Chart.defaults.global.elements.line.backgroundColor = "rgba(222, 222, 222, 0.6)";
         </script>
 		<script>
 
@@ -525,6 +523,7 @@ const
     $ = {
         id: Number(search.get("id")),
         index: Number(search.get("index")),
+        oid: search.get("oid"),
         name: search.get("name"),
         from: Number(search.get("from")),
         to: Number(search.get("to")),
@@ -549,7 +548,7 @@ document.getElementById("realtime").onclick = function () {
 };
 
 document.getElementById("save").onclick = function () {
-	$.chart.getFile();
+	$.chart.download();
 };
 
 document.getElementById("set").onclick = function (e) {
@@ -617,7 +616,7 @@ document.getElementById("set").onclick = function (e) {
 new Cursor(document.querySelector("footer"), {
     step: new Date($.to).diff(new Date($.from)),
     maskColor: "rgba(0, 0, 0, 0.5)",
-    handleColor: "rgba(0, 0, 0, 0.8)",
+    handleColor: "#dd3a7e",
     onchange: (f, t) => {
         const
             from = new Date($.from),
@@ -629,15 +628,20 @@ new Cursor(document.querySelector("footer"), {
     }
 });
 
-if ($.id && $.from && $.to && $.name) {
+{
+    const
+        search = new URLSearchParams(window.location.search),
+        from = Number(search.get("from")),
+        to = Number(search.get("to"));
+
     const ticks = $.preview.config.options.scales.xAxes[0].ticks;
 
-    ticks.max = $.to;
-    ticks.min = $.from;
+    ticks.max = to;
+    ticks.min = from;
 
-    document.body.classList[new Date($.to).diff(new Date($.from)) === 1? "add": "remove"]("detail");
+    document.body.classList[new Date(to).diff(new Date(from)) === 1? "add": "remove"]("detail");
 
-    $.chart.location.replace(`${$.name}?id=${$.id}&index=${$.index}&from=${$.from}&to=${$.to}`);
+    $.chart.location.replace(`${search.get("name")}?${search.toString()}`);
 }
 		</script>
 	

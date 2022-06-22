@@ -8,10 +8,10 @@
 
 		<style>
 @import "/css/style.css";
+@import "/css/var.css";
 @import "/css/fa.css";
 
 body {
-	background-color: #4d525a;
 	color: #fff;
 }
 
@@ -31,11 +31,18 @@ h2 {
     text-shadow: 0 2px 3px #000;
 }
 
+iframe {
+    border: none;
+    width: 100%; height: 100%;
+}
+
 section {
     position: relative;
 	padding: 5px;
 	background-color: #424242;
     display: flex; flex-direction: column;
+    box-sizing: border-box;
+    margin: 3px 0;
 }
 
 section ul {
@@ -61,13 +68,61 @@ section li {
     content: attr(data-response);
 }
 
+/** rtt **/
+section.rtt {
+    width: 200px;
+}
+
+section.rtt ul {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+}
+
+section.rtt li {
+    position: absolute;
+    border-radius: 50%;
+}
+
+section.rtt li.rotate {
+    height: 100px;
+    width: 100px;
+}
+
+body:not(.shutdown) section.rtt li.rotate {
+    animation: rotate 2s infinite;
+    /*background-image: linear-gradient(135deg, #FEED07 0%, #FE6A50 5%, #ED00AA 15%, #2FE3FE 50%, #8900FF 100%);*/
+    background-image: linear-gradient(135deg, #dddddd 0%, #FE6A50 5%, #f6bf26 15%, #00897b 50%, #8e24aa 100%);
+}
+
+section.rtt li.background {
+    height: 90px;
+    width: 90px;
+    /*background-image: linear-gradient(0deg, #36295e, #1c1045);*/
+    background-color: #424242;
+}
+
+section.rtt li.background {
+    font: 2em "Font Awesome 5 Free";
+}
+
+section.rtt li.content {
+    font-weight: bold;
+    font-size: 1.6em;
+}
+
+section.dummy {
+    flex: 1;
+}
+
+/****/
+
 #processor,
 #storage {
     display: flex;
 }
 
 #storage {
-    overflow-x: auto;
+    flex-wrap: wrap;
 }
 
 #processor li {
@@ -130,6 +185,110 @@ section.type {
     flex: none; width: 120px;
 }
 
+/** Interface **/
+section.interface {
+    width: 100%;
+}
+
+section.interface table {
+    border-collapse: collapse;
+	width: 100%;
+	table-layout: fixed;
+}
+
+section.interface thead {
+    background-color: #34495e;
+}
+
+section.interface tbody tr {
+    border: 1px solid transparent;
+    border-bottom-color: #663399;
+}
+
+section.interface th {
+    padding: 1em 0;
+}
+
+section.interface td {
+    line-height: 3em;
+    position: relative;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    padding: 0 1em;
+}
+
+section.interface td:nth-child(1) {
+    text-align: center;
+    font-family: "Font Awesome 5 Free";
+}
+
+section.interface td:nth-child(1)::before {
+    content: "\f796";
+    transform: rotate(180deg);
+    position: absolute; inset: 0 0 0 0;
+    font-size: 2em;
+    color: var(--var-color-normal);
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+section.interface tr[data-status=shutdown] td:nth-child(1)::before {
+    color: var(--var-color-shutdown);
+}
+
+section.interface tr[data-status=critical] td:nth-child(1)::before {
+    color: var(--var-color-critical);
+}
+
+section.interface tr[data-status=disabled] td:nth-child(1)::before {
+    color: var(--var-color-disabled);
+}
+
+section.interface td:nth-child(4),
+section.interface td:nth-child(6),
+section.interface td:nth-child(8) {
+    text-align: center;
+}
+
+section.interface td:nth-child(5),
+section.interface td:nth-child(7) {
+    background: linear-gradient(to right,
+        var(--var-color-normal) 70%,
+        var(--var-color-critical) 70%,
+        var(--var-color-critical) 90%,
+        var(--var-color-shutdown) 90%)
+}
+
+section.interface
+:is(tr[data-status=shutdown], tr[data-status=disabled])
+:is(td:nth-child(5), td:nth-child(7)) {
+    background: none;
+}
+
+section.interface
+:is(tr[data-status=shutdown], tr[data-status=disabled])
+:is(td:nth-child(5), td:nth-child(7))
+div {
+    display: none;
+}
+
+section.interface
+:is(td:nth-child(5), td:nth-child(7))::after {
+    content: attr(data-value);
+    position: relative;
+}
+
+section.interface
+:is(td:nth-child(5),td:nth-child(7))
+div {
+    position: absolute; inset: 0 0 0 0;
+    background-color:#303030;
+    animation: gauge 1s;
+}
+
+@keyframes gauge {
+    30% {left: 0}
+}
+/** Interface **/
+
 section.enterprise ul,
 section.type ul {
     background-size: contain;
@@ -142,13 +301,8 @@ section.information {
     flex: 1 0;
 }
 
-section.storage {
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
 section.portmap {
-    flex: none; width: 100%; box-sizing: border-box;
+    width: 100%;
     position: relative;
 }
 
@@ -212,6 +366,70 @@ label.switch .off {
     flex-wrap: wrap;
 }
 
+#fan li {
+    width: 120px;
+    display: inline-flex; justify-content: center; align-items: center;
+    background: url(/img/fan.png) no-repeat center;
+    background-size: contain;
+}
+
+#fan li::before {
+    font: 80px "Font Awesome 5 Free";
+    content: "\f863";
+    color: #8e24aa;
+    animation: critical 1s infinite;
+}
+
+#fan li.normal::before {
+    color: #00897b;
+    animation: rotate 2s linear infinite;
+}
+
+#power li {
+    width: 120px;
+    display: inline-flex; justify-content: center; align-items: center;
+    overflow: hidden;
+}
+
+#power li::before {
+    font: 80px "Font Awesome 5 Free";
+    content: "\f1e6";
+    -webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+#power li.normal::before {
+	background-image: linear-gradient(#c0c0c0, #c0c0c0 30%, #00897b 30%, #00897b 65%, #303030 75%);
+    animation: power 1s;
+}
+
+#power li:not(.normal)::before {
+    background-image: linear-gradient(#c0c0c0, #c0c0c0 30%, #8e24aa 30%, #8e24aa 65%, #303030 75%);
+    animation: critical 1s infinite;
+}
+
+#temperature li {
+    width: 120px;
+    display: inline-flex; justify-content: center;
+}
+
+#temperature li label {
+    font-size: 16px;
+    font-weight: bold;
+    position: absolute;
+    inset: auto auto 5px 5px;
+}
+
+#temperature li::before {
+    font: 80px "Font Awesome 5 Free";
+    content: "\f2c7";
+    align-self: center;
+    -webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-image: linear-gradient(red, red 30%, orange 30%, orange 60%, green 60%);
+    transform: translateX(20px);
+}
+
 div.tbody {
 	text-align: initial;
 }
@@ -265,20 +483,121 @@ div.flex span {
 }
 
 body:not(.response) section.response,
+body:not(.response) section.rtt,
 body:not(.processor) section.processor,
 body:not(.storage) section.storage,
 body:not(.memory) section.memory,
 body:not(.portmap) section.portmap,
+body:not(.interface) section.interface,
+body:not(.power) section.power,
+body:not(.temperature) section.temperature,
+body:not(.fan) section.fan,
 body.shutdown .status::after,
 #toggle:checked ~label.switch .off,
 #toggle:not(:checked) ~label.switch .on {
 	display: none;
 }
 
+@keyframes rotate {
+    0% {
+        transform:rotate(0deg);
+    }
+    100% {
+        transform:rotate(360deg);
+    }
+}
+
+@keyframes power {
+    0% {
+        transform: translateY(100%);
+    }
+    100% {
+        transform: none;
+    }
+}
+
+@keyframes critical {
+    0% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 1;
+    }
+}
 		</style>
 		
 		<script>
-		
+
+function Interface() {
+    //this.initialize(arguments);
+}
+
+{
+    const UNIT = ["bps", "Kbps", "Mbps", "Gbps", "Tbps"];
+
+    function toBPSString(value) {    
+        for(var i=0, _i=UNIT.length -1; i<_i; i++) {
+            if (value > 999) {
+                value /= 1000;
+            }
+            else {
+                break;
+            }
+        }
+        
+        return `${value.toFixed(2)}${UNIT[i]}`;
+    }
+
+    Interface.Port = function (container, config) {
+        this.container = container;
+        this.config = config;
+        this.status = container.appendChild(document.createElement("td"));
+        this.name = container.appendChild(document.createElement("td"));
+        this.descr = container.appendChild(document.createElement("td"));
+        this.bandwidth = container.appendChild(document.createElement("td"));
+        this.inUse = container.appendChild(document.createElement("td"));
+        this.inGauge = this.inUse.appendChild(document.createElement("div"));
+        this.inErr = container.appendChild(document.createElement("td"));
+        this.outUse = container.appendChild(document.createElement("td"));
+        this.outGauge = this.outUse.appendChild(document.createElement("div"));
+        this.outErr = container.appendChild(document.createElement("td"));
+
+        this.name.textContent = config.name;
+        this.descr.textContent = config.descr;
+        this.bandwidth.textContent = toBPSString(config.bandwidth);
+        
+        if (config.alias) {
+            container.title = config.alias;
+        }
+    };
+
+    Interface.Port.prototype = {
+        set: function (inBPS, outBPS, inErr, outErr) {
+            if (!isNaN(inBPS) && !isNaN(outBPS) && !isNaN(inErr) && !isNaN(outErr)) {
+                this.inUse.dataset.value = toBPSString(inBPS);
+                this.inGauge.style.left = this.inUse.title = `${(inBPS / this.config.bandwidth *100).toFixed(2)}%`;
+                this.inUse.appendChild(this.inGauge);
+
+                this.outUse.dataset.value = toBPSString(outBPS);
+                this.outGauge.style.left = this.outUse.title = `${(outBPS / this.config.bandwidth *100).toFixed(2)}%`;
+                this.outUse.appendChild(this.outGauge);
+
+                this.inErr.textContent = inErr;
+                this.outErr.textContent = outErr;
+            } else {
+                this.inUse.dataset.value = "";
+                this.inGauge.style.left = 0;
+
+                this.outUse.dataset.value = ""
+                this.outGauge.style.left = 0;
+
+                this.inErr.textContent = "";
+                this.outErr.textContent = "";
+            }
+        }
+    };
+}
+
 function PortMap() {
     this.initialize(arguments);
 }
@@ -287,168 +606,287 @@ function PortMap() {
     PortMap.prototype = {
         initialize: function(args) {
             this.container = args[0];
-            this.map = {};
+            this.indexToPort = new Map();
         },
         add: function (index, indexData) {
             const container = document.createElement("li");
-            let port, bandwidth, ifAdminStatus, ifOperStatus, inBPS, outBPS, inErrs, outErrs,
-                critical = false;
-            
-            bandwidth = indexData[ITAhM.snmp.oid.bandwidth];
+            let bandwidth = 0, label = "", names = [];
 
-            bandwidth = bandwidth && Number(bandwidth.value);
-            
-            if (!bandwidth) {
-                bandwidth = indexData[ITAhM.snmp.oid.ifHighSpeed];
+            if (ITAhM.snmp.oid.ifSpeed in indexData) {
+                bandwidth = Number(indexData[ITAhM.snmp.oid.ifSpeed]);
 
-                bandwidth = bandwidth && Number(bandwidth.value) *1000000;
+                if (ITAhM.snmp.oid.ifHighSpeed in indexData) {
+                    const speed = indexData[ITAhM.snmp.oid.ifHighSpeed] *1000000;
 
-                if (!bandwidth) {
-                    bandwidth = indexData[ITAhM.snmp.oid.ifSpeed];
-
-                    bandwidth = bandwidth && Number(bandwidth.value);
+                    if (speed > bandwidth) {
+                        bandwidth = speed;
+                    }
                 }
-
-                if (!bandwidth) {
-                    return;
-                }
+            } else if (ITAhM.snmp.oid.ifHighSpeed in indexData) {
+                bandwidth = Number(indexData[ITAhM.snmp.oid.ifHighSpeed]) *1000000;
             }
 
-            ifAdminStatus = indexData[ITAhM.snmp.oid.ifAdminStatus];
-
-            if (!ifAdminStatus) {
+            if (bandwidth <= 0) {
                 return;
             }
 
-            ifAdminStatus = Number(ifAdminStatus.value);
-
-            ifOperStatus = indexData[ITAhM.snmp.oid.ifOperStatus];
-
-            if (!ifOperStatus) {
+            if (!(ITAhM.snmp.oid.ifAdminStatus in indexData)) {
                 return;
             }
 
-            ifOperStatus = Number(ifOperStatus.value);
-
-            inBPS = indexData[ITAhM.snmp.oid.inBPS];
-
-            if (!inBPS) {
+            if (!(ITAhM.snmp.oid.ifOperStatus in indexData)) {
                 return;
             }
 
-            critical ||= inBPS.critical;
-
-            inBPS = Number(inBPS.value);
-
-            outBPS = indexData[ITAhM.snmp.oid.outBPS];
-
-            if (!outBPS) {
+            if (ITAhM.snmp.oid.ifHCInOctets in indexData && ITAhM.snmp.oid.ifHCOutOctets in indexData) {
+                this.prefix = "ifHC"
+            } else if (ITAhM.snmp.oid.ifInOctets in indexData && ITAhM.snmp.oid.ifOutOctets in indexData) {
+                this.prefix = "if"
+            } else {
                 return;
             }
 
-            critical ||= outBPS.critical;
+            [ITAhM.snmp.oid.ifName, ITAhM.snmp.oid.ifDescr, ITAhM.snmp.oid.ifAlias].forEach(name => indexData[name] && names.push(indexData[name]));
 
-            outBPS = Number(outBPS.value);
-            
-            inErrs = indexData[ITAhM.snmp.oid.inErrs];
+            if (names.length === 0) {
+                return;
+            }
 
-            inErrs = inErrs && Number(inErrs.value) || 0;
-                        
-            outErrs = indexData[ITAhM.snmp.oid.outErrs];
-
-            outErrs = outErrs && Number(outErrs.value) || 0;
-
-            port = new Ethernet(this.container.appendChild(container), {
-                image: $.loader.map["/canvas/ethernet.png"],
-                bandwidth: bandwidth,
-                status: ifAdminStatus !== 1?
-                    Ethernet.STATUS_DISABLED: ifOperStatus !==1?
-                    Ethernet.STATUS_SHUTDOWN: critical?
-                    Ethernet.STATUS_CRITICAL:
-                    Ethernet.STATUS_NORMAL
-            });
+            names.sort((n1, n2) => n1.length - n2.length);
 
             container.appendChild(document.createElement("label")).onclick = e => {
                 e.stopPropagation();
                 
-                onSelectResource("/chart/error.html", index);
+                onSelectResource({
+                    chart: "/chart/error.html",
+                    index: index,
+                    title: names[0]
+                });
             };
 
             container.classList.add("selectable");
-            
-            container.onclick = e => onSelectResource("/chart/throughput.html", index);
 
-            this.map[index] = port;
+            container.onclick = e => onSelectResource({
+                chart: "/chart/throughput.html",
+                index: index,
+                oid: this.prefix,
+                max: bandwidth,
+                unit: 8,
+                title: names[0]
+            });
 
-            if (ifAdminStatus == 1 && ifOperStatus == 1) {
-                port.set(inBPS, outBPS);
-            }
+            this.indexToPort.set(index, new Ethernet(this.container.appendChild(container), {
+                image: $.loader.map["/img/ethernet.png"],
+                bandwidth: bandwidth,
+                label: names[0]
+            }));
 
-            for (let i=0, ar = [
-                indexData[ITAhM.snmp.oid.ifName],
-                indexData[ITAhM.snmp.oid.ifDescr],
-                indexData[ITAhM.snmp.oid.ifAlias]
-            ]; i<ar.length; i++) {
-                if (ar[i] && ar[i].value) {
-                    port.label(ar[i++].value);
+            container.title = names.pop();
 
-                    for (; i<ar.length; i++) {
-                        if (ar[i] && ar[i].value) {
-                            container.title = ar[i].value;
-
-                            break;
-                        }
-                    }
-
-                    break;
-                }
-            }
-
-            //port.link(Math.round(Math.random() *10000000000000), $.loader.map[++i %3 ==0? "/img/svg/router.svg": i %3 ==1? "/img/svg/firewall.svg": "/img/svg/workgroup.svg"]);
+            return true;
         },
-        set: function (index, indexData) {
-            const port = this.map[index];
-
+        set: function (port, indexData) {
             try {
                 const
-                    ifAdminStatus = Number(indexData[ITAhM.snmp.oid.ifAdminStatus].value),
-                    ifOperStatus = Number(indexData[ITAhM.snmp.oid.ifOperStatus].value),
-                    inBPS = indexData[ITAhM.snmp.oid.inBPS],
-                    outBPS = indexData[ITAhM.snmp.oid.outBPS],
-                    inErrors = indexData[ITAhM.snmp.oid.inErrs],
-                    outErrors = indexData[ITAhM.snmp.oid.outErrs],
-                    status = ifAdminStatus !== 1?
-                        Ethernet.STATUS_DISABLED: ifOperStatus !==1?
-                        Ethernet.STATUS_SHUTDOWN: inBPS.critical || outBPS.critical?
-                        Ethernet.STATUS_CRITICAL:
-                        Ethernet.STATUS_NORMAL;
+                    ifAdminStatus = Number(indexData[ITAhM.snmp.oid.ifAdminStatus]),
+                    ifOperStatus = Number(indexData[ITAhM.snmp.oid.ifOperStatus]),
+                    inOctets = indexData[ITAhM.snmp.oid[`${this.prefix}InOctets`]],
+                    outOctets = indexData[ITAhM.snmp.oid[`${this.prefix}OutOctets`]],
+                    inErrors = Number(indexData[ITAhM.snmp.oid.ifInErrors]),
+                    outErrors = Number(indexData[ITAhM.snmp.oid.ifOutErrors]);
 
-                if (port.config.status === status) {
-                    if (ifAdminStatus == 1 && ifOperStatus == 1) {
-                       port.set(Number(inBPS.value), Number(outBPS.value));
-                    }
+                if (ifAdminStatus !== 1) {
+                    port.status(Ethernet.STATUS_DISABLED);
+                    port.set();
+                } else if (ifOperStatus !==1) {
+                    port.status(Ethernet.STATUS_SHUTDOWN);
+                    port.set();
                 } else {
-                    port.status(status);
-
-                    if (ifAdminStatus == 1 && ifOperStatus == 1) {
-                        port.set(Number(inBPS.value), Number(outBPS.value));
-                    } else {
-                        port.set();
-                    }
+                    port.set(Number(inOctets) * 8, Number(outOctets) * 8);
                 }
-
-                if (inErrors && Number(inErrors.value) > 0 || outErrors && Number(outErrors.value) > 0) {
-                    port.container.classList.add("error");
-                } else {
-                    port.container.classList.remove("error");
-                }
+                
+                port.container.classList[inErrors > 0 || outErrors > 0? "add": "remove"]("error");
             } catch (e) {
                 console.error(e);
             }
         },
-        update: function (resourceData) {
-            for (let index in this.map) {
-                this.set(index, resourceData[index]);
+        update: function (resourceData, criticalData) {
+            for (let [index, port] of this.indexToPort) {
+                if (criticalData[index]?.[ITAhM.snmp.oid[`${this.prefix}InOctets`]] === false || criticalData[index]?.[ITAhM.snmp.oid[`${this.prefix}OutOctets`]] === false) {
+                    port.status(Ethernet.STATUS_CRITICAL);
+                } else {
+                    port.status(Ethernet.STATUS_NORMAL);
+                }
+
+                this.set(port, resourceData[index]);
+            }
+        }
+    };
+}
+
+function Fan() {
+    this.initialize(arguments);
+}
+
+{let i = 0;
+    Fan.prototype = {
+        initialize: function (args) {
+            this.container = args[0];
+            this.indexToContainer = new Map();
+        },
+        add: function (index) {
+            const container = document.createElement("li");
+            
+            this.indexToContainer.set(index, container);
+            
+            this.container.appendChild(container);
+        },
+        set: function (container, indexData) {
+            var status = false;
+
+            if (ITAhM.snmp.oid.cisco.ciscoEnvMonFanState in indexData) {
+                status = Number(indexData[ITAhM.snmp.oid.cisco.ciscoEnvMonFanState]) === 1;
+            } else if (ITAhM.snmp.oid.piolink.hFANStatus in indexData) {
+                status = Number(indexData[ITAhM.snmp.oid.piolink.hFANStatus]) === 2;
+            } else if (ITAhM.snmp.oid.axgate.fanStatus in indexData) {
+                status = Number(indexData[ITAhM.snmp.oid.axgate.fanStatus]) === 1;
+            } else if (ITAhM.snmp.oid.juniper.jnxOperatingStateFan in indexData) {
+                status = Number(indexData[ITAhM.snmp.oid.juniper.jnxOperatingStateFan]) === 2;
+            }
+
+            container.classList[status? "add": "remove"]("normal");
+
+            return status;
+        },
+        update: function (resourceData, criticalData) {
+            var status = 0;
+
+            for (let [index, container] of this.indexToContainer) {
+                if (this.set(container, resourceData[index])) {
+                    status++;
+                }
+            }
+            
+            if (this.indexToContainer.size === status) {
+                const classList = document.body.querySelector(".fan.status").classList;
+
+                ["critical", "shutdown"].forEach(status => classList.remove(status));
+            } else if (this.indexToContainer.size === 0) {
+                const classList = document.body.querySelector(".fan.status").classList;
+
+                classList.remove("critical");
+                classList.add("shutdown");
+            } else {
+                const classList = document.body.querySelector(".fan.status").classList;
+
+                classList.remove("shutdown");
+                classList.add("critical");
+            }
+        }
+    };
+}
+
+function Power() {
+    this.initialize(arguments);
+}
+
+{
+    Power.prototype = {
+        initialize: function (args) {
+            this.container = args[0];
+            this.indexToContainer = new Map();
+        },
+        add: function (index, indexData) {
+            const container = document.createElement("li");
+            
+            this.indexToContainer.set(index, container);
+            
+            this.container.appendChild(container);
+        },
+        set: function (container, indexData) {
+            var status = false;
+        
+            if (ITAhM.snmp.oid.axgate.powerStatus in indexData) {
+                status = Number(indexData[ITAhM.snmp.oid.axgate.powerStatus]) === 1;
+            }
+            
+            container.classList.remove("normal");
+
+            status && container.classList.add("normal");
+            
+            return status;
+        },
+        update: function (resourceData, criticalData) {
+            var status = 0;
+
+            for (let [index, container] of this.indexToContainer) {
+                if (this.set(container, resourceData[index])) {
+                    status++;
+                }
+            }
+            
+            if (this.indexToContainer.size === status) {
+                const classList = document.body.querySelector(".power.status").classList;
+
+                ["critical", "shutdown"].forEach(status => classList.remove(status));
+            } else if (this.indexToContainer.size === 0) {
+                const classList = document.body.querySelector(".power.status").classList;
+
+                classList.remove("critical");
+                classList.add("shutdown");
+            } else {
+                const classList = document.body.querySelector(".power.status").classList;
+
+                classList.remove("shutdown");
+                classList.add("critical");
+            }
+        }
+    };
+}
+
+function Temperature() {
+    this.initialize(arguments);
+}
+
+{
+    Temperature.prototype = {
+        initialize: function (args) {
+            this.container = args[0];
+            this.indexToContainer = new Map();
+        },
+        add: function (index, oid) {
+            const container = document.createElement("li");
+            
+            container.appendChild(document.createElement("label"));
+
+            this.indexToContainer.set(index, container);
+            
+            container.classList.add("status", "selectable");
+
+            container.dataset.oid = oid;
+
+            container.onclick = e => onSelectResource({
+                chart: "/chart/temperature.html",
+                oid: oid,
+                index: index,
+                unit: 0.1
+            });
+
+            this.container.appendChild(container);
+        },
+        set: function (container, indexData) {
+            if (ITAhM.snmp.oid.axgate.temperature in indexData) {
+                container.querySelector("label")
+                    .textContent = `${(Number(indexData[ITAhM.snmp.oid.axgate.temperature]) /10).toFixed(1)} ${String.fromCodePoint("0x2103")}`;
+            }
+        },
+        update: function (resourceData, criticalData) {
+            var status = 0;
+
+            for (let [index, container] of this.indexToContainer) {
+                container.classList[criticalData[index]?.[container.dataset.oid] === false? "add": "remove"]("critical");
+
+                this.set(container, resourceData[index]);
             }
         }
     };
@@ -459,22 +897,22 @@ function Processor() {
 }
 
 {
-    const options = {
+    const 
+        options = {
             cutoutPercentage: 70,
             circumference: Math.PI,
             rotation: Math.PI *-1
         },
-        COLOR_GREEN = "#00897b",
-        COLOR_ORANGE = "#f6bf26",
-        COLOR_RED = "#8e24aa",
+        COLOR_GREEN = "#00897b", //"#2FE3FE",
+        COLOR_ORANGE = "#f6bf26",//"#FE6A50"
+        COLOR_RED = "#8e24aa", //"#8900FF",
         COLOR_NULL = "transparent",
         COLOR_GAUGE = "#dddddd";
 
     Processor.prototype = {
         initialize: function (args) {
-            container = args[0];
-
-            this.array = [];
+            this.container = args[0];
+            this.indexToOID = new Map();
 
             const
                 min = document.createElement("li"),
@@ -520,10 +958,15 @@ function Processor() {
             df.appendChild(avg);
             df.appendChild(max);
 
-            container.appendChild(df);
+            this.container.appendChild(df);
         },
-        add: function (index) {
-            this.array.push(index);
+        add: function (index, oid) {
+            this.indexToOID.set(index, oid);
+
+            this.container.onclick = e => onSelectResource({
+                chart: "/chart/processor.html",
+                oid: oid
+            });
         },
         set: function (index, value) {
             const chart = this[index];
@@ -537,19 +980,24 @@ function Processor() {
 
             chart.update();
         },
-        update: function (resourceData) {
-            if (!this.array.length) {
+        update: function (resourceData, criticalData) {
+            if (this.indexToOID.size === 0) {
                 return;
             }
             
-            const array = [];
+            const
+                array = [],
+                classList = document.body.querySelector("section.processor.status").classList;
 
-            this.array.forEach(index => {
-                array.push(Number(resourceData[index][ITAhM.snmp.oid.hrProcessorLoad].value));
-            });
+            classList.remove("critical");
 
-            document.body.querySelector(".processor.status")
-                .classList[resourceData["0"]["1.3.6.1.4.1.49447.4"].critical? "add": "remove"]("critical");
+            for (let [index, oid] of this.indexToOID) {
+                array.push(Number(resourceData[index][oid]));
+
+                if (criticalData[index]?.[oid] === false) {
+                    classList.add("critical");
+                }
+            }
 
             this.set("max", Math.max.apply(undefined, array));
             this.set("min", Math.min.apply(undefined, array));
@@ -563,39 +1011,31 @@ function Response() {
 }
 
 {
-    const options = {
-            cutoutPercentage: 0
-        },
-        COLOR_GAUGE = "#4d525a";
-
     Response.prototype = {
         initialize: function (args) {
-            const
-                container = args[0],
-                chart = document.createElement("li");
-
-            this.chart = new Chart(chart.appendChild(document.createElement("canvas")), {
-                type: "pie",
-                data: {
-                    datasets: []
-                },
-                options: options
-            });
-
-            container.appendChild(chart);
+            this.container = args[0];
+            this.indexToContainer = new Map();
         },
-        update: function (rtt) {
-            this.chart.config.label = `${rtt.value}ms`;
+        set: function (container, indexData) {
+            const rtt = indexData[ITAhM.snmp.oid.corebrg.responseTime];
 
-            document.body.querySelector(".response.status")
-                .classList[rtt.critical? "add": "remove"]("critical");
+            container.querySelector("li.content").textContent = `${rtt}ms`;
+        },
+        update: function (resourceData, criticalData) {
+            const classList = document.body.querySelector(".rtt.status").classList;
 
-            this.chart.config.data.datasets[0] = {
-                data: [100],
-                backgroundColor: [COLOR_GAUGE]
-            };
+            classList.remove("shutdown", "critical");
 
-            this.chart.update();
+            for (let [index, container] of this.indexToContainer) {
+                this.set(container, resourceData[index]);
+
+                if (index in criticalData && ITAhM.snmp.oid.corebrg.responseTime in criticalData[index]) {
+                    classList.add("critical");
+                }
+            }
+        },
+        add: function (index, indexData) {
+            this.indexToContainer.set(index, this.container);
         }
     };
 }
@@ -644,36 +1084,53 @@ function Storage() {
     Storage.prototype = {
         initialize: function (args) {
             this.container = args[0];
-            this.map = {};
+            this.indexToContainer = new Map();
         },
         add: function (index, indexData) {
+            const isValidData = ITAhM.snmp.oid.hrStorageSize in indexData
+                && ITAhM.snmp.oid.hrStorageAllocationUnits in indexData
+                && ITAhM.snmp.oid.hrStorageUsed in indexData;
+            
+            if (!isValidData) {
+                return;
+            }
+
             const
                 storage = document.createElement("li"),
-                canvas = document.createElement("canvas");
+                canvas = document.createElement("canvas"),
+                chart = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: [indexData[ITAhM.snmp.oid.hrStorageDescr] || ""]
+                    },
+                    options: options
+                });
 
-            this.map[index] = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: [indexData[ITAhM.snmp.oid.hrStorageDescr] && indexData[ITAhM.snmp.oid.hrStorageDescr].value || ""]
-                },
-                options: options
+            this.indexToContainer.set(index, {
+                status: storage,
+                chart: chart
             });
             
             storage.classList.add("status", "selectable");
             
-            storage.onclick = e => onSelectResource("/chart/storage.html", index);
+            if (ITAhM.snmp.oid.hrStorageUsed in indexData) {
+                storage.onclick = e => onSelectResource({
+                    chart: "/chart/storage.html",
+                    index: index,
+                    max: Number(indexData[ITAhM.snmp.oid.hrStorageSize]) * Number(indexData[ITAhM.snmp.oid.hrStorageAllocationUnits]),
+                    unit: indexData[ITAhM.snmp.oid.hrStorageAllocationUnits],
+                    title: indexData[ITAhM.snmp.oid.hrStorageDescr] || undefined
+                });
+            }
 
             storage.appendChild(canvas);
 
             this.container.appendChild(storage);
-
-            this.set(index, indexData);
         },
-        set: function (index, indexData) {
+        set: function (chart, indexData) {
             const
-                chart = this.map[index],
-                used = Number(indexData[ITAhM.snmp.oid.hrStorageUsed].value), // used
-                size = Number(indexData[ITAhM.snmp.oid.hrStorageSize].value), // size
+                used = Number(indexData[ITAhM.snmp.oid.hrStorageUsed]), // used
+                size = Number(indexData[ITAhM.snmp.oid.hrStorageSize]), // size
                 datasets = [{
                     data: [0],
                     backgroundColor: COLOR_GREEN
@@ -699,17 +1156,16 @@ function Storage() {
                 datasets[0].data[0] = Math.round(value);
             }
 
-            this.container.querySelector(".status")
-                .classList[indexData[ITAhM.snmp.oid.hrStorageUsed].critical? "add": "remove"]("critical");
-
             chart.config.label = `${value}%`;
             chart.config.data.datasets = datasets;
 
             chart.update();
         },
-        update: function (resourceData) {
-            for (let index in this.map) {
-                this.set(index, resourceData[index]);
+        update: function (resourceData, criticalData) {
+            for (let [index, container] of this.indexToContainer) {
+                container.status.classList[criticalData[index]?.[ITAhM.snmp.oid.hrStorageUsed] === false? "add": "remove"]("critical");
+
+                this.set(container.chart, resourceData[index]);
             }
         }
     };
@@ -726,16 +1182,31 @@ function initialize(node) {
     document.body.classList.add("response");
 
     {
+        const toggle = document.getElementById("toggle");
+    
+        if (window.localStorage.getItem("toggle")) {
+            toggle.checked = true;
+        }
+
+        toggle.onclick = e => {
+            if (toggle.checked) {
+                window.localStorage.setItem("toggle", "on");
+            } else {
+                window.localStorage.removeItem("toggle");
+            }
+        }
+    }
+
+    {
         const container = document.body.querySelector("section.type ul");
-        let icon;
+        let icon = ITAhM.iconData["unknown"];
+        
         if (node.type) {
             if (node.type in $.iconData) {
                 icon = $.iconData[node.type];
             } else if (node.type in ITAhM.iconData) {
                 icon = ITAhM.iconData[node.type];
             }
-        } else {
-            icon = ITAhM.iconData["unknown"];
         }
     
         container.style.backgroundImage = `url(${icon.src})`;
@@ -748,97 +1219,128 @@ function initialize(node) {
         //sysName
         (function(sysName) {
             if (sysName) {
-                document.body.querySelector(".information .snmp.name")
-                    .textContent = sysName.value;
+                document.body.querySelector(".information .snmp.name").textContent = sysName;
             }
         })(indexData[ITAhM.snmp.oid.sysName]);
 
         //sysDescr
         (function(sysDescr) {
             if (sysDescr) {
-                document.body.querySelector(".information .snmp.descr")
-                    .textContent = sysDescr.value;
+                document.body.querySelector(".information .snmp.descr").textContent = sysDescr;
             }
         })(indexData[ITAhM.snmp.oid.sysDescr]);
 
         //sysObjectID
         (function(sysObjectID) {
             if (sysObjectID) {
-                const enterprise = ITAhM.util.enterpriseFromOID(sysObjectID.value);
-                //const enterprise = ITAhM.util.enterpriseFromOID("1.3.6.1.4.1.2636");
+                const enterprise = ITAhM.util.enterpriseFromOID(sysObjectID);
 
                 if (enterprise && enterprise.logo) {
                     document.body.querySelector("section.enterprise ul").style.backgroundImage = `url(${enterprise.logo})`;
+                } else {
+                    document.body.querySelector("section.enterprise ul").title = sysObjectID;
                 }
             }
         })(indexData[ITAhM.snmp.oid.sysObjectID]);
 
         //responseTime
-        (function(rtt) {
-            if (rtt) {
-                $.response.update(rtt);
-
-                document.getElementById("response").querySelector("li").dataset.response = toElapseString(rtt.timestamp);
-            }
-        })(indexData[ITAhM.snmp.oid.responseTime]);
+        if (ITAhM.snmp.oid.corebrg.responseTime in indexData) {
+            $.response.add(index, indexData);
+        }
         
         //스토리지, 물리 메모리
-        (function(type, used, size, units, descr) {
-            if (type && used && size && units && Number(size.value) > 0) {
-                switch(type.value) {
-                case ITAhM.snmp.oid.hrStorageRam:
-                    document.body.classList.add("memory");
+        if (ITAhM.snmp.oid.hrStorageType in indexData) {
+            switch(indexData[ITAhM.snmp.oid.hrStorageType]) {
+            case ITAhM.snmp.oid.hrStorageRam:
+                document.body.classList.add("memory");
 
-                    $.memory.add(index, indexData);
+                $.memory.add(index, indexData);
 
-                    break;
-                case ITAhM.snmp.oid.hrStorageFixedDisk:
-                    document.body.classList.add("storage");
+                break;
+            case ITAhM.snmp.oid.hrStorageFixedDisk:
+                document.body.classList.add("storage");
 
-                    $.storage.add(index, indexData);
-                    //$.storage.add(index, indexData);$.storage.add(index, indexData);$.storage.add(index, indexData);$.storage.add(index, indexData);$.storage.add(index, indexData);
+                $.storage.add(index, indexData);
 
-                    break;
-                }
+                break;
             }
-        })(indexData[ITAhM.snmp.oid.hrStorageType]
-            , indexData[ITAhM.snmp.oid.hrStorageUsed]
-            , indexData[ITAhM.snmp.oid.hrStorageSize]
-            , indexData[ITAhM.snmp.oid.hrStorageAllocationUnits]
-            , indexData[ITAhM.snmp.oid.hrStorageDescr]);
+        }
         
         // 인터페이스
-        (function(descr, type, bandwidth, ifHighSpeed, ifSpeed, aStatus, oStatus, inOcts, outOcts, inErrs, outErrs, name, alias) {
-            if (inOcts && outOcts && (bandwidth || ifHighSpeed || ifSpeed) && inErrs && outErrs && aStatus && oStatus) {
+        (function(descr, type, bandwidth, aStatus, oStatus, inOcts, outOcts, name, alias) {
+            if (type && inOcts && outOcts && bandwidth && aStatus && oStatus) {
                 document.body.classList.add("portmap");
-                
-                $.portMap.add(index, indexData);
+                if (Number(type) === 6) {
+                    $.portMap.add(index, indexData);
+                }
             }
         })(indexData[ITAhM.snmp.oid.ifDescr]
             , indexData[ITAhM.snmp.oid.ifType]
-            , indexData[ITAhM.snmp.oid.bandwidth]
-            , indexData[ITAhM.snmp.oid.ifHighSpeed]
-            , indexData[ITAhM.snmp.oid.ifSpeed]
+            , indexData[ITAhM.snmp.oid.ifHighSpeed] || indexData[ITAhM.snmp.oid.ifSpeed]
             , indexData[ITAhM.snmp.oid.ifAdminStatus]
             , indexData[ITAhM.snmp.oid.ifOperStatus]
-            , indexData[ITAhM.snmp.oid.inBPS]
-            , indexData[ITAhM.snmp.oid.outBPS]
-            , indexData[ITAhM.snmp.oid.inErrs]
-            , indexData[ITAhM.snmp.oid.outErrs]
+            , indexData[ITAhM.snmp.oid.ifHCInOctets] || indexData[ITAhM.snmp.oid.ifInOctets]
+            , indexData[ITAhM.snmp.oid.ifHCOutOctets] || indexData[ITAhM.snmp.oid.ifOutOctets]
             , indexData[ITAhM.snmp.oid.ifName]
             , indexData[ITAhM.snmp.oid.ifAlias]);
             
-        //CPU
-        (function(load) {
-            if (load) {
-                document.body.classList.add("processor");
+        //FAN
+        [
+            ITAhM.snmp.oid.cisco.ciscoEnvMonFanState,
+            ITAhM.snmp.oid.piolink.hFANStatus,
+            ITAhM.snmp.oid.axgate.fanStatus,
+            ITAhM.snmp.oid.juniper.jnxOperatingStateFan
+        ].forEach(oid => {
+            if (oid in indexData) {
+                $.fan.add(index, indexData);
 
-                $.processor.add(index, indexData);
+                document.body.classList.add("fan");
             }
-        })(indexData[ITAhM.snmp.oid.hrProcessorLoad]);
+        });
+        //Processor
+        [
+            ITAhM.snmp.oid.hrProcessorLoad,
+            ITAhM.snmp.oid.cisco.cpmCPUTotal5secRev,
+            ITAhM.snmp.oid.axgate.hrProcessorLoad
+        ].forEach(oid => {
+            if (oid in indexData) {
+                $.processor.add(index, oid);
+
+                document.body.classList.add("processor");
+            }
+        });
+
+        //Power
+        [
+            ITAhM.snmp.oid.axgate.powerStatus
+        ].forEach(oid => {
+            if (oid in indexData) {
+                $.power.add(index, indexData);
+
+                document.body.classList.add("power");
+            }
+        });
+        
+        //Temperature
+        [
+            ITAhM.snmp.oid.axgate.temperature
+        ].forEach(oid => {
+            if (oid in indexData) {
+                $.temperature.add(index, oid)
+
+                document.body.classList.add("temperature");
+            }
+        });
     }
-	
-    $.processor.update(node.resource);
+    
+    $.response.update(node.resource, node.critical);
+    $.processor.update(node.resource, node.critical);
+    $.memory.update(node.resource, node.critical);
+    $.storage.update(node.resource, node.critical);
+    $.portMap.update(node.resource, node.critical);
+    $.fan.update(node.resource, node.critical);
+    $.power.update(node.resource, node.critical);
+    $.temperature.update(node.resource, node.critical);
 
     [].forEach.call(document.body.querySelectorAll("section"), section => {
 		section.draggable = true;
@@ -897,24 +1399,12 @@ function refresh() {
 }
 
 function update(node) {
-    const resourceData = node.resource;
-
-    if (!resourceData) {
+    if (!("resource" in node)) {
         return;
     }
 
-    try {
-        let rt = resourceData["0"][ITAhM.snmp.oid.responseTime];
-        
-        $.response.update(rt);
-        
-        document.getElementById("response").querySelector("li").dataset.response = toElapseString(rt.timestamp);
-    } catch (e) {}
-
-    $.processor.update(resourceData);
-    $.storage.update(resourceData);
-    $.memory.update(resourceData);
-    $.portMap.update(resourceData);
+    ["response", "processor", "storage", "memory", "portMap", "fan", "power", "temperature"]
+        .forEach(resource => $[resource].update(node.resource, node.critical));
 
     refresh();
 }
@@ -948,27 +1438,47 @@ function toElapseString(millis) {
         return `${Math.round(elapse /24 /60 /60 /1000)}일 전`;
     }
 }
-//private
-function onSelectResource(chart, index) {
-    const date = new Date();
 
-    window.location
-        .replace(`/chart/chart.html?id=${$.id}&name=${chart}&index=${index}&from=${date.setHours(0, 0, 0, 0)}&to=${date.setDate(date.getDate() +1)}`);
+//private
+function onSelectResource(args) {
+    const {
+            chart, oid, index, max, unit, title
+        } = args,
+        date = new Date(),
+        search = new URLSearchParams();
+    
+    search.set("id", $.id);
+    search.set("name", chart);
+    oid && search.set("oid", oid);
+    index && search.set("index", index);
+    max && search.set("max", max);
+    unit && search.set("unit", unit);
+    title && search.set("title", title);
+    search.set("from", date.setHours(0, 0, 0, 0));
+    search.set("to", date.setDate(date.getDate() +1));
+
+    window.location.replace(`/chart/chart.html?${search.toString()}`);
 }
 
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert(NOTICE_SESS_EXPIRE["kr"]);
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
 		</script>
@@ -1012,9 +1522,20 @@ function showMessage(xhr) {
                 <ul></ul>
             </section>
 
-            <section class="response status">
-                <h2>응답 시간</h2>
-                <ul id="response" class="container selectable"></ul>
+            <section class="fan status">
+                <h2>팬</h2>
+                <ul id="fan" class="container"></ul>
+            </section>
+
+            <section class="power status">
+                <h2>전원</h2>
+                <ul id="power" class="container"></ul>
+            </section>
+
+            <section class="temperature">
+                <h2>온도</h2>
+                <ul id="temperature" class="container">
+                </ul>
             </section>
 
 			<section class="processor status">
@@ -1032,9 +1553,21 @@ function showMessage(xhr) {
                 <ul id="storage" class="container"></ul>
             </section>
 			
-			<section class="portmap">
+            <section class="rtt status">
+                <h2>응답 시간</h2>
+                <ul id="rtt" class="container selectable">
+                    <li class="rotate"></li>
+                    <li class="background" data-elapse="">&#xf2f2;</li>
+                    <li class="content"></li>
+                </ul>
+            </section>
+
+            <section class="dummy">
+            </section>
+
+            <section class="portmap">
 				<h2>
-                    포트맵
+                    인터페이스
                 </h2>
                 <div>
                     <input type="checkbox" id="toggle">
@@ -1049,6 +1582,35 @@ function showMessage(xhr) {
                     <ul id="portmap"></ul>
                 </div>
 			</section>
+
+            <section class="interface">
+                <table>
+                    <colgroup>
+                        <col width="60">
+                        <col>
+                        <col>
+                        <col width="180">
+                        <col>
+                        <col width="160">
+                        <col>
+                        <col width="160">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>상태</th>
+                            <th>이름</th>
+                            <th>설명</th>
+                            <th>대역폭</th>
+                            <th>수신량</th>
+                            <th>수신 오류</th>
+                            <th>송신량</th>
+                            <th>송신 오류</th>
+                        </tr>
+                    </thead>
+                    <tbody id="interface">
+                    </tbody>
+                </table>
+            </section>
 		</article>
 
 		<div class="loading mask"></div>
@@ -1121,6 +1683,7 @@ Chart.Chart.pluginService.register({
         </script>
         <script src="/js/request.js"></script>
         <script src="/js/constants.js"></script>
+        <script src="/js/snmp.js"></script>
         <script src="/util/loader.js"></script>
 		<script>
 
@@ -1133,57 +1696,44 @@ const
         processorIndexArray: [],
         memoryIndexArray: [],
         storageIndexObj: {},
-        response: new Response(document.getElementById("response")),
+        response: new Response(document.getElementById("rtt")),
         processor: new Processor(document.getElementById("processor")),
         storage: new Storage(document.getElementById("storage")),
         memory: new Storage(document.getElementById("memory")),
         portMap: new PortMap(document.getElementById("portmap")),
+        fan: new Fan(document.getElementById("fan")),
+        power: new Power(document.getElementById("power")),
+        temperature: new Temperature(document.getElementById("temperature")),
         ethernet: new Image(),
         loader: new ImageLoader(onImageLoad)
     };
 
-document.getElementById("processor").onclick = e => onSelectResource("/chart/processor.html", "0");
-document.getElementById("response").onclick = e => onSelectResource("/chart/responseTime.html", "0");
-
-function initNode () {
-    switch (this.status) {
-        case 200:
-            break;
-        default:
-            throw showMessage(this);
-    }
-
-    initialize(JSON.parse(this.responseText));
-}
-
-function initIcon () {
-    switch (this.status) {
-        case 200:
-            break;
-        default:
-            throw showMessage(this);
-    }
-
-    $.iconData = JSON.parse(this.responseText);
-
-    $.request.execute({
-        command: "get",
-        target: "node",
-        id: $.id,
-        resource: true
-    }, initNode);
-}
+document.getElementById("rtt").onclick = e => onSelectResource({
+    chart: "/chart/responseTime.html",
+    index: "0"
+});
 
 function onImageLoad() {
-    $.request.execute({
+    $.request.query({
         command: "get",
         target: "icon"
-    }, initIcon);
+    }).then(iconData => {
+        $.iconData = iconData || {};
+
+        return $.request.query({
+            command: "get",
+            target: "node",
+            id: $.id,
+            resource: true
+        });
+    }).then(node => {
+        initialize(node);
+    })
+    .catch(showMessage);
 }
 
 if ($.id) {
-    //$.loader.load(["/canvas/ethernet.png", "/img/svg/router.svg", "/img/svg/firewall.svg", "/img/svg/workgroup.svg"]);
-    $.loader.load(["/canvas/ethernet.png"]);
+    $.loader.load(["/img/ethernet.png"]);
 }
 
 

@@ -6,11 +6,191 @@
 		
 		<style>
 
+@import "/css/style.css";
 @import "/css/var.css";
 @import "/css/fa.css";
-@import "/css/skin/index.css";
-@import "/css/skin/type1.css";
+@import "/css/index.css";
 
+nav {
+    height: 100%;
+    flex-direction: column;
+}
+
+nav >ul {
+    flex-direction: column;
+}
+
+nav >ul >li {
+    text-align: center;
+    color: #1f1f1f;
+}
+
+nav >ul >li:not(:last-child) {
+    margin-bottom: 3px;
+}
+
+nav >ul >li:not([title]) {
+    display: none;
+}
+
+nav >ul ul {
+    inset: 0 auto auto 100%;
+    text-align: initial;
+    border: none;
+    padding: 0;
+}
+
+nav >ul ul >li {
+    padding: 0.5em 1em;
+}
+
+nav >ul ul.view >li:first-child {
+    pointer-events: none;
+    background-color: #1b3d81;
+    color: #fefefe;
+    text-align: center;
+}
+
+nav >ul:last-child ul {
+    inset: auto auto 0 100%;
+}
+
+nav >ul >li ul::after {
+    inset: 5px 100% auto auto;
+    border-bottom-color: transparent;
+}
+
+nav >ul:last-child ul::after {
+    inset: auto 100% 5px auto;
+}
+
+nav >ul >li >a {
+    padding: 5px;
+    font-size: 30px;
+    font-weight: bold;
+    width: 100%;
+    border: 2px solid #fefefe;
+    box-sizing: border-box;
+    background-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(0, 0, 0, 0.1);
+    border-image: linear-gradient(to bottom, #aaa9ad, #5b676d);
+    border-image-slice: 1;
+}
+
+nav >ul >li >a >div {
+    font-size: 12px;
+    display: block;
+}
+
+.account {
+    display: none;
+}
+
+nav >ul {
+    width: 60px;
+}
+
+nav >ul >li {
+    color: #fefefe;
+}
+
+footer div {
+    background-color: var(--var-color-normal);
+}
+
+footer div.shutdown {
+    background-color: var(--var-color-shutdown);
+}
+
+footer div.critical {
+    background-color: var(--var-color-critical);
+}
+
+footer div::after {
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='15.515px' height='17.5px' viewBox='0 17.5 15.515 17.5'><g transform='translate(47.999, 0) scale(-1, 1)'><path fill='%23296e01' d='M38.484,17.5c0,8.75,1,13.5-6,17.5C51.484,35,52.484,17.5,38.484,17.5z'/></g></svg>") no-repeat right bottom;
+}
+
+footer div.shutdown::after {
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='15.515px' height='17.5px' viewBox='0 17.5 15.515 17.5'><g transform='translate(47.999, 0) scale(-1, 1)'><path fill='%23a62c2b' d='M38.484,17.5c0,8.75,1,13.5-6,17.5C51.484,35,52.484,17.5,38.484,17.5z'/></g></svg>") no-repeat right bottom;
+}
+
+footer div.critical::after {
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='15.515px' height='17.5px' viewBox='0 17.5 15.515 17.5'><g transform='translate(47.999, 0) scale(-1, 1)'><path fill='%23da680f' d='M38.484,17.5c0,8.75,1,13.5-6,17.5C51.484,35,52.484,17.5,38.484,17.5z'/></g></svg>") no-repeat right bottom;
+}
+
+aside {
+    position: absolute; inset: 100px;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex; flex-direction: column;
+}
+
+body:not(.view) aside {
+    display: none;
+}
+
+aside >div:first-child {
+    flex: none;
+    padding: 1em;
+    background-color: #1b3d81;
+}
+
+aside >div:last-child {
+    flex: 1;
+}
+
+#close {
+    font-family: 'Font Awesome 5 Free';
+    display: block;
+    float: right;
+    font-weight: bold;
+    cursor: pointer;
+    color: #fefefe;
+}
+
+#close:hover {
+    transform: scale(1.2);
+}
+
+body.restart {
+    border: 10px solid red;
+    animation: restart 1s infinite;
+}
+
+dialog {
+    width: 320px;
+    border: 3px solid #dd3a7e;
+    text-align: center;
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+dialog button {
+    flex: 1;
+    padding: 0.5em;
+    font: 1em "Font Awesome 5 Free", "맑은 고딕";
+}
+
+@keyframes restart {
+    from {
+        border-color: transparent;
+    }
+    to {
+        border-color: red;
+    }
+}
+
+body.restart::after {
+    font: bold 2em "Font Awesome 5 Free", "맑은 고딕";
+    content: "\f071" "  " "서비스가 비정상 종료 되었습니다. 서비스 정상 종료후 다시 시작 하세요.";
+    position: fixed; inset: 1em 0 auto 0;
+    display: block;
+    padding: 1em;
+    color: red;
+    text-align: center;
+    pointer-events: none;
+}
         </style>
         <script>
 
@@ -52,63 +232,32 @@ function signIn(account) {
     document.getElementById("user").title = account.id;
     document.getElementById("signout").onclick = onSignOut;
 
-    {
-        const commander = new Commander(account);
+    $.request.listen((e, status)=> {
+        onEvent(e, status);
 
-        new BroadcastChannel("bc_root").onmessage = e => commander.execute(e.data);
-    }
-
-    $.request.execute({
-        command: "get",
-        target: "setting"
-    }, function () {
-        switch (this.status) {
-        case 200:
-            const
-                settingData = JSON.parse(this.responseText);
-            let home = "about:blank";
-
-            if (!("mute" in settingData) || settingData.mute === "false") {
-                $.sound = new Audio("/siren.mp3");
-            }
-
-            $.request.listen(e => {
-                onEvent(e);
-
-                Channel.sendEvent(e);
-            });
-
-            if ("home" in settingData) {
-                switch (settingData.home) {
-                case "1":
-                    home = "/topology.html";
-
-                    break;
-                case "2":
-                    home = "/branch.html";
-
-                    break;
-                case "3":
-                    home = "/dc.html";
-
-                    break;
-                case "4":
-                    home = "/TopTen.html";
-
-                    break;
-                }
-            }
-
-            document.getElementById("main").src = home;
-            document.getElementById("status").src = "/status.html";
-
-            document.body.classList.add("authorized");
-
-            break;
-        default:
-            showMessage(this);
+        if (e) {
+            Channel.sendEvent(e);
         }
     });
+
+    new Request().echo((status, millis) => {});
+
+    new BroadcastChannel("bc_root").onmessage = e => new Commander(account).execute(e.data);
+    
+    $.request.query({
+        command: "get",
+        target: "config"
+    })
+    .then(configData => {
+        if ("RESTART" in configData && JSON.parse(configData["RESTART"]) === true) {
+            document.body.classList.add("restart");
+        }
+
+        document.getElementById("main").src = "/topology/viewer.html";
+
+        document.body.classList.add("authorized");
+    })
+    .catch(showMessage);
 }
 
 function toElapseString(millis) {
@@ -125,50 +274,94 @@ function toElapseString(millis) {
     }
 }
 
-function onEvent(event) {
+function onEvent(event, status) {
     if (event == null) {
         event = {
-            name: "시스템",
-            message: "이벤트 리스너 응답 없음."
+            origin: "system",
+            level: status
         };
     } else if (event.level < 0) {
-        alert("Notice.\n\n"+
-            "관리자가 서비스를 종료하였습니다.");
-
         return signOut();
     }
 
+    if (event.oid && event.index) {
+        switch (event.oid) {
+        case ITAhM.snmp.oid.ifOutOctets:
+        case ITAhM.snmp.oid.ifInOctets:
+        case ITAhM.snmp.oid.ifHCOutOctets:
+        case ITAhM.snmp.oid.ifHCInOctets:
+        case ITAhM.snmp.oid.ifOperStatus:
+            return $.request.query({
+                    command: "get",
+                    target: "node",
+                    id: event.node,
+                    resource: true
+                })
+                .then(nodeData => {
+                    const indexData = nodeData.resource[event.index];
+
+                    buildMessage(event,
+                        `인터페이스 ${indexData[ITAhM.snmp.oid.ifName] || indexData[ITAhM.snmp.oid.ifDescr] || indexData[ITAhM.snmp.oid.ifAlias]} ${getNameOfOID(event.oid)}`);
+                })
+                .catch(showMessage);
+        default:
+            return buildMessage(event, `${getNameOfOID(event.oid)}`);
+        }
+    }
+    
+    buildMessage(event);
+}
+
+function buildMessage(event, extra = "") {
     const div = document.createElement("div");
 
     div.dataset.timestamp = new Date().getTime();
     div.dataset.elapse = "지금";
-    div.textContent = `${event.name || event.ip || ""} ${event.message}`;
+
+    switch(event.origin.toUpperCase()) {
+    case "CRITICAL":
+        div.textContent = `${event.name || event.ip || ""} ${extra} 임계 ${event.level === 0? "정상": "초과"}`;
+        
+        break;
+    case "MATCH":
+        div.textContent = `${event.name || event.ip || ""} ${extra} 상태 ${event.level === 0? "정상": "오류"}`;
+        
+        break;
+    case "STATUS":
+        div.textContent = `${event.name || event.ip || ""} 응답 ${event.level === 0? "정상": "없음"}`;
+
+        break;
+    case "SNMP":
+        div.textContent = `${event.name || event.ip || ""} SNMP ${event.level === 0? "정상": ("오류코드 "+ event.level)}`;
+
+        break;
+    case "REGISTER":
+        div.textContent = `${event.name || event.ip || ""} 등록 ${event.level === 0? "성공": "실패"}`;
+
+        break;
+    case "SEARCH":
+        div.textContent = `${event.name || event.ip || ""} 스마트서치 통보`;
+
+        break;
+    case "SYSTEM":
+        div.textContent = `이벤트 리스너 오류코드 ${event.level}`;
+
+        break;
+    }
+
+    if (event.level === 2) {
+        div.classList.add("shutdown");
+
+        const alarm = !window.localStorage.getItem("mute") && sound.play();
+
+        alarm && alarm.catch(e => document.body.querySelector("dialog").showModal());
+    } else if (event.level === 1) {
+        div.classList.add("critical");
+    }
 
     document.body.querySelector("footer").appendChild(div);
 
     document.body.classList.add("event");
-
-    switch(event.origin) {
-    case "critical":
-    case "status":
-    case "snmp":
-    case "updown":
-        break;
-
-    case "register":
-    case "search":
-    case "system":
-    case "warning":
-        break;
-    }
-
-    if (event.level === 2 && $.sound) {
-        try {
-            $.sound.play();
-        } catch (e) {
-            console.log(e);
-        };
-    }
 }
 
 function showDialog(src, parent) {
@@ -222,138 +415,86 @@ function onSignOut() {
 }
 
 function showMessage(xhr) {
-    switch (xhr.status) {
-    default:
-        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
+
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace(xhr);
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
-function onTest(e) {
-    const reader = new FileReader();
-
-    reader.onload = function (e) {
-        const rows = reader.result.split(/\r?\n/);
-        const locationData = {};
-        let location;
-
-        rows.forEach((row,i) => {
-            const cols = row.split(",");
-            
-            location = {
-                rack: Number(cols[0]),
-                position: Number(cols[1]),
-                maker: cols[2],
-                model: cols[3],
-                name: cols[5] || "",
-            };
-
-            if (cols[6]) {
-                location.ip = cols[6];
-            }
-
-            locationData[String(i +1)] = location;
-        });
-        
-        $.request.execute({
-            command: "test",
-            location: locationData
-        }, function (e) {
-            console.log(this.status);
-        });
-    };
-
-    reader.readAsText(e.target.files[0], "UTF-8");
-}
         </script>
     </head>
     <body class="status event">
+        <article>
+            <main>
+                <iframe name="main" id="main" src="/connect.html"></iframe>
+            </main>
+            <aside>
+                <div>
+                    <span  id="close" title="닫기">&#xf00d;</span>
+                </div>
+                <div>
+                    <iframe name="view"></iframe>
+                </div>
+            </aside>
+        </article>
         <header>
             <nav>
                 <ul>
-                    <li>
-                        <b></b>
-                    </li>
-                    <li title="토폴로지">
-                        <a href="/topology.html" target="main">
-                            &#xf0e8;
-                            <div>토폴로지</div>
-                        </a>
-                        <ul class="root">
-                            <li>
-                                <a href="/topology.html" target="main">&#xf06e; 보기</a>
-                            </li>
-                            <li>
-                                <a href="/topology/editor.html" target="main">&#xf044; 편집</a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li title="지도">
-                        <a href="/branch.html" target="main">
-                            &#xf3c5;
-                            <div>지도</div>
+                    <li title="Home">
+                        <a href="/">
+                            &#xf015;
+                            <div>홈</div>
                         </a>
                     </li>
-                    <li title="데이터센터">
-                        <a href="/dc.html" target="main">
-                            &#xf64f;
-                            <div>DC</div>
-                        </a>
-                        <ul class="root">
-                            <li>
-                                <a href="/dc.html" target="main">&#xf06e; 보기</a>
-                            </li>
-                            <li>
-                                <a href="/dc/editor.html" target="main">&#xf044; 편집</a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li title="Top Ten">
-                        <a href="/topTen.html" target="main">
+                    <!--li title="Top Ten">
+                        <a href="/topTen.html" target="view">
                             &#xf160;
                             <div>탑텐</div>
                         </a>
-                    </li>
-                    <li>
-                        <b></b>
-                    </li>
+                    </li-->
                     <li title="이벤트">
-                        <a href="/event.html" target="main">
+                        <a href="/event.html" target="view">
                             &#xf783;
                             <div>이벤트</div>
                         </a>
                     </li>
-                    <li title="감사">
-                        <a href="/audit.html" target="main">
-                            &#xf1e5;
-                            <div>감사</div>
+                    <li title="노드 목록">
+                        <a href="/node.html" target="view">
+                            &#xf233;
+                            <div>노드</div>
                         </a>
                     </li>
-                    <li>
-                        <b></b>
-                    </li>
-                    <li title="리스트">
-                        <a>
-                            &#xf0ca;
-                            <div>리스트</div>
+                    <li title="브랜치 목록">
+                        <a href="/branch.html" target="view">
+                            &#xf126;
+                            <div>브랜치</div>
                         </a>
-                        <ul>
-                            <li>
-                                <a href="/node/viewer.html" target="main">&#xf233; 노드</a>
-                            </li>
-                            <li>
-                                <a href="/group.html" target="main">&#xf126; 브랜치</a>
-                            </li>
-                            <li>
-                                <a href="/link.html" target="main"> &#xf83e; 회선</a>
-                            </li>
-                            <li>
-                                <a href="/user.html" target="main">&#xf0c0; 사용자</a>
-                            </li>
-                        </ul>
+                    </li>
+                    <li title="회선 목록">
+                        <a href="/link.html" target="view">
+                            &#xf83e;
+                            <div>회선</div>
+                        </a>
+                    </li>
+                    <li title="사용자 목록">
+                        <a href="/user.html" target="view">
+                            &#xf0c0;
+                            <div>사용자</div>
+                        </a>
                     </li>
                     <li title="기능">
                         <a>
@@ -362,35 +503,27 @@ function onTest(e) {
                         </a>
                         <ul>
                             <li>
-                                <a href="/critical.html" target="main">
-                                    &#xf08d; 임계
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/icon.html" target="main">
+                                <a href="/icon.html" target="view">
                                     &#xf61f; 아이콘
                                 </a>
                             </li>
                             <li>
-                                <a href="/setting.html" target="main">
+                                <a href="/setting.html" target="view">
                                     &#xf013; 설정
                                 </a>
                             </li>
                         </ul>
                     </li>
-                    <li>
-                        <b></b>
-                    </li>
-                    <li title="Home">
-                        <a href="/">
-                            &#xf015;
-                            <div>홈</div>
+                    <li title="테스트">
+                        <a href="/dc.html" target="main">
+                            &#xf1b2;
+                            <div>DC</div>
                         </a>
                     </li>
                 </ul>
                 <ul>
                     <li id="user">
-                        <a href="/">
+                        <a>
                             &#xf011;
                         </a>
                         <ul>
@@ -405,45 +538,26 @@ function onTest(e) {
                 </ul>
             </nav>
         </header>
-        <article>
-            <aside>
-                <iframe name="status" id="status"></iframe>
-                <div id="tab"></div>
-            </aside>
-            <main>
-                <iframe name="main" id="main" src="/connect.html"></iframe>
-            </main>
-        </article>
-        <footer></footer>
+        
         <iframe id="dialog" name="dialog"></iframe>
+        
+        <dialog>
+            <h3>알림 소리를 재생 합니다.</h3>
+            <button>&#xf025; 재생</button>
+        </dialog>
+
+        <footer></footer>
 
         <script src="/js/request.js"></script>
         <script src="/js/constants.js"></script>
         <script src="/js/channel.js"></script>
+        <script src="/js/snmp.js"></script>
         <script>
 
 const $ = {
-        event: document.getElementById("event"),
-        popups: []
-    };
-
-((open) => {
-    window.open = (url, name) => {
-        if (name) {
-            open(url, name);
-        } else {
-            $.popups.push(open(url,
-                "_blank",
-                `left=${window.innerWidth /4},top=${window.innerHeight /4},width=${window.innerWidth /2},height=${window.innerHeight /2}`));
-        }
-    };
-})(window.open);
-
-window.onunload = e => $.popups.forEach(wnd => wnd.close());
-
-document.getElementById("tab").onclick = function (e) {
-    document.body.classList.toggle("status");
-};
+        event: document.getElementById("event")
+    },
+    sound = new Audio("/siren.mp3");
 
 document.querySelector("footer").onclick = function (e) {
     for (let event; event = this.firstChild; ) {
@@ -452,24 +566,32 @@ document.querySelector("footer").onclick = function (e) {
     
     document.body.classList.remove("event");
 
-    document.getElementById("main").src = "/event.html";
+//    document.getElementById("view").src = "/event.html";
 };
 
-document.getElementById("password").onclick = e => {
-    //document.querySelector("div.account details").open = false;
-    
-    showDialog("/dialog/password.html");
-}
+document.body.querySelector("dialog button").onclick = e => document.body.querySelector("dialog").close();
 
-function refreshEvent() {
+document.getElementById("password").onclick = e => showDialog("/dialog/password.html");
+
+Array.from(document.body.querySelectorAll("[target=view]")).forEach(a => a.addEventListener("click", e => document.body.classList.add("view")));
+
+document.getElementById("close").onclick = e => {
+    document.body.querySelector("iframe[name=view]").src = "about:blank";
+
+    document.body.classList.remove("view");
+};
+
+window.history.pushState(new Map(), document.title, window.location.href);
+
+window.onpopstate = e => document.body.classList.remove("dialog");
+
+(function refreshEvent() {
     Array
         .from(document.querySelector("footer").children)
         .forEach(event => (event.dataset.elapse = toElapseString(event.dataset.timestamp)));
     
     setTimeout(() => window.requestAnimationFrame(refreshEvent), 1000);
-}
-
-refreshEvent();
+}) ();
 
         </script>
         

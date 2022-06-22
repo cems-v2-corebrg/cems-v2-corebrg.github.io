@@ -4,275 +4,63 @@
 		<meta charset="UTF-8">
 		<meta http-equiv="Cache-Control" content="No-Cache">
 		
-		<title>ITAhM</title>
+		<title>CHART_ERROR_OUT</title>
 		
 		<style>
 		
 @import "/css/style.css";
+@import "/css/fa.css";
+@import "/chart/chart.css";
 
-body {
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-	margin: 0; padding: 0;
-}
-
-body::before {
-    position: absolute;
-    top: 0; left: 0;
+body::after {
+    position: absolute; inset: 0 50% auto auto;
+    transform: translateX(50%);
     content: "송신";
     color: #f25c66;
-}
-
-iframe {
-	width: 100%; height: 100%;
-	border: none;
-}
-
-div.realtime {
-    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-#realtime {
-    width: 50%; min-width: 500px;
-    height: 50%; min-height: 300px;
-}
-
-body:not(.realtime) div.realtime {
-    display: none;
+    font-weight: bold;
+    font-size: 1.2em;
 }
 
 		</style>
 		<script>
 
-/**
- * public
- */
- function getFile() {
-	const rows = [];
-    
-    if ($.data) {
-        var i = 1;
-
-        rows.push("Index,Date,Errors");
-
-        $.data.forEach((timestamp, value) => {
-            rows.push([i++, parent.toDateTimeString(timestamp), parent.toString(value)].join(","));
-        }, true);
-    }
-    else if ($.summary) {
-        var i = 1;
-        rows.push("Index,Date,Max,Avg,Min");
-
-        const summary = $.summary.parse($.from, $.to);
-
-        if (summary) {
-            summary.keys.forEach(keys => keys.forEach(timestamp => {
-                const value = $.summary.get(timestamp);
-
-                rows.push([i++, parent.toDateTimeString(timestamp), parent.toString(value.max), parent.toString(value.avg), parent.toString(value.min)].join(","));
-            }));
-        }
-    }
-	
-	ITAhM.util.download(new Blob([rows.join("\n")] ,{
-		type: "text/csv;charset=utf-8;"
-	}), "chart_error_out.csv");
-}
-
-function realtime(realtime) {
-    if (realtime) {
-        document.getElementById("realtime").contentWindow.location.href = "/chart/realtime.html";
-
-        document.body.classList.add("realtime");
-    } else {
-        document.body.classList.remove("realtime");
-
-        delete $.realtime;
-
-        document.getElementById("realtime").contentWindow.location.replace("about:blank");
-    }
-}
-
-function postRealtimeRequest(realtimeData) {
-    $.request.execute({
-        command: "get",
-        target: "resource",
-        id: $.id,
-        index: $.index,
-        oid: ITAhM.snmp.oid.inErrs,
-    }, function () {
-        switch (this.status) {
-        case 200:
-            break;
-        default:
-            try {
-                console.log(JSON.parse(this.responseText).error);
-            } catch (e) {}
-        }
-
-        const value = JSON.parse(this.responseText);
-        
-        if ($.realtime) {
-            try {
-                for (let timestamp in value) {
-                    $.realtime.update(Number(value[timestamp]));
-                    
-                    break;
-                }
-
-                window.setTimeout(postRealtimeRequest, INTERVAL);
-            } catch (e) {
-                console.error(e);
-            }
-        }
-    });
-}
-
-function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert("Notice!\n\n"+ "세션 만료.");
-
-        break;
-    default:
-        alert(`Error!\n\n오류코드 ${xhr.status}.`);
-    }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
+function toString(value) {
+    return value.toFixed(0) +"cps"
 }
 
 		</script>
 	</head>
 	
 	<body class="loading">
-        <iframe id="chart"></iframe>
-        <div class="realtime">
-            <iframe id="realtime"></iframe>
-        </div>
-        <div class="loading mask"></div>
+        <header>
+            <h2 hidden><i>"</i> <span id="title">통신오류</span> <i>"</i></h2>
+            <form class="critical">
+                <span>임계</span>
+                <input name="limit" type="number" min="0" max="100" required>
+                <span>%</span>
+                <button type="submit">설정</button>
+                <button type="reset">해지</button>
+            </form>
+        </header>
+        <main>
+            <iframe id="chart"></iframe>
+            <dialog>
+                <iframe id="realtime"></iframe>
+            </dialog>
+            <div class="loading mask"></div>
+        </main>
         
 		<script src="/js/ITAhM.js"></script>	
         <script src="/js/object.js"></script>
         <script src="/js/snmp.js"></script>
         <script src="/js/request.js"></script>
         <script src="/js/constants.js"></script>
+        <script src="/chart/chart.js"></script>
 		<script>
 
-const
-    INTERVAL = 5000,
-    search = new URLSearchParams(window.location.search),
-    $ = {
-        request: new Request(),
-        id: Number(search.get("id")),
-        index: search.get("index"),
-        from: Number(search.get("from")),
-        to: Number(search.get("to"))
-    }
+const search = new URLSearchParams(window.location.search);
 
-if (!$.id || !$.index || !$.from || !$.to) {
-    throw top.location.replace("/warning.html");
-}
-
-document.getElementById("realtime").onload = function (e) {
-    const realtime = this.contentWindow;
-
-    if (realtime.location.protocol === "http:") {
-        $.realtime = realtime;
-
-        realtime.initialize({
-            toString: parent.toString,
-            color: "#f25c66",
-            file: "chart_error_out_realtime.csv"
-        });
-
-        postRealtimeRequest();
-    }
-};
-
-(frame => {
-    const chart =  frame.contentWindow;
-
-    frame.onload = function (e) {
-        chart.initialize({
-            summary: $.summary,
-            from: $.from,
-            to: $.to,
-            max: $.max,
-            color: "#f25c66",
-            toString: parent.toString
-        });
-    };
-
-    /**
-     * public
-     */
-     window.detail = function () {
-        const date = new Date($.from);
-
-        if (date.setDate(date.getDate() +1) == $.to) {
-            document.body.classList.add("loading");
-
-            $.request.execute({
-                command: "get",
-                target: "resource",
-                id: $.id,
-                index: $.index,
-                oid: ITAhM.snmp.oid.ifOutErrors,
-                date: $.from,
-            }, function (e) {
-                switch (this.status) {
-                case 200:
-                    break;
-                default:
-                    return showMessage(this);
-                }
-
-                chart.draw($.data = new parent.ChartData(JSON.parse(this.responseText)), true);
-
-                document.body.classList.remove("loading");
-            });
-        } else {
-            delete $.data;
-        }
-    };
-
-    window.draw = (from, to) => {
-        $.from = from;
-        $.to = to;
-        
-        chart.location.reload();
-    };
-
-    window.initResource = function () {
-        switch (this.status) {
-        case 200:
-            break;
-        default:
-            return showMessage(this);
-        }
-
-        $.summary = new parent.SummaryData(JSON.parse(this.responseText));
-
-        document.body.classList.remove("loading");
-
-        frame.src = "/chart/base.html";
-    }
-})(document.getElementById("chart"));
-
-$.request.execute({
-    command: "get",
-    target: "resource",
-    id: $.id,
-    index: $.index,
-    oid: ITAhM.snmp.oid.ifOutErrors,
-    from: $.from,
-    to: $.to
-}, initResource);
+initialize(ITAhM.snmp.oid.ifOutErrors, search.get("index"));
 
 		</script>
 	

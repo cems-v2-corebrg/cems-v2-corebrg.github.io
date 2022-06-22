@@ -21,8 +21,28 @@ h2 {
     text-shadow: 0 2px 2px #000000;
 }
 
-h2 >span {
+h2 >span,
+#profile button {
     font-family: "Font Awesome 5 Free";
+}
+
+table {
+    width: 100%;
+    table-layout: fixed;
+    border: 1px solid #dddddd;
+}
+
+th {
+    background-color: #04aa6d;
+    color: #ffffff;
+}
+
+tr:nth-child(even) {
+    background-color: #efefef;
+}
+
+th, td {
+    padding: 0.8em;
 }
 
 ul {
@@ -65,7 +85,7 @@ ul {
     content: "\f15c";
 }
 
-#event .list .item::before {
+#smtp .list .item::before {
     content: "\f1fa";
 }
 
@@ -100,13 +120,16 @@ form {
 	position: relative;
 }
 
-form input,
-form select {
+form :is(input, select, button) {
 	padding: 3px;
+    box-sizing: border-box;
 }
 
-input[name="store_date"] {
-	width: 50px;
+form :is(input, select) {
+	width: 200px;
+}
+
+input[type=number] {
 	text-align: right;
 }
 
@@ -136,14 +159,6 @@ ul.smtp .status input {
     flex: 1;
 }
 
-#path:not(:empty)::before {
-	content: "(";
-}
-
-#path:not(:empty)::after {
-	content: ")";
-}
-
 #link input[type=number] {
 	width: 50px;
 	text-align: right;
@@ -162,31 +177,21 @@ ul.smtp .status input {
     transform: none;
 }
 
-#event label::before {
-    font-family: "Font Awesome 5 Free";
-}
-#event label.off::before {
-    content: "\f204";
-    color: #aaaaaa;
-}
-
-#event label.on::before {
-    content: "\f205";
-    color: initial;
+#restore:not(:empty)::before {
+    content: "마지막 백업 ";
 }
 
 body:not(.loading) .container >.loading.mask {
 	position: absolute;
-    display: initial;
+    display: flex;
 }
 
 body:not(.loading) .container:not(.loading) >.loading.mask,
-#event.on label.off,
-#event:not(.on) label.on,
-#syslog.enable input[type=submit],
-#syslog:not(.enable) input[type=reset],
+#smtp.enable [type=submit],
+#smtp:not(.enable) [type=reset],
 label input,
 .lock,
+#restore:empty,
 body:not(.root) .root {
     display: none;
 }
@@ -194,29 +199,25 @@ body:not(.root) .root {
 		</style>
 		<script>
 
-function createItem(key, data, func) {
-	const li = document.createElement("li");
-	
-	li.textContent = key;
-	li.className = "item";
-    li.onclick = e => func(key, data);
-
-	return li;
-}
-
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert("Notice!\n\n"+ "세션 만료.");
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(`Error!\n\n오류코드: ${xhr.status}.`);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace(xhr);
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
 		</script>
@@ -230,27 +231,33 @@ function showMessage(xhr) {
 			정보
 		</h2>
 		<div id="information" class="box container loading">
-			<p>
-				자바 버전 : <span id="java"></span>
-			</p>
-			<p>
-				에이전트 버전 : <span id="version"></span>
-			</p>
-			<p>
-				에이전트 저장공간 여유 :
-				<span id="space"></span>
-				<i id="path"></i>
-			</p>
-			<p>
-				전일 디스크 사용량 : <span id="usage"></span>
-            </p>
-            <p>
-				데이터베이스 연결 : <span id="max_conn"></span>
-			</p>
-			<p>
-				관리 리소스 갯수 : <span id="resource"></span>
-			</p>
-			<p id="expire"></p>
+            <table>
+                <colgroup>
+                    <col width="300">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <th>자바 버전</th>
+                        <td id="java"></td>
+                    </tr>
+                    <tr>
+                        <th>에이전트 버전</th>
+                        <td id="version"></td>
+                    </tr>
+                    <tr>
+                        <th>데이터베이스 위치</th>
+                        <td id="path"></td>
+                    </tr>
+                    <tr>
+                        <th>저장공간 여유</th>
+                        <td id="space"></td>
+                    </tr>
+                    <tr>
+                        <th>전일 디스크 사용량</th>
+                        <td id="usage"></td>
+                    </tr>
+                </tbody>
+            </table>
 			<div class="loading mask"></div>
 		</div>
 		<h2>
@@ -259,75 +266,123 @@ function showMessage(xhr) {
             </span>
 			동작
 		</h2>
-		<div id="common" class="box container loading">
-            <p>
-				<form id="request_interval">
-					Ping 요청 주기(초) :
-					<select name="request_interval">
-						<option value="3000">3
-						<option value="5000">5
-						<option value="10000" selected>10
-						<option value="30000">30
-						<option value="60000">60
-					</select>
-					<input type="submit" value="적용" class="root">
-				</form>
-			</p>
-            <p>
-				<form id="timeout">
-					Ping Timeout(초):
-                    <select name="timeout">
-                        <option value="1000">1
-                        <option value="2000">2
-                        <option value="3000">3
-                        <option value="5000">5
-                        <option value="10000" selected>10
-                    </select>
-                    <input type="submit" value="적용" class="root">
-                </form>
-			</p>
-            <p>
-				<form id="retry">
-					Ping Retry(초):
-                    <select name="retry">
-                        <option value="0" selected>0
-                        <option value="1">1
-                        <option value="2">2
-                    </select>
-                    <input type="submit" value="적용" class="root">
-                </form>
-			</p>
-			<p>
-				<form id="store_date">
-					데이터 보관 기간(일) :
-					<input type="number" min="0" max="365" name="store_date">
-					<input type="submit" value="적용" class="root">
-					<i>(데이터 정리 기능을 사용하지 않는 경우 0)</i>
-				</form>
-			</p>
-			<p>
-				<form id="save_interval">
-					데이터 저장 단위(분) :
-					<select name="save_interval">
-						<option value="60000">1
-						<option value="120000">2
-						<option value="180000">3
-						<option value="300000">5
-						<option value="600000">10
-					</select>
-					<input type="submit" value="적용" class="root">
-				</form>
-            </p>
-            <p>
-                <form>
-                    인터페이스 모니터 :
-                    <select id="if_mon">
-                        <option value="true">활성
-                        <option value="">비활성
-                    </select>
-                </form>
-            </p>
-			
+		<div id="system" class="box container loading">
+            <table>
+                <colgroup>
+                    <col width="300">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <th>Ping 요청 주기(초)</th>
+                        <td>
+                            <form id="requestinterval">
+                                <select name="value" dir="rtl" required>
+                                    <option value="3000">3
+                                    <option value="5000">5
+                                    <option value="10000">10
+                                    <option value="30000">30
+                                    <option value="60000">60
+                                </select>
+                                <button type="submit" class="root">적용</button>
+                                <button type="reset" class="root">초기화</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Ping Timeout(초):</th>
+                        <td>
+                            <form id="timeout">
+                                <select name="value" dir="rtl" required>
+                                    <option value="1000">1
+                                    <option value="2000">2
+                                    <option value="3000">3
+                                    <option value="5000">5
+                                    <option value="10000">10
+                                </select>
+                                <button type="submit" class="root">적용</button>
+                                <button type="reset" class="root">초기화</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Ping Retry(회)</th>
+                        <td>
+                            <form id="retry">
+                                <select name="value" dir="rtl">
+                                    <option value="0" required>0
+                                    <option value="1">1
+                                    <option value="2">2
+                                </select>
+                                <button type="submit" class="root">적용</button>
+                                <button type="reset" class="root">초기화</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>데이터 보관 기간(일)</th>
+                        <td>
+                            <form id="expireafter">
+                                <input type="number" min="0" max="365" name="value" required>
+                                <button type="submit" class="root">적용</button>
+                                <button type="reset" class="root">초기화</button>
+                                <i>(데이터 정리 기능을 사용하지 않는 경우 0)</i>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>데이터 저장 단위(분)</th>
+                        <td>
+                            <form id="saveinterval">
+                                <select name="value" dir="rtl" required>
+                                    <option value="60000">1
+                                    <option value="120000">2
+                                    <option value="180000">3
+                                    <option value="300000">5
+                                    <option value="600000">10
+                                </select>
+                                <button type="submit" class="root">적용</button>
+                                <button type="reset" class="root">초기화</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>인터페이스 감시</th>
+                        <td>
+                            <form id="portmonitor">
+                                <select name="value" dir="rtl" required>
+                                    <option value="all">전체
+                                    <option value="enable" disabled>활성
+                                    <option value="disable" selected>비활성
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>팬 상태 감시</th>
+                        <td>
+                            <form id="fanmonitor">
+                                <select name="value" dir="rtl" required>
+                                    <option value="all">전체
+                                    <option value="enable" disabled>활성
+                                    <option value="disable" selected>비활성
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>전원 상태 감시</th>
+                        <td>
+                            <form id="powermonitor">
+                                <select name="value" dir="rtl" required>
+                                    <option value="all">전체
+                                    <option value="enable" disabled>활성
+                                    <option value="disable" selected>비활성
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 			<div class="loading mask"></div>
 		</div>
 		<h2>
@@ -337,177 +392,142 @@ function showMessage(xhr) {
 			UI
 		</h2>
 		<div id="setting" class="container box loading">
-			<p>
-				<form id="background">
-					대시보드 배경 : 
-					<input type="text" name="background">
-					<input type="submit" value="적용" class="root">
-				</form>
-            </p>
-            <p>
-				<form id="home">
-                    기본 화면 : 
-                    <select name="home">
-                        <option value="0" selected>없음</option>
-                        <option value="1">토폴로지</option>
-                        <option value="2">지도</option>
-                        <option value="3">데이터센터</option>
-                        <option value="4">성능Top</option>
-                    </select>
-					<input type="submit" value="적용" class="root">
-				</form>
-			</p>
-			<p>
-				<form id="node">
-					노드정보 항목 추가 : 
-					<input type="text" name="custom" placeholder="항목1 [,항목2 ...]">
-					<input type="submit" value="적용" class="root">
-					<i>콤마(,)로 구분</i>
-				</form>
-			</p>
-			<p>
-				<form id="line">
-					회선정보 항목 추가 : 
-					<input type="text" name="custom" placeholder="항목1 [,항목2 ...]">
-					<input type="submit" value="적용" class="root">
-					<i>콤마(,)로 구분</i>
-				</form>
-			</p>
-			<p>
-				<form id="link_color">
-					기본 연결선 색 :
-					<input type="color" name="color" value="#ffffff">
-					<input type="submit" value="적용" class="root">
-				</form>
-            </p>
-            <p>
-				<form id="link_size">
-					기본 연결선 두께:
-					<input type="number" name="size" value="2" min="0">
-					PX
-					<input type="submit" value="적용" class="root">
-				</form>
-			</p>
+			<table>
+                <colgroup>
+                    <col width="300">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <th>알림 소리</th>
+                        <td>
+                            <form id="sound">
+                                <select name="value" required>
+                                    <option value="" selected>재생</option>
+                                    <option value="mute">음소거</option>
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th title="콤마[,]로 구분">노드정보 항목 추가 *</th>
+                        <td>
+                            <form id="customnode">
+                                <input type="text" name="value" placeholder="항목1 [,항목2 ...]" required>
+                                <button type="submit" class="root">적용</button>
+                                <button type="reset" class="root">초기화</button>
+                            </form>            
+                        </td>
+                    </tr>
+                    <tr>
+                        <th title="콤마[,]로 구분">회선정보 항목 추가 *</th>
+                        <td>
+                            <form id="customline">
+                                <input type="text" name="value" placeholder="항목1 [,항목2 ...]" required>
+                                <button type="submit" class="root">적용</button>
+                                <button type="reset" class="root">초기화</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>기본 연결선 색</th>
+                        <td>
+                            <form id="linkcolor">
+                                <input type="color" name="value" required>
+                                <button type="submit" class="root">적용</button>
+                                <button type="reset" class="root">초기화</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>기본 연결선 두께(PX)</th>
+                        <td>
+                            <form id="linksize">
+                                <input type="number" name="value" min="0" required>
+                                <button type="submit" class="root">적용</button>
+                                <button type="reset" class="root">초기화</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 			<div class="loading mask"></div>
 		</div>
 		
-		<form id="profile" class="container loading">
-			<h2>
-				<span class="logo">
-                    &#xf2c2;
-                </span>
-                SNMP 프로파일
-                <span title="프로파일 추가" class="root add button">&#xf055;</span>
-			</h2>
-			<div class="box">
-				<ul id="profile_list" class="list"></ul>
-				<i>등록된 Profile은 변경할 수 없습니다. 삭제후 추가하십시오. (사용중인 Profile은 삭제할 수 없습니다.)</i>
-			</div>
+        <h2>
+            <span class="logo">
+                &#xf658;
+            </span>
+            이벤트 통지
+        </h2>
+		<form id="smtp" class="container box loading">
+            <table>
+                <colgroup>
+                    <col width="300">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <th>SMTP 서버</th>
+                        <td>
+                            <input type="text" name="server" placeholder="smtp.example.com" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>보안 프로토콜</th>
+                        <td>
+                            <select name="protocol" required>
+                                <option value="tls">TLS</option>
+                                <option value="ssl">SSL</option>
+                                <option value="smtp" selected>사용안함</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>계정</th>
+                        <td>
+                            <input type="text" name="username" placeholder="홍길동@example.com" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>비밀번호</th>
+                        <td>
+                            <input type="password" name="password" placeholder="계정 비밀번호" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>상태</th>
+                        <td>
+                            <input type="text" name="status" disabled value="중지">
+                            <button type="reset" class="root">중지</button>
+                            <button type="submit" class="root">사용</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+			<div class="loading mask"></div>
+        </form>
+
+        <h2>
+            <span class="logo">
+                &#xf2c2;
+            </span>
+            SNMP 프로파일
+        </h2>
+		<form id="profile" class="container box loading">
+            <button type="submit" title="프로파일 추가" class="root">&#xf055; 추가</button>
+            <ul id="profile_list" class="list"></ul>
+            <i>등록된 Profile은 변경할 수 없습니다. 삭제후 추가하십시오. (사용중인 Profile은 삭제할 수 없습니다.)</i>
 			<div class="loading mask"></div>
 		</form>
-		
-		<form id="event" class="container loading">
-			<h2>
-				<span class="logo">
-                    &#xf658;
-                </span>
-                이벤트 통지
-			</h2>
-			<div class="box">
-                <div class="setting">
-                    <ul class="smtp">
-                        <li>
-                            <span>
-                                SMTP 서버:
-                            </span>
-                            <span>
-                                <input type="text" name="server" placeholder="smtp.example.com" required>
-                            </span>
-                        </li>
-                        <li>
-                            <span>
-                                보안 프로토콜:
-                            </span>
-                            <span>
-                                <select name="protocol" required>
-                                    <option value="tls">TLS</option>
-                                    <option value="ssl">SSL</option>
-                                    <option value="smtp" selected>사용안함</option>
-                                </select>
-                            </span>
-                        </li>
-                        <li>
-                            <span>
-                                계정:
-                            </span>
-                            <span>
-                                <input type="text" name="username" placeholder="홍길동@example.com" required>
-                            </span>
-                        </li>
-                        <li>
-                            <span>
-                                비밀번호:
-                            </span>
-                            <span>
-                                <input type="password" name="password" placeholder="계정 비밀번호" required>
-                            </span>
-                        </li>
-                        <li>
-                            <span>
-                                상태:
-                            </span>
-                            <span>
-                                <input type="text" name="status" disabled>
-                            </span>
-                        </li>
-                    </ul>
-                    <input type="reset" value="중지" class="root">
-                    <input type="submit" value="적용" class="root">
-                </div>
-			</div>
-			<div class="loading mask"></div>
-        </form>
-        <form id="syslog" class="container loading">
-			<h2>
-				<span class="logo">
-                    &#xf064;
-                </span>
-                Syslog
-			</h2>
-			<div class="box">
-                <div class="setting">
-                    <ul class="smtp">
-                        <li>
-                            <span>
-                                Syslog 서버:
-                            </span>
-                            <span>
-                                <input type="text" name="server" required>
-                            </span>
-                        </li>
-                        <li>
-                            <span>
-                                UDP 포트:
-                            </span>
-                            <span>
-                                <input type="number" name="port" min="0" max="65535" required>
-                            </span>
-                        </li>
-                    </ul>
-                    <input type="reset" value="해제" class="root">
-                    <input type="submit" value="적용" class="root">
-                </div>
-            </div>
-            <div class="loading mask"></div>
-        </form>
+
 		<h2>
             <span class="logo">
                 &#xf1da;
             </span>
             백업
         </h2>
-        <form class="box root" id="backup">
-            <input type=submit value="설정 백업">
+        <form class="container box root" id="backup">
+            <button type=submit>설정 백업</button>
+            <button id="restore" type="button" title="백업 다운로드"></button>
         </form>
         <h2>
             <span class="logo">
@@ -515,8 +535,8 @@ function showMessage(xhr) {
             </span>
             서비스
         </h2>
-        <form class="box root" id="stop">
-            <input type=submit value="서비스 중지">
+        <form class="container box root" id="stop">
+            <button type="submit">서비스 중지</button>
         </form>
         <div class="loading mask"></div>
 
@@ -525,6 +545,7 @@ function showMessage(xhr) {
         <script src="/js/md5.js"></script>
         <script src="/js/request.js"></script>
         <script src="/js/constants.js"></script>
+        <script src="/js/setting.js"></script>
 		<script>
 
 const
@@ -539,608 +560,469 @@ if (top.account.level === 0) {
     document.body.classList.add("root");
 }
 
-function initInformation() {
-    switch (this.status) {
-    case 200:
-        const information = JSON.parse(this.responseText);
+$.request.query({
+    command: "get",
+    target: "information"
+})
+.then(data => { // 기본정보
+    document.getElementById("java").textContent = data.java;
+    document.getElementById("version").textContent = data.version;
+    document.getElementById("usage").textContent
+        = data.usage && ITAhM.util.toBytesString(data.usage) || "제공하지 않음.";
+    document.getElementById("space").textContent = ITAhM.util.toBytesString(data.space);
+    document.getElementById("path").textContent = data.path;
 
-        document.getElementById("java").textContent = information.java;
-        document.getElementById("version").textContent = information.version;
-        document.getElementById("resource").textContent = information.resource;
-        document.getElementById("max_conn").textContent = information.maxConnection;
-        document.getElementById("usage").textContent
-            = information.usage && ITAhM.util.toBytesString(information.usage) || "제공하지 않음.";
-        document.getElementById("space").textContent = ITAhM.util.toBytesString(information.space);
-        document.getElementById("path").textContent = information.path;
-        document.getElementById("expire").textContent
-            = information.expire > 0? new Date(information.expire).toLocaleString(): "";
+    if (data.backup) {
+        const restore = document.getElementById("restore");
+        
+        restore.textContent = new Date(data.backup).toLocaleString();
 
-        document.getElementById("information").classList.remove("loading");	
-
-        $.request.execute({
-            command: "get",
-            target: "config"
-        }, initConfig);
-
-        break;
-    default:
-        showMessage(this);
-    }
-}
-
-(function (form) {
-    const request = {
-            command: "set",
-            target: "config",
-            key: "smtpServer"
+        restore.onclick = function (e) {
+            $.request.download({
+                command: "restore",
+                name: "backup.zip"
+            })
+            .catch(showMessage);
         };
-
-    function sendRequest() {
-        form.classList.add("loading");
-
-        $.request.execute(request, function (e) {
-            switch (this.status) {
-            case 200:
-                alert(`Information.\n\n${ALERT_EVENT_ENABLE_SUCCESS}`);
-
-                window.location.reload();
-
-                break;
-            case 501:
-                alert(`Error!.\n\n${ALERT_EVENT_ENABLE_FAIL}.`);
-
-                window.location.reload();
-
-                break;
-            default:
-                showMessage(this);
-            }
-        });
     }
 
-    if (top.account.level === 0)
-    form.onreset = function (e) {
-        e.preventDefault();
+    document.getElementById("information").classList.remove("loading");	
 
-        form.classList.remove("on");
-
-        request.value = undefined;
-
-        sendRequest();
-    }
-
-    if (top.account.level === 0)
-    form.onsubmit = function (e) {
-        e.preventDefault();
-
-        form.classList.add("on");
-
-        request.value = {
-            server: form.elements["server"].value,
-            user: form.elements["username"].value,
-            password: form.elements["password"].value,
-            protocol: form.elements["protocol"].value
-        };
-
-        sendRequest();
-    }
-
-    window.initSMTP = function (config) {
-        form.elements["server"].value = config.smtpServer || "";
-        form.elements["username"].value = config.smtpUser || "",
-        form.elements["password"].value = config.smtpPassword || "";
-        form.elements["protocol"].value = config.smtpProtocol || "";
-        form.elements["status"].value = config.smtpRunning? "정상": config.smtpEnable? "오류": "중지";
-
-        if (config.smtpEnable) {
-            form.classList.add("on");
-        }
-
-        form.classList.remove("loading");
-    };
-}) (document.getElementById("event"));
-
-(function (form) {
-    window.initSyslog = function (config) {
-        if ("syslog" in config) {
-            const syslog = config.syslog.split(":");
-
-            if (syslog.length === 2) {
-                form.elements["server"].value = syslog[0];
-                form.elements["port"].value = syslog[1];
-
-                form.classList.add("enable");
-            }
-        }
-
-        form.classList.remove("loading");
-    };
-
-    if (top.account.level === 0)
-    form.onsubmit = function (e) {
-        e.preventDefault();
-
-        form.classList.add("loading");
-
-        $.request.execute({
-            command: "set",
-            target: "config",
-            key: "syslog",
-            value: [form.elements["server"].value, form.elements["port"].value].join(":")
-        }, function (e) {
-        switch (this.status) {
-        case 200:
-            alert(INFO_SET_SYSLOG["kr"]);
-
-            form.classList.add("enable");
-
-            break;
-        default:
-            form.elements["server"].value = "";
-            form.elements["port"].value = "";
-
-            showMessage(this);
-
-            throw window.location.reload();
-        }
-
-        form.classList.remove("loading");
+    return $.request.query({
+        command: "get",
+        target: "profile"
     });
+})
+.then(data => {// SNMP 프로파일
+    const
+        df = document.createDocumentFragment(),
+        container = document.getElementById("profile");
+
+    function createItem(key) {
+        const li = document.createElement("li");
+        
+        li.textContent = key;
+        li.className = "item";
+        li.onclick = e => onSelectProfile(key);
+
+        return li;
     }
 
-    if (top.account.level === 0)
-    form.onreset = function (e) {
+    container.onsubmit = e => {
         e.preventDefault();
 
+        top.showDialog("/dialog/profile.html", window);
+    };
+
+    function onSelectProfile(name) {
+		top.showDialog(`/dialog/profile.html?name=${name}`, window);
+	}
+
+    for (let name in data) {
+        df.appendChild(createItem(name, data[name], onSelectProfile));
+    }
+
+    document.getElementById("profile_list").appendChild(df);
+
+    container.classList.remove("loading");
+
+    return $.request.query({
+        command: "get",
+        target: "config"
+    });
+})
+.then(data => {// 시스템 설정
+    const container = document.getElementById("system");
+
+    ["expireafter", "requestinterval", "saveinterval", "retry", "timeout"].forEach(id => {
+        const
+            form = document.getElementById(id),
+            key = id.toUpperCase();
+
+        form.querySelector("[name=value]").value = data[key];
+
+        if (top.account.level === 0) {
+            form.onsubmit = function (e) {	
+                e.preventDefault();
+
+                container.classList.add("loading");
+
+                $.request.query({
+                    command: "set",
+                    target: "config",
+                    key: key,
+                    value: this.elements["value"].value
+                })
+                .then(() => {
+                    alert("Information.\n\n시스템 설정을 완료하였습니다.");
+
+                    container.classList.remove("loading");
+                })
+                .catch(showMessage);
+            };
+
+            form.onreset = function (e) {	
+                e.preventDefault();
+
+                if (!confirm("Confirm.\n\n시스템 설정을 초기화 하겠습니까?")) {
+                    return;
+                }
+
+                container.classList.add("loading");
+
+                $.request.query({
+                    command: "remove",
+                    target: "config",
+                    key: key
+                })
+                .then(() => {
+                    alert("Information.\n\n시스템 설정을 초기화 하였습니다.");
+
+                    window.location.reload();
+                })
+                .catch(showMessage);
+            };
+        }
+    });
+
+    {
+        const select = document.body.querySelector("#portmonitor select");
+        let tmp;
+
+        select.value = data["PORTMONITOR"];
+
+        select.onclick = e => {
+            tmp = select.value;
+        };
+
+        select.onchange = e => {
+            if (!confirm("Confirm.\n\n인터페이스 감시 기능을 설정 하겠습니까?")) {
+                select.value = tmp;
+
+                return;
+            }
+
+            container.classList.add("loading");
+
+            $.request.query({
+                command: "set",
+                target: "config",
+                key: "PORTMONITOR",
+                value: select.value
+            })
+            .then(() => {
+                alert("Information.\n\n인터페이스 감시 기능을 설정 하였습니다.");
+
+                container.classList.remove("loading");
+            })
+            .catch(showMessage);
+        };
+    }
+    
+    {
+        const select = document.body.querySelector("#fanmonitor select");
+        let tmp;
+
+        select.value = data["FANMONITOR"];
+
+        select.onclick = e => {
+            tmp = select.value;
+        };
+
+        select.onchange = e => {
+            if (!confirm("Confirm.\n\n팬 상태 감시 기능을 설정 하겠습니까?")) {
+                select.value = tmp;
+
+                return;
+            }
+
+            container.classList.add("loading");
+
+            $.request.query({
+                command: "set",
+                target: "config",
+                key: "FANMONITOR",
+                value: select.value
+            })
+            .then(() => {
+                alert("Information.\n\팬 상태 감시 기능을 설정 하였습니다.");
+
+                container.classList.remove("loading");
+            })
+            .catch(showMessage);
+        };
+    }
+
+    {
+        const select = document.body.querySelector("#powermonitor select");
+        let tmp;
+
+        select.value = data["POWERMONITOR"];
+
+        select.onclick = e => {
+            tmp = select.value;
+        };
+
+        select.onchange = e => {
+            if (!confirm("Confirm.\n\n전원 상태 감시 기능을 설정 하겠습니까?")) {
+                select.value = tmp;
+
+                return;
+            }
+
+            container.classList.add("loading");
+
+            $.request.query({
+                command: "set",
+                target: "config",
+                key: "POWERMONITOR",
+                value: select.value
+            })
+            .then(() => {
+                alert("Information.\n\n전원 상태 감시 기능을 설정 하였습니다.");
+
+                container.classList.remove("loading");
+            })
+            .catch(showMessage);
+        };
+    }
+
+    container.classList.remove("loading");
+
+    return data;
+})
+.then(data => {// UI 설정
+    const container = document.getElementById("setting");
+
+    for (let key in data) {
+        settingData[key] = data[key];
+    }
+
+    ["customnode", "customline", "linkcolor", "linksize"].forEach(id => {
+        const
+            form = document.getElementById(id),
+            key = id.toUpperCase();
+    
+        if (key in settingData) {
+            form.querySelector("[name=value]").value = settingData[key];
+        }
+
+        if (top.account.level === 0) {
+            document.getElementById(id).onsubmit = function (e) {
+                e.preventDefault();
+                
+                container.classList.add("loading");
+
+                $.request.query({
+                    command: "set",
+                    target: "config",
+                    key: key,
+                    value: this.elements["value"].value
+                })
+                .then(() => {
+                    alert("Information.\n\nUI 설정을 완료 하였습니다.");
+
+                    container.classList.remove("loading");
+                })
+                .catch(showMessage);
+            };
+
+            document.getElementById(id).onreset = function (e) {
+                e.preventDefault();
+                
+                if (!confirm("Confirm.\n\nUI 설정을 초기화 하겠습니까?")) {
+                    return;
+                }
+                
+                container.classList.add("loading");
+
+                $.request.query({
+                    command: "remove",
+                    target: "config",
+                    key: key
+                })
+                .then(() => {
+                    alert("Information.\n\nUI 설정을 초기화 하였습니다.");
+
+                    window.location.reload();
+                })
+                .catch(showMessage);
+            };
+        }
+    });
+
+    {
+        const select = document.body.querySelector("#sound select");
+        let tmp;
+
+        select.value = window.localStorage.getItem("mute") || "";
+
+        select.onclick = e => {
+            tmp = select.value;
+        };
+
+        select.onchange = e => {
+            if (!confirm("Confirm.\n\n알림 소리 설정을 변경 하겠습니까?")) {
+                select.value = tmp;
+
+                return;
+            }
+
+            container.classList.add("loading");
+
+            window.localStorage.setItem("mute", select.value);
+
+            alert("Information.\n\n알림 소리 설정을 변경 하였습니다.");
+
+            container.classList.remove("loading");
+        };
+    }
+
+    container.classList.remove("loading");
+
+    return data;
+})
+.then(data => {// SMTP
+    const
+        smtpData = "SMTP" in data && JSON.parse(data["SMTP"]),
+        form = document.getElementById("smtp"),
+        setStatus = smtpData => {
+            form.classList.remove("enable");
+
+            if (smtpData.enable) {
+                if (smtpData.status) {
+                    form.elements["status"].value = "정상";
+                    form.classList.add("enable");
+                } else {
+                    form.elements["status"].value = "오류";
+                }
+            } else {
+                form.elements["status"].value = "중지";
+            }
+        };
+
+    if (smtpData) {
+        form.elements["server"].value = smtpData.server || "";
+        form.elements["username"].value = smtpData.user || "",
+        form.elements["password"].value = smtpData.password || "";
+        form.elements["protocol"].value = smtpData.protocol || "";
+
+        setStatus(smtpData);
+    }
+    
+    form.onsubmit = e => {
+        e.preventDefault();
+
+        if (!confirm("Confirm.\n\n메일 전송 기능을 활성화 합니다.")) {
+            return;
+        }
+        
         form.classList.add("loading");
 
-        $.request.execute({
-            command: "set",
-            target: "config",
-            key: "syslog"
-        }, function (e) {
-            switch (this.status) {
-            case 200:
-                form.elements["server"].value = "";
-                form.elements["port"].value = "";
-
-                form.classList.remove("enable");
-
-                alert(INFO_SET_SYSLOG["kr"]);
-
-                break;
-            default:
-                showMessage(this);
-
-                throw window.location.reload();
+        $.request.query({
+            command: "smtp",
+            smtp: {
+                server: form.elements["server"].value,
+                protocol: form.elements["protocol"].value,
+                user: form.elements["username"].value,
+                password: form.elements["password"].value,
+                enable: true
             }
+        })
+        .then(smtpData => {
+            if (smtpData.status) {
+                alert("Information.\n\n메일 전송 기능이 활성화 되었습니다.");
+            } else {
+                alert("Error!\n\n메일 전송 기능이 활성화 되지 않았습니다.");
+            }
+            
+            setStatus(smtpData);
 
             form.classList.remove("loading");
-        });
-    }
-}) (document.getElementById("syslog"));
+        })
+        .catch(showMessage);
+    };
 
-(function(container) {
-    if (top.account.level === 0)
-	document.getElementById("timeout").onsubmit = function (e) {
-		e.preventDefault();
-		
-		container.classList.add("loading");
-		
-		$.request.execute({
-            command: "set",
-            target: "config",
-			key: "timeout",
-			value: this.elements["timeout"].value
-		}, function () {
-			switch(this.status) {
-			case 200:
-				alert("Information.\n\nPing 응답 제한 시간을 설정 하였습니다.");
-				
-				break;
-			default:
-				showMessage(this);
+    form.onreset = e => {
+        e.preventDefault();
 
-                throw window.location.reload();
-			}
-			
-			container.classList.remove("loading");
-		});	
-	};
-    
-    if (top.account.level === 0)
-    document.getElementById("retry").onsubmit = function (e) {
-		e.preventDefault();
-		
-		container.classList.add("loading");
-		
-		$.request.execute({
-            command: "set",
-            target: "config",
-			key: "retry",
-			value: this.elements["retry"].value
-		}, function () {
-			switch(this.status) {
-			case 200:
-				alert("Information.\n\nPing 재시도 횟수를 설정 하였습니다.");
-				
-				break;
-			default:
-				showMessage(this);
-
-                throw window.location.reload();
-			}
-			
-			container.classList.remove("loading");
-		});	
-	};
-
-    if (top.account.level === 0)
-	document.getElementById("request_interval").onsubmit = function (e) {
-		e.preventDefault();
-		
-		container.classList.add("loading");
-		
-		$.request.execute({
-			command: "set",
-            target: "config",
-			key: "requestInterval",
-			value: this.elements["request_interval"].value
-		}, function () {
-			switch(this.status) {
-			case 200:
-				alert("Information.\n\nPing 요청 주기를 설정 하였습니다.");
-				
-				break;
-			default:
-				showMessage(this);
-
-                throw window.location.reload();
-			}
-			
-			container.classList.remove("loading");
-		});	
-	};
-
-    if (top.account.level === 0)
-	document.getElementById("store_date").onsubmit = function (e) {	
-		e.preventDefault();
-
-		window.common.classList.add("loading");
-
-		$.request.execute({
-			command: "set",
-            target: "config",
-			key: "storeDate",
-			value: this.elements["store_date"].value || "0"
-		}, function (response) {
-			switch (this.status) {
-			case 200:
-				alert("Information.\n\n데이터 보관 기간을 설정하였습니다.");
-
-				break;
-			default:
-                showMessage(this);
-
-                throw window.location.reload();
-			}
-
-			container.classList.remove("loading");
-		});
-	};
-
-    if (top.account.level === 0)
-	document.getElementById("save_interval").onsubmit = function (e) {	
-		e.preventDefault();
-
-		container.classList.add("loading");
-		
-		$.request.execute({
-			command: "set",
-            target: "config",
-			key: "saveInterval",
-			value: this.elements["save_interval"].value
-		}, function () {
-			switch(this.status) {
-			case 200:
-				alert("Information.\n\nSNMP 정보 저장 주기를 설정하였습니다.");
-				
-				break;
-			default:
-                showMessage(this);
-
-                throw window.location.reload();
-			}
-
-			container.classList.remove("loading");
-		});
-	};
-    
-    if (top.account.level === 0)
-	document.getElementById("if_mon").onchange = function (e) {
-        if (!confirm("인터페이스 모니터를 변경 합니까?")) {
-            this.value = this.value? "": "true";
-            
+        if (!confirm("Confirm.\n\n메일 전송 기능을 사용하지 않습니까?")) {
             return;
         }
 
-		container.classList.add("loading");
-		
-        const enable = this.value? true: false;
+        form.classList.add("loading");
 
-		$.request.execute({
-			command: "set",
-            target: "config",
-			key: "ifMon",
-			value: enable
-		}, function () {
-			switch(this.status) {
-			case 200:
-				alert(`Information.\n\n인터페이스 모니터를 ${enable? "활성": "비활성"} 하였습니다.`);
-				
-				break;
-			default:
-                showMessage(this);
-
-                throw window.location.reload();
-			}
-
-			container.classList.remove("loading");
-		});
-    }
-
-    window.initConfig = function () {
-		switch (this.status) {
-        case 200:
-            const config = JSON.parse(this.responseText);
+        $.request.query({
+            command: "smtp",
+            smtp: {
+                server: form.elements["server"].value,
+                protocol: form.elements["protocol"].value,
+                user: form.elements["username"].value,
+                password: form.elements["password"].value,
+                enable: false
+            }
+        })
+        .then(smtpData => {
+            alert("Information.\n\n이제 메일 전송 기능을 사용하지 않습니다.");
             
-            document.querySelector("input[name=store_date]").value = config.storeDate;
-            document.querySelector("select[name=request_interval]").value = config.requestInterval;
-            document.querySelector("select[name=timeout]").value =  config.timeout;
-            document.querySelector("select[name=retry]").value = config.retry;
-            document.querySelector("select[name=save_interval]").value = config.saveInterval;
-            document.getElementById("if_mon").value = config.ifMon? "true": "";
+            setStatus(smtpData);
 
-            initSMTP(config);
-            
-            initSyslog(config);
-
-            container.classList.remove("loading");
-
-            $.request.execute({
-                command: "get",
-                target: "setting"
-            }, initSetting);
-
-            break;
-        default:
-            showMessage(this);
-		}
-    }
-}) (document.getElementById("common"));
-
-(function (container) {
-    var settingData;
-    
-	function postRequest(key, value, callback) {
-        const request = {
-			command: "set",
-			target: "setting",
-			key: key
-		};
-
-        if (value) {
-            request.value = value;
-        }
-
-		container.classList.add("loading");
-
-        $.request.execute(request , function () {
-			switch(this.status) {
-			case 200:
-		        settingData[key] = value;
-
-				callback && callback(key, value);
-
-				alert("UI 설정을 변경하였습니다.");
-				
-				break;
-			default:
-                showMessage(this);
-			}
-
-			container.classList.remove("loading");
-		});
-	}
-
-    if (top.account.level === 0)
-	document.getElementById("background").onsubmit = function (e) {
-		e.preventDefault();
-		
-		postRequest("background", this.elements["background"].value);
-	};
-
-    if (top.account.level === 0)
-    document.getElementById("home").onsubmit = function (e) {
-		e.preventDefault();
-		
-		postRequest("home", this.elements["home"].value);
-	};
-
-    if (top.account.level === 0)
-	document.getElementById("node").onsubmit = function (e) {
-		e.preventDefault();
-		
-		const customs = this.elements["custom"].value.split(",");
-		
-		for (var i=0, _i=customs.length; i<_i; i++) {
-			customs[i] = customs[i].trim();
-		}
-		
-		postRequest("custom", customs.join(","));
-	};
-
-    if (top.account.level === 0)
-	document.getElementById("line").onsubmit = function (e) {
-		e.preventDefault();
-		
-		const customs = this.elements["custom"].value.split(",");
-		
-		for (var i=0, _i=customs.length; i<_i; i++) {
-			customs[i] = customs[i].trim();
-		}
-		
-		postRequest("customLink", customs.join(","));
-	};
-
-    if (top.account.level === 0)
-	document.getElementById("link_color").onsubmit = function (e) {
-		e.preventDefault();
-		
-		postRequest("linkColor", this.elements["color"].value);
-	};
-
-    if (top.account.level === 0)
-    document.getElementById("link_size").onsubmit = function (e) {
-		e.preventDefault();
-		
-		postRequest("linkSize", Math.max(this.elements["size"].value, 0).toString());
-	};
-
-    window.initSetting = function () {
-        switch (this.status) {
-        case 200:
-            settingData = JSON.parse(this.responseText);
-
-            if ("background" in settingData) {
-                container.querySelector("input[name=background]").value = settingData.background;
-            }
-
-            if ("home" in settingData) {
-                container.querySelector("select[name=home]").value = settingData.home;
-            }
-
-            if ("custom" in settingData) {
-                document.getElementById("node").querySelector("[name=custom]")
-                    .value = settingData.custom.split(",").join(", ");
-            }
-            
-            if ("customLink" in settingData) {
-                document.getElementById("line").querySelector("[name=custom]")
-                    .value = settingData.customLink.split(",").join(", ");
-            }
-
-            if ("linkColor" in settingData) {
-                document.getElementById("link_color").querySelector("[name=color]").value = settingData.linkColor;
-            }
-
-            if ("linkSize" in settingData) {
-                document.getElementById("link_size").querySelector("[name=size]").value = settingData.linkSize;
-            }
-
-            container.classList.remove("loading");
-
-            $.request.execute({
-                command: "get",
-                target: "profile"
-            }, initProfile);
-
-            break;
-        default:
-            showMessage(this);
-        }
+            form.classList.remove("loading");
+        })
+        .catch(showMessage);
     };
 
-}) (document.getElementById("setting"));
+    form.classList.remove("loading");
 
-(function (container) {
-	container.querySelector(".add").onclick = e => top.showDialog("/dialog/profile.html", this);
+    return data;
+})
+.then(data => {// 서비스 중지
+    const form = document.getElementById("stop");
 
-	function onSelectProfile(name, profile) {
-		top.showDialog(`/dialog/profile.html?name=${name}`, this);
-	}
-
-    window.initProfile = function () {
-		switch (this.status) {
-        case 200:
-            const
-                profileData = JSON.parse(this.responseText)
-                df = document.createDocumentFragment();
-
-            for (let name in profileData) {
-                df.appendChild(createItem(name, profileData[name], onSelectProfile));
-            }
-
-            document.getElementById("profile_list").appendChild(df);
-
-            container.classList.remove("loading");	
-
-            break;
-        default:
-            showMessage(this);
-		}
-    };
-}) (document.getElementById("profile"));
-
-(function(form) {
     if (top.account.level === 0)
 	form.onsubmit = function (e) {
 		e.preventDefault();
     
+        if (!confirm("Warning!\n\n서비스를 중지합니까?\n이 작업은 되돌릴 수 없습니다.")) {
+            return;
+        }
+
         document.body.classList.add("loading");
 
-        $.request.execute({
+        $.request.query({
+            command: "stop",
+            service: "nms"
+        })
+        .then(() => top.location.reload())
+        .catch(showMessage);
+	};
+
+    return data;
+})
+.then(data => {// 백업
+    const form = document.getElementById("backup");
+
+    if (top.account.level === 0)
+	form.onsubmit = function (e) {
+		e.preventDefault();
+
+        if (!confirm("Confirm.\n\n현재의 설정을 백업 하겠습니까?")) {
+            return;
+        }
+
+        document.body.classList.add("loading");
+
+        $.request.query({
             command: "backup",
             service: "nms"
-        }
-        , function () {
-            switch (this.status) {
-            case 200:
-                alert("Information.\n\n"+
-                    "백업 정상.");
-
-                document.body.classList.remove("loading");
-
-                break;
-            default:
-                alert("Error!\n\n"+
-                    "오류코드: "+ this.status);
-                
-                try {
-                    console.log(JSON.parse(this.responseText).error);
-                } catch (e) {}
-            }
-        });
+        })
+        .then(() => window.location.reload())
+        .catch(showMessage);
 	};
-}) (document.getElementById("backup"));
 
-(function(form) {
-    if (top.account.level === 0)
-	form.onsubmit = function (e) {
-		e.preventDefault();
-    
-        document.body.classList.add("loading");
-
-        $.request.execute({
-                command: "stop",
-                service: "nms"
-            }, function () {
-            switch (this.status) {
-            case 200:
-                top.location.replace("/service.html");
-
-                break;
-            default:
-                showMessage(this);
-            }
-        });
-	};
-}) (document.getElementById("stop"));
-
-$.request.execute({
-    command: "get",
-    target: "information"
-}, initInformation);
+    return data;
+})
+.catch(showMessage);
 
 		</script>
 	

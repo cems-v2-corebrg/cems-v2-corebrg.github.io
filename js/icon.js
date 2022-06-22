@@ -161,5 +161,19 @@ ITAhM.iconData = {
         src: "/img/png/application.png",
         disabled: "/img/png/disabled/application.png",
         shutdown: "/img/png/shutdown/application.png"
+    },
+    ups: {
+        type: "ups",
+        group: "etc",
+        src: "/img/png/ups.png",
+        disabled: "/img/png/disabled/ups.png",
+        shutdown: "/img/png/shutdown/ups.png"
+    },
+    ipt: {
+        type: "ipt",
+        group: "voice",
+        src: "/img/png/ipt.png",
+        disabled: "/img/png/disabled/ipt.png",
+        shutdown: "/img/png/shutdown/ipt.png"
     }
 };

@@ -41,18 +41,24 @@ function onSubmit (e) {
 }
 
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert("Notice!\n\n"+ "세션 만료.");
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
         </script>
@@ -112,6 +118,7 @@ function showMessage(xhr) {
         </main>
         
         <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
         <script src="/js/dialog.js"></script>
 		<script>
 
@@ -130,31 +137,27 @@ $.form.elements["mask"].onchange = function (e) {
     document.getElementById("mask").textContent = this.value;
 };
 
-function initProfile () {
-    switch (this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
-    }
-
+$.request.query({
+    command: "get",
+    target: "profile"
+}).then(profileData => {
     const
-        df = document.createDocumentFragment(),
-        profileData = JSON.parse(this.responseText);
+        df = document.createDocumentFragment();
 
     for (let name in profileData) {
         df.appendChild(document.createElement("option")).text = name;
     }
 
-    $.form.elements["profile"].appendChild(df);
+    if (df.children.length === 0) {
+        alert(ALERT_NO_PROFILE["kr"]);
 
-    document.body.classList.remove("loading");
-}
-	
-$.request.execute({
-    command: "get",
-    target: "profile"
-}, initProfile);
+        top.showDialog("/dialog/profile.html", window);
+    } else {
+        $.form.elements["profile"].appendChild(df);
+
+        document.body.classList.remove("loading");
+    }
+}).catch(showMessage);
 
 		</script>
 	

@@ -2,35 +2,38 @@
 <html>
     <head>
         <meta charset="UTF-8">
+        <title>CeMS Topology</title>
         <style>
 
 @import "/css/style.css";
 @import "/css/fa.css";
 
 body {
-    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    position: fixed; inset: 0 0 0 0;
     padding: 0; margin: 0;
-    /*background: #ffffff url("/img/bg_signin.png") no-repeat center center fixed;
-	background-size: cover;*/
+    background: #2f2f2f url("/img/bg_circuit.png") no-repeat center/cover fixed;
 }
-/*
-body:not(.background)::before {
-	content: "";
-	position: absolute; top: 0; right: 0; bottom: 0; left: 0;
-	background-color: rgba(0, 0, 0, 0.8);
-	z-index: -1;
+
+aside {
+    position: absolute; inset: 1em 1em auto auto;
+    width: 460px; height: 80px;
+	padding: 1em;
+	pointer-events: none;
 }
-*/
+
+iframe {
+    width: 100%; height: 100%;
+    border: none;
+    padding: 0; margin: 0;
+}
+
 nav {
-    position: absolute; inset: 0 0 auto 0;
+    position: absolute; inset: 0 auto auto 0;
     padding: 5px;
     display: flex; justify-content: space-between;
     font: 20px "Font Awesome 5 Free";
     color: #ffffff;
     user-select: none;
-}
-
-nav >div {
     display: flex;
 }
 
@@ -89,7 +92,7 @@ polyline {
 }
 
 .path text {
-    cursor: pointer;
+    pointer-events: none;
     fill: #fcba30;
 }
 
@@ -129,17 +132,22 @@ text {
     fill: #ffffff;
 }
 
+
+.loading.mask {
+    z-index: 9;
+}
+
+
 body:not(.label) .node tspan,
 body.name .node tspan:last-child,
 body:not(.name) .node tspan:first-child,
 body:not(.exit) #exit,
-body:not(.dialog) #dialog,
-body:not(.frame) .frame {
+body:not(.loading) .loading.mask {
 	display: none;
 }
+
             </style>
             <script>
-
 function Display () {
     document.body.classList.add("label", "name");
     
@@ -158,31 +166,26 @@ function Display () {
         action[i++ %3]();
     }
 }
+            </script>
+            <script>
+function onEvent(e) {
+    const event = e.data;
 
-function showDialog(src, parent) {
-    const dialog = document.getElementById("dialog");
-
-    dialog.onload = function () {
-        $.parent = parent;
-
-		document.body.classList.add("dialog");
-	};
-
-    dialog.src = src;
-}
-
-function closeDialog(reset) {
-    document.body.classList.remove("dialog");
-    
-    if (reset) {
-        resetParent();
+    if (!event || event.level < 0) {
+        return;
     }
+    
+    if (event.node) {
+        if ($.timer) {
+            clearTimeout($.timer);
+        }
 
-    delete $.parent;
-}
-
-function resetParent() {
-    $.parent && $.parent.location.reload();
+        $.timer = setTimeout(() => requestAnimationFrame(t => {
+            const pos = window.positionData[String(event.node)];
+            
+            pos && moveStage(pos.parent, event.node);
+        }), 1000);
+    }
 }
 
 function showChart(id, index) {
@@ -204,92 +207,103 @@ function onSearch (e) {
     if (!keyword) {
         return;
     }
-
+    
     var
         found = false,
         node;
 
-    for (let id in parent.branchData) {
-        node = parent.branchData[id];
+    for (let id in window.branchData) {
+        node = window.branchData[id];
 
         if (keyword === node.ip || keyword === node.name) {
-            parent.moveStage(parent.positionData[id].parent, id);
+            moveStage(window.positionData[id].parent, id);
             
-            found = true;
-
-            break;
+            return;
         }
     }
 
     if (!found) {
-        for (let id in parent.nodeData) {
-            node = parent.nodeData[id];
+        for (let id in window.nodeData) {
+            node = window.nodeData[id];
 
             if (keyword === node.ip || keyword === node.name) {
-                parent.moveStage(parent.positionData[id].parent, id);
-                
-                found = true;
+                moveStage(window.positionData[id].parent, id);
 
-                break;
+                return;
             }
         }
     }
 
-    if (!found) {
-        alert("Information.\n\n검색 결과가 없습니다.");
-    }
+    alert("Information.\n\n검색 결과가 없습니다.");
+}
+
+function moveStage (group, id) {
+    const search = new URLSearchParams();
+
+    group && search.set("group", group);
+    id && search.set("focus", id);
+
+    window.location.search = search;
 }
 
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert(NOTICE_SESS_EXPIRE["kr"]);
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
             </script>
         </head>
         
-        <body class="label name loading">
+        <body class="loading">
             <nav>
-                <div>
-                    <span title="라벨 표시" id="display">
-                        &#xf074;
-                    </span>
-                    <span title="노드 찾기" id="search">
-                        &#xf002;
-                    </span>
-                    <span title="상위 이동" id="exit">
-                        &#xf2f5;
-                    </span>
-                </div>
-                <div class="frame">
-                    <span id="popup" title="새 창">&#xf2d2;</span>
-                </div>
+                <span title="편집 모드" id="edit">
+                    &#xf013;
+                </span>
+                <span title="라벨 표시" id="display">
+                    &#xf074;
+                </span>
+                <span title="노드 찾기" id="search">
+                    &#xf002;
+                </span>
+                <span title="상위 이동" id="exit">
+                    &#xf2f5;
+                </span>
             </nav>
-            <iframe id="dialog" name="dialog"></iframe>
+            <aside>
+                <iframe src="/status.html"></iframe>
+            </aside>
+            
             <div class="loading mask"></div>
 
             <script src="/js/ITAhM.js"></script>
-            <script src="/js/snmp.js"></script>
-            <script src="/js/icon.js"></script>
-            <script src="/topology/viewer.js"></script>
             <script src="/js/request.js"></script>
+            <script src="/js/icon.js"></script>
             <script src="/js/constants.js"></script>
+            <script src="/js/channel.js"></script>
+            <script src="/js/snmp.js"></script>
+            <script src="/topology/viewer.js"></script>
+            <script src="/js/setting.js"></script>
             <script>
 const
     search = new URLSearchParams(window.location.search),
     $ = {
         request: new Request(),
-        iconData: ITAhM.iconData,
         branch: Number(search.get("group")) || undefined,
         focus: Number(search.get("focus")) || undefined,
         display: new Display(),
@@ -299,22 +313,91 @@ const
 
 document.getElementById("display").onclick = e => $.display.update();
 document.getElementById("search").onclick = onSearch;
-
-if ("display" in parent.settingData && parent.settingData.display === "address") {
-    document.body.classList.remove("name");
-}
-
-initialize($.branch, parent);
+document.getElementById("edit").onclick = e => location.replace("/topology/editor.html");
 
 if ($.branch) {
-    document.getElementById("exit").onclick = e => parent.moveStage(parent.positionData[$.branch].parent);
+    document.getElementById("exit").onclick = e => moveStage(window.positionData[$.branch].parent);
 
     document.body.classList.add("exit");
 }
 
-document.body.classList.remove("loading");
+$.request.query({
+    command: "get",
+    target: "position",
+    name: "position"
+})
+.then(data => {
+    window.positionData = data || {};
 
-$.focus && focusNode($.focus);
+    return $.request.query({
+        command: "get",
+        target: "node"
+    });
+})
+.then(data => {
+    window.nodeData = data;
+
+    return $.request.query({
+        command: "get",
+        target: "branch"
+    });
+})
+.then(data => {
+    window.branchData = data;
+
+    return $.request.query({
+        command: "get",
+        target: "link"
+    });
+})
+.then(data => {
+    window.linkData = data;
+
+    return $.request.query({
+        command: "get",
+        target: "path"
+    });
+})
+.then(data => {
+    window.pathData = data;
+
+    return $.request.query({
+        command: "get",
+        target: "config"
+    });
+})
+.then(data => {
+    window.settingData = settingData;
+
+    for (let key in data) {
+        window.settingData[key] = data[key];
+    }
+    
+    if ("DISPLAY" in settingData && settingData["DISPLAY"] === "address") {
+        document.body.classList.remove("name");
+    }
+
+    return $.request.query({
+        command: "get",
+        target: "icon"
+    });
+})
+.then(data => {
+    window.iconData = ITAhM.iconData;
+
+    for (let type in data) {
+        window.iconData[type] = data[type];
+    }
+
+    initialize($.branch);
+
+    $.focus && focusNode($.focus);
+    
+    Channel.listen(onEvent);
+
+    document.body.classList.remove("loading");
+})
+.catch(showMessage);
 
         </script>
     </body>

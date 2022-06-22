@@ -8,6 +8,7 @@
 		
 		<style>
 @import "/css/style.css";
+@import "/css/var.css";
 
 body {
 	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
@@ -47,6 +48,18 @@ body {
     animation: grow_pt 1s;
 }
 
+#graph >circle.max {
+    fill: var(--var-color-shutdown);
+}
+
+#graph >circle.avg {
+    fill: var(--var-color-critical);
+}
+
+#graph >circle.min {
+    fill: var(--var-color-normal);
+}
+
 .balloon {
 	position: absolute;
 	padding: 5px;
@@ -60,7 +73,7 @@ body {
 }
 
 .balloon.date {
-    background-color: #F4A259;
+    background-color: #dd3a7e;
     border: 1px solid #ddd;
     top: -1em;
 }
@@ -480,7 +493,7 @@ function initialize(args) {
             valueAxis.appendChild(createValueText(0, y, args.toString(value === 0? 0: value)));
             
             if (args.max) {
-                rateAxis.appendChild(createValueText(0, y, (value *100 / args.max).toFixed(2) + "%"));
+                rateAxis.appendChild(createValueText(0, y, `${(value *100 / args.max).toFixed(2)}%`));
             }
         }
         
@@ -619,7 +632,7 @@ function initialize(args) {
 /**
  * public
  */
-function draw(chartData, sort = false) {
+function draw(chartData) {
     const
         df = document.createDocumentFragment(),
         pt = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -628,13 +641,16 @@ function draw(chartData, sort = false) {
 
     var point;
     chartData.forEach((timestamp, value) => {
-        point = pt.cloneNode(true);
+        ["max", "avg", "min"].forEach(name => {
+            point = pt.cloneNode(true);
 
-        point.setAttributeNS(null, "cx", Math.round((timestamp - $.from) / $.tpp));
-        point.setAttributeNS(null, "cy", Math.round((value - $.low) * $.yRatio));
+            point.setAttributeNS(null, "cx", Math.round((timestamp - $.from) / $.tpp));
+            point.setAttributeNS(null, "cy", Math.round((value[name] - $.low) * $.yRatio));
+            point.setAttributeNS(null, "class", name);
 
-        df.appendChild(point);
-    }, sort);
+            df.appendChild(point);
+        });
+    });
 
     document.getElementById("graph").appendChild(df);
 }

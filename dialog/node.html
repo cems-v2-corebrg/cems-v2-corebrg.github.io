@@ -41,9 +41,8 @@ optgroup::before {
 		
 		<script>
 		// static function
-function isIPv4(s) {
-    return s.length > 0;
-    //return s.match(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/)? true: false;
+function isValidIPv4Address(ip) {
+    return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ip);
 }
 
 function isTCP(s) {
@@ -57,7 +56,7 @@ function isTCP(s) {
         return false;
     }
 
-    if (!isIPv4(addrs[0])) {
+    if (!isValidIPv4Address(addrs[0])) {
         return false;
     }
 
@@ -80,15 +79,16 @@ function trimLabel(labels) {
 	
 	return result.join(",");
 }
+        </script>
 
+        <script>
 function onSubmit(e) {
     e.preventDefault();
-    
+
     const
         request = {
             target: "node",
             node: {
-                group: "node"
             }
         };
 
@@ -97,6 +97,16 @@ function onSubmit(e) {
     }
 
     if (this.elements["ip"].value) {
+        if (!isValidIPv4Address(this.elements["ip"].value) && !isTCP(this.elements["ip"].value)) {
+            alert("Error.\n\nIP 형식이 올바르지 않습니다.");
+
+            console.log(this.elements["ip"].value);
+
+            this.elements["ip"].select();
+
+            return;
+        }
+
         request.node.ip = this.elements["ip"].value;
     }
 
@@ -125,8 +135,6 @@ function onSubmit(e) {
         }
     }
 
-    document.body.classList.add("loading");
-
     if ($.id) {
         request.command = "set";
         request.id = $.id;
@@ -134,27 +142,24 @@ function onSubmit(e) {
     else {
         request.command = "add";
     }
+    
+    document.body.classList.add("loading");
+    
+    $.request.query(request)
+    .then(node => {
+        top.resetParent();
 
-    $.request.execute(request, function () {
-        switch (this.status) {
-        case 200:
-            top.resetParent();
+        if ($.id) {
+            window.location.reload();
+        } else if (node) {
+            const search = new URLSearchParams();
 
-            window.location.replace(`${window.location.pathname}?id=${$.id || JSON.parse(this.responseText).id}`);
-            
-            break;
-        case 409:
-            alert("Error!\n\n이미 사용중인 IP 주소 입니다.");
+            search.set("id", node.id);
 
-            $.form.elements["ip"].select();
-
-            break;
-        default:
-            throw showMessage(this);
+            window.location.search = search;
         }
-
-        document.body.classList.remove("loading");
-    });
+    })
+    .catch(showMessage);
 }
 
 function onReset(e) {
@@ -176,73 +181,6 @@ function onReset(e) {
                 top.closeDialog(true);
 
                 break;
-            case 409:
-
-            default:
-                showMessage(this);
-        }
-    });
-}
-
-function onSetManager(e) {
-    if (!confirm("Confirm.\n\n관리자를 변경하겠습니까?")) {
-        this.value = $.manager;
-
-        return;
-    }
-
-    document.body.classList.add("loading");
-
-    $.request.execute({
-        command: "set",
-        target: "manager",
-        node: $.id,
-        user: this.value
-    }, function () {
-        switch (this.status) {
-            case 200:
-                break;
-            default:
-                throw showMessage(this);
-        }
-
-        alert("Notice.\n\n요청을 정상 처리 하였습니다.");
-
-        top.closeDialog(true);
-    });
-}
-
-function onSetMonitor (e) {
-    if (!confirm("Confirm.\n\n모니터 방식을 변경하겠습니까?")) {
-        this.value = $.protocol;
-
-        return;
-    }
-    
-    document.body.classList.add("loading");
-
-    const request = {
-        command: "set",
-        target: "monitor",
-        id: $.id,
-        ip: $.form.elements["ip"].value
-    };
-
-    if (this.value) {
-        request.protocol = this.value;
-    }
-
-    this.disabled = true;
-
-    $.request.execute(request, function () {
-        switch (this.status) {
-            case 200:
-                alert("Notice.\n\n모니터 요청 정상.");
-
-                top.closeDialog(true);
-                //document.body.classList.remove("loading");
-                
-                break;
             default:
                 showMessage(this);
         }
@@ -250,18 +188,24 @@ function onSetMonitor (e) {
 }
 
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert(`Notice!\n\n세션 만료.`);
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
 		</script>
@@ -306,27 +250,6 @@ function showMessage(xhr) {
                         </tr>
                     </tbody>
                     <tbody id="custom"></tbody>
-                    <tbody class="option">
-                        <tr class="monitor">
-                            <th>모니터링</th>
-                            <td>
-                                <select name="monitor">
-                                    <option value="" selected  class="protocol" disabled>없음</option>
-                                    <optgroup label="SNMP" class="protocol ip" disabled>
-                                        <option value="snmp">auto</option>
-                                    </optgroup>
-                                    <option value="icmp"  class="protocol ip" disabled>ICMP</option>
-                                    <option value="tcp"  class="protocol ip tcp" disabled>TCP</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>관리자</th>
-                            <td>
-                                <select name="manager"></select>
-                            </td>
-                        </tr>
-                    </tbody>
                 </table>
                 
                 <footer>
@@ -339,6 +262,7 @@ function showMessage(xhr) {
 		</main>
         <script src="/js/ITAhM.js"></script>
         <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
         <script src="/js/icon.js"></script>
         <script src="/js/channel.js"></script>
         <script src="/js/dialog.js"></script>
@@ -360,51 +284,41 @@ if (top.account.level === 0) {
     document.body.classList.add("root");
 }
 
-$.form.elements["manager"].onchange = onSetManager;
-$.form.elements["manager"].onclick = function (e) {
-    $.manager = this.value;
-};
-
-$.form.elements["monitor"].onchange = onSetMonitor;
-$.form.elements["monitor"].onclick = function (e) {
-    $.protocol = this.value;
-};
-
-function initProfile(e) {
-    switch(this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
+$.request.query({
+    command: "get",
+    target: "config",
+    key: "customNode".toUpperCase()
+})
+.then(configData => {
+    if (configData) {
+        const
+            customs = configData["customNode".toUpperCase()].split(','),
+            df = document.createDocumentFragment();
+        let tr, input;
+        
+        customs.forEach(name => {
+            tr = df.appendChild(document.createElement("tr"));
+            tr.appendChild(document.createElement("th")).textContent = name;
+            
+            input = document.createElement("input");
+            input.type = "text";
+            
+            $.customInputMap[name] = input;
+            
+            tr.appendChild(document.createElement("td")).appendChild(input);    
+        });
+        
+        document.getElementById("custom").appendChild(df);
     }
 
-    const
-        profileData = JSON.parse(this.responseText),
-        df = document.createDocumentFragment();
-
-    for (let name in profileData) {
-        df.appendChild(document.createElement("option")).text = name;
-    }
-
-    document.querySelector("optgroup").appendChild(df);
-
-    $.request.execute({
+    return $.request.query({
         command: "get",
         target: "icon"
-    }, buildType);
-}
-
-function buildType() {
-    switch (this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
-    };
-
+    });
+})
+.then(customData => {
     const
         iconData = ITAhM.iconData,
-        customData = JSON.parse(this.responseText),
         df = document.createDocumentFragment(),
         group = {};
     let 
@@ -441,153 +355,45 @@ function buildType() {
     $.form.elements["type"].selectedIndex = -1;
 
     if ($.id) {
-        $.request.execute({
+        return $.request.query({
             command: "get",
             target: "node",
             id: $.id
-        }, initNode);
-    } else {
-        $.form.elements["type"].value = "unknown";
-
-        document.body.classList.remove("loading");
+        });
     }
-}
+})
+.then(node => {
+    if (node) {
+        if (!node.type) {
+            node.type = "unknown";
+        }
 
-function initNode(e) {
-    switch (this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
-    }
+        if (node.ip) {
+            $.form.elements["ip"].disabled = true;
+            $.form.elements["ip"].value = node.ip;
+        }
 
-    const node = JSON.parse(this.responseText);
+        $.form.elements["name"].value = node.name || "";
+        $.form.elements["type"].value = node.type;
+        // 저장할때는 trim으로 다 붙여서 넣지만 보여줄때는 보기 좋게 한칸씩 뗀다.
+        $.form.elements["label"].value = node.label && (node.label.split(",")).join(", ") || "";
+        
+        if ("extra" in node) {
+            const extra = JSON.parse(node.extra);
 
-    if (!node.type) {
-        node.type = "unknown";
-    }
-
-    if (node.ip) {
-        const monitor = $.form.elements["monitor"];
-
-        document.body.classList.add("monitor");
-
-        if (node.protocol) {
-            monitor.value = node.profile || node.protocol;
-
-            [].forEach.call(monitor.querySelectorAll(".protocol:not(.ip)"), e => e.disabled = false);
-        } else {
-            if (isTCP(node.ip)) {
-                [].forEach.call(monitor.querySelectorAll(".protocol.tcp"), e => e.disabled = false);
-            } else if (isIPv4(node.ip)) {
-                [].forEach.call(monitor.querySelectorAll(".protocol.ip:not(.tcp)"), e => e.disabled = false);
+            for (let name in $.customInputMap) {
+                $.customInputMap[name].value = extra[name] || "";
             }
         }
-        
-        $.form.elements["ip"].disabled = true;
-        $.form.elements["ip"].value = node.ip;
+
+        document.body.classList.add("edit");
+    } else {
+        $.form.elements["type"].value = "unknown";
     }
 
-    $.form.elements["name"].value = node.name || "";
-    $.form.elements["type"].value = node.type;
-    // 저장할때는 trim으로 다 붙여서 넣지만 보여줄때는 보기 좋게 한칸씩 뗀다.
-    $.form.elements["label"].value = node.label && (node.label.split(",")).join(", ") || "";
-
-    if (node.manager) {
-        $.form.elements["manager"].value = node.manager;
-    }
-    
-    if ("extra" in node) {
-        const extra = JSON.parse(node.extra);
-
-        for (let name in $.customInputMap) {
-            $.customInputMap[name].value = extra[name] || "";
-        }
-    }
-
-    document.body.classList.add("edit");
     document.body.classList.remove("loading");
-}
-
-function initCustom(customs) {
-    const df = document.createDocumentFragment();
-    var
-        tr,
-        input;
-    
-    customs.forEach(name => {
-        tr = df.appendChild(document.createElement("tr"));
-        tr.appendChild(document.createElement("th")).textContent = name;
-        
-        input = document.createElement("input");
-        input.type = "text";
-        
-        $.customInputMap[name] = input;
-        
-        tr.appendChild(document.createElement("td")).appendChild(input);    
-    });
-    
-    document.getElementById("custom").appendChild(df);
-}
-
-function initSetting(e) {
-    switch(this.status) {
-    case 200:
-        const settingData = JSON.parse(this.responseText);
-
-        if ("custom" in settingData) {
-            initCustom(settingData.custom.split(','));
-        }
-    case 204:
-        break;
-    default:
-        throw showMessage(this);
-    }
-
-    $.request.execute({
-        command: "get",
-        target: "profile"
-    }, initProfile);
-}
-
-function initUser(e) {
-    switch(this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
-    }
-
-    const
-        userData = JSON.parse(this.responseText),
-        df = document.createDocumentFragment();
-    let user, option;
-
-    for (let key in userData) {
-        user = userData[key];
-
-        option = document.createElement("option");
-
-        option.value = user.id;
-        option.text = `${user.name}(${user.id})`;
-
-        df.appendChild(option);
-    }
-
-    $.form.elements["manager"].appendChild(df);
-    $.form.elements["manager"].selectedIndex = -1;
-
-    $.request.execute({
-        command: "get",
-        target: "setting",
-        key: "custom"
-    }, initSetting);
-}
-
-$.request.execute({
-    command: "get",
-    target: "user"
-}, initUser);
+})
+.catch(showMessage);
 
 	</script>
 	

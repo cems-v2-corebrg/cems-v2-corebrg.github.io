@@ -7,21 +7,27 @@
 		<title>CeMS Chart</title>
 
 		<style>
+@import "/css/style.css";
 @import "/css/fa.css";
 
 body {
     position: fixed; top: 0; right: 0; bottom: 0; left: 0;
     padding: 0; margin: 0;
-    background-color: #4d525a;
+    background: #2f2f2f url(/img/bg_circuit.png) no-repeat center/cover fixed;
     display: flex; flex-direction: column;
 }
 
 nav {
-    font: bold 20px 'Font Awesome 5 Free';
+    font-size: 20px;
+    font-weight: bold;
     color: #aaaaaa;
     flex: none;
     padding: 0.5em;
     display: flex; justify-content: space-between;
+}
+
+nav :is(div:first-of-type, div:last-of-type) {
+    font-family: 'Font Awesome 5 Free';
 }
 
 #node {
@@ -60,18 +66,24 @@ body:not(.frame) .frame {
 		<script>
 
 function showMessage(xhr) {
-    switch (xhr.status) {
-    case 401:
-        alert(NOTICE_SESS_EXPIRE["kr"]);
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
 
-        break;
-    default:
-        alert(ERROR_RES_CODE(xhr.status)["kr"]);
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
     }
-
-    try {
-        console.log(JSON.parse(xhr.responseText).error);
-    } catch (e) {}
 }
 
 		</script>
@@ -84,8 +96,8 @@ function showMessage(xhr) {
                 <span id="back" class="chart" title="이전으로">&#xf536;</span>
             </div>
             <div id="node"></div>
-            <div class="frame">
-                <span id="popup" title="새 창">&#xf2d2;</span>
+            <div>
+                <span id="popup" class="frame" title="새 창">&#xf2d2;</span>
             </div>
         </nav>
         <main>
@@ -169,8 +181,6 @@ Channel.getAccount(account => {
             id: $.id,
             resource: true
         }, initNode);
-    } else {
-        window.location.replace("/warning.html");
     }
 });
 
