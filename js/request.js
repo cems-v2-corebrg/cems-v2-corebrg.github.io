@@ -93,7 +93,8 @@ function Request() {
             xhr.open("POST", `${this.agent}/request`, true);
             xhr.withCredentials = true;
             xhr.timeout = TIMEOUT;
-
+            xhr.setRequestHeader("Access-Control-Request-Private-Network", true);
+            
             xhr.onloadend = e => {
                 switch (xhr.status) {
                 case 200:
