@@ -38,7 +38,7 @@ h1, h2 {
     color: #0084ff;
 }
 
-input[type=submit] {
+[type=submit] {
     width: 100%;
 	box-sizing: border-box;
 	padding: 10px;
@@ -49,11 +49,6 @@ input[type=submit] {
 	color: #fff;
 }
 
-.icon {
-    font-family: 'Font Awesome 5 Free';
-    color: #0084ff;
-}
-
 .input {
     display: flex;
     padding: 1em;
@@ -62,10 +57,16 @@ input[type=submit] {
     background-color: #fefefe;
 }
 
-.input >span {
+.input::before {
+    font-family: 'Font Awesome 5 Free';
     flex: none;
     display: inline-block;
     margin: 0 0.5em;
+    color: #1b1c2e;
+}
+
+.input.address::before {
+    content: "\f542";
 }
 
 .input >input {
@@ -74,11 +75,33 @@ input[type=submit] {
     outline: none;
 }
 
+[type=submit]::before {
+    font-family: 'Font Awesome 5 Free';
+    content: "\f1e6";
+    display: inline-block;
+    padding: 0 0.5em;
+}
+
 body.ready {
     display: none;
 }
 
         </style>
+        <script>
+(url => {
+    window.URL = function (address) {
+        try {
+            return new url(address);
+        } catch (e) {
+            try {
+                return new url(`http://${address}`);
+            } catch (e) {
+                throw e;
+            }
+        }
+    }
+})(URL);
+        </script>
         <script>
 
 function onConnect() {
@@ -112,17 +135,11 @@ function onConnect() {
             <h1>Connect to agent</h1>
             <section>
                 <form id="connect">
-                    <p>IP Address</p>
-                    <div class="input">
-                        <span class="icon">&#xf015;</span>
-                        <input type="text" name="ip" placeholder="IP address" autofocus required value="127.0.0.1">
+                    <p>Agent Address</p>
+                    <div class="input address">
+                        <input type="text" name="address" placeholder="protocol//ip:tcp" autocomplete="off" autofocus required>
                     </div>
-                    <p>TCP Port</p>
-                    <div class="input">
-                        <span class="icon">&#xf542;</span>
-                        <input type="text" name="tcp" placeholder="TCP port" required value="2021">
-                    </div>
-                    <input type="submit" value="&#xf1e6; Connect" class="icon">
+                    <button type="submit">Connect</button>
                 </form>
             </section>
             <h1>
@@ -146,10 +163,17 @@ const $ = {
 
     form.onsubmit = function (e) {
         e.preventDefault();
+        var agent;
+
+        try {
+            agent = new URL(this.elements["address"].value);
+        } catch (e) {
+            form.elements["address"].select();
+
+            return;
+        }
         
         document.body.classList.add("loading");
-
-        const agent = `${window.location.protocol}//${this.elements["ip"].value}:${this.elements["tcp"].value}`;
 
         $.request.connect(agent, function () {
             switch (this.status) {

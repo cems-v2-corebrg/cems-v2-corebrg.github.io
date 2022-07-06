@@ -38,7 +38,7 @@ function Request() {
 
             const xhr = new XMLHttpRequest();
 
-            xhr.open("POST", `${this.agent}/request`, true);
+            xhr.open("POST", `${this.agent}request`, true);
             xhr.withCredentials = true;
 
             if (this.session) {
@@ -90,11 +90,10 @@ function Request() {
 
             const xhr = new XMLHttpRequest();
 
-            xhr.open("POST", `${this.agent}/request`, true);
+            xhr.open("POST", `${this.agent}request`, true);
             xhr.withCredentials = true;
             xhr.timeout = TIMEOUT;
-            xhr.setRequestHeader("Access-Control-Request-Private-Network", true);
-            
+
             xhr.onloadend = e => {
                 switch (xhr.status) {
                 case 200:
@@ -127,11 +126,10 @@ function Request() {
 
             const xhr = new XMLHttpRequest();
                 
-            xhr.open("POST", `${this.agent}/request`, true);
+            xhr.open("POST", `${this.agent}request`, true);
             xhr.withCredentials = true;
 
             xhr.setRequestHeader("Session", this.session);
-            xhr.setRequestHeader("Access-Control-Request-Private-Network", true);
             xhr.onloadend = callback;
 
             xhr.send(JSON.stringify(request));
@@ -165,7 +163,7 @@ function Request() {
 
             const xhr = new XMLHttpRequest();
                 
-            xhr.open("POST", `${this.agent}/request`, true);
+            xhr.open("POST", `${this.agent}request`, true);
             xhr.withCredentials = true;
 
             xhr.setRequestHeader("Session", this.session);
@@ -195,7 +193,7 @@ function Request() {
 
             const xhr = new XMLHttpRequest();
                 
-            xhr.open("POST", `${this.agent}/request`, true);
+            xhr.open("POST", `${this.agent}request`, true);
             xhr.withCredentials = true;
 
             xhr.setRequestHeader("Session", this.session);
@@ -217,7 +215,7 @@ function Request() {
         download: function (request) {
             const xhr = new XMLHttpRequest();
                 
-            xhr.open("POST", `${this.agent}/request`, true);
+            xhr.open("POST", `${this.agent}request`, true);
             xhr.withCredentials = true;
             xhr.responseType = "blob";
     

@@ -585,7 +585,7 @@
             pathData.labelFrom.setAttribute("x", 0);
             pathData.labelFrom.setAttribute("y", -100 /3);
         }
-console.log("from", pathData);
+
         pathData.path.setAttribute("transform", `translate(${xFrom},${yFrom})`);
         
         pathData.line.setAttribute("points", "0,0 0,-100");
@@ -608,7 +608,7 @@ console.log("from", pathData);
             pathData.labelFrom.setAttribute("x", 0);
             pathData.labelFrom.setAttribute("y", -100 *2 /3);
         }
-console.log("to", pathData);
+
         pathData.path.setAttribute("transform", `translate(${xFrom},${yFrom})`);
 
         pathData.line.setAttribute("points", "0,0 0,-100");

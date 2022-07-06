@@ -15,7 +15,9 @@ ITAhM.snmp = {
         },
         cisco: {
             ciscoEnvMonFanState: "1.3.6.1.4.1.9.9.13.1.4.1.3",
-            cpmCPUTotal5secRev: "1.3.6.1.4.1.9.9.109.1.1.1.1.6"
+            ciscoEnvmonSupplyState: "1.3.6.1.4.1.9.9.13.1.5.1.3",
+            cpmCPUTotal5secRev: "1.3.6.1.4.1.9.9.109.1.1.1.1.6",
+            ciscoEnvmonTemperatureStatusValue: "1.3.6.1.4.1.9.9.13.1.3.1.3"
         },
         corebrg: {
             bandwidth: "1.3.6.1.4.1.49447.3.5",
@@ -28,7 +30,9 @@ ITAhM.snmp = {
             dsCpuLoad5s: "1.3.6.1.4.1.6296.9.1.1.1.8"
         },
         juniper: {
-            jnxOperatingStateFan: "1.3.6.1.4.1.2636.3.1.13.1.6.4"
+            jnxOperatingStateFan: "1.3.6.1.4.1.2636.3.1.13.1.6.4",
+            jnxOperatingTemp: "1.3.6.1.4.1.2636.3.1.13.1.7",
+            jnxOperatingPower:"1.3.6.1.4.1.2636.3.1.13.1.6.2"
         },
         piolink: {
             CoreTemperature: "1.3.6.1.4.1.10188.5.6.1.1.1.2",
@@ -82,6 +86,10 @@ ITAhM.snmp = {
             name: "Microsoft",
             logo: "/img/enterprise/microsoft.png"
         },
+        318: {
+            name: "American Power Conversion Corp.",
+            logo: "/img/enterprise/apc.svg"
+        },
         368: {
             name: "Axis Communications AB"
         },
@@ -99,6 +107,9 @@ ITAhM.snmp = {
             name: "Juniper Networks, Inc.",
             logo: "/img/enterprise/juniper.svg"
         },
+        3417: {
+            name: "CacheFlow Inc."
+        },
         6296: {
             name: "DASAN Co.,LTD."
         },
@@ -110,13 +121,32 @@ ITAhM.snmp = {
             name: "Piolink, Inc",
             logo: "/img/enterprise/piolink.png"
         },
+        12356: {
+            name: "Fortinet, Inc.",
+            logo: "/img/enterprise/fortinet.svg"
+        },
+        12532: {
+            name: "Neoteris, Inc.",
+            logo: "/img/enterprise/pulsesecure.svg"
+        },
         18334: {
             name: "KONICA MINOLTA HOLDINGS, INC.",
             logo: "/img/enterprise/konicaminolta.png"
         },
+        21726: {
+            name: "HappyComm"
+        },
+        24681: {
+            name: "QNAP Systems, Inc.",
+            logo: "/img/enterprise/qnap.svg"
+        },
         37288: {
             name: "AXGATE CO., LTD",
             logo: "/img/enterprise/axgate2.png"
+        },
+        55062: {
+            name: "QNAP Systems, Inc.",
+            logo: "/img/enterprise/qnap.svg"
         }
     },
     ifAdminStatus: {

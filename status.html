@@ -44,6 +44,10 @@ section.critical {
     background-image: linear-gradient(to right, var(--var-color-critical), #da680f7f);
 }
 
+section.major {
+    background-image: linear-gradient(to right, var(--var-color-major), #fdcc0d7f);
+}
+
 section.normal {
     background-image: linear-gradient(to right, var(--var-color-normal), #296e017f);
 }
@@ -139,10 +143,17 @@ function showMessage(xhr) {
             </div>
         </section>
         <section class="critical">
-            <div>&#xf0f3;</div>
+            <div>&#xf059;</div>
             <div>
                 <h1 id="critical">0</h1>
                 <h2>Critical</h2>
+            </div>
+        </section>
+        <section class="major">
+            <div>&#xf0f3;</div>
+            <div>
+                <h1 id="major">0</h1>
+                <h2>Major</h2>
             </div>
         </section>
         <section class="normal">

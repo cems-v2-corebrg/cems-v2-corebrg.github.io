@@ -734,24 +734,30 @@ function Fan() {
             this.container = args[0];
             this.indexToContainer = new Map();
         },
-        add: function (index) {
+        add: function (oid, index) {
             const container = document.createElement("li");
             
             this.indexToContainer.set(index, container);
             
+            container.dataset.oid = oid;
+
             this.container.appendChild(container);
         },
         set: function (container, indexData) {
+            const oid = container.dataset.oid;
             var status = false;
 
-            if (ITAhM.snmp.oid.cisco.ciscoEnvMonFanState in indexData) {
-                status = Number(indexData[ITAhM.snmp.oid.cisco.ciscoEnvMonFanState]) === 1;
-            } else if (ITAhM.snmp.oid.piolink.hFANStatus in indexData) {
-                status = Number(indexData[ITAhM.snmp.oid.piolink.hFANStatus]) === 2;
-            } else if (ITAhM.snmp.oid.axgate.fanStatus in indexData) {
-                status = Number(indexData[ITAhM.snmp.oid.axgate.fanStatus]) === 1;
-            } else if (ITAhM.snmp.oid.juniper.jnxOperatingStateFan in indexData) {
-                status = Number(indexData[ITAhM.snmp.oid.juniper.jnxOperatingStateFan]) === 2;
+            switch (oid) {
+            case ITAhM.snmp.oid.axgate.fanStatus:
+            case ITAhM.snmp.oid.cisco.ciscoEnvMonFanState:
+                status = Number(indexData[oid]) === 1;
+
+                break;
+            case ITAhM.snmp.oid.piolink.hFANStatus:
+            case ITAhM.snmp.oid.juniper.jnxOperatingStateFan:
+                status = Number(indexData[oid]) === 2;
+
+                break;
             }
 
             container.classList[status? "add": "remove"]("normal");
@@ -796,18 +802,25 @@ function Power() {
             this.container = args[0];
             this.indexToContainer = new Map();
         },
-        add: function (index, indexData) {
+        add: function (oid, index) {
             const container = document.createElement("li");
             
             this.indexToContainer.set(index, container);
             
+            container.dataset.oid = oid;
+
             this.container.appendChild(container);
         },
         set: function (container, indexData) {
+            const oid = container.dataset.oid;
             var status = false;
         
-            if (ITAhM.snmp.oid.axgate.powerStatus in indexData) {
-                status = Number(indexData[ITAhM.snmp.oid.axgate.powerStatus]) === 1;
+            switch (oid) {
+            case ITAhM.snmp.oid.axgate.powerStatus:
+            case ITAhM.snmp.oid.cisco.ciscoEnvmonSupplyState:
+                status = Number(indexData[oid]) === 1;
+
+                break;
             }
             
             container.classList.remove("normal");
@@ -854,7 +867,7 @@ function Temperature() {
             this.container = args[0];
             this.indexToContainer = new Map();
         },
-        add: function (index, oid) {
+        add: function (oid, index) {
             const container = document.createElement("li");
             
             container.appendChild(document.createElement("label"));
@@ -869,15 +882,37 @@ function Temperature() {
                 chart: "/chart/temperature.html",
                 oid: oid,
                 index: index,
-                unit: 0.1
+                unit: (oid => {
+                    switch (oid) {
+                    case ITAhM.snmp.oid.axgate.temperature:
+                        return 0.1;
+                    default:
+                        return 1;
+                    }
+                })(oid)
             });
+
+            container.dataset.oid = oid;
 
             this.container.appendChild(container);
         },
         set: function (container, indexData) {
-            if (ITAhM.snmp.oid.axgate.temperature in indexData) {
-                container.querySelector("label")
-                    .textContent = `${(Number(indexData[ITAhM.snmp.oid.axgate.temperature]) /10).toFixed(1)} ${String.fromCodePoint("0x2103")}`;
+            const oid = container.dataset.oid;
+            let value;
+
+            switch (oid) {
+            case ITAhM.snmp.oid.axgate.temperature:
+                value = Number(indexData[oid]) /10;
+
+                break;
+            default:
+                value = Number(indexData[oid]);
+
+                break;
+            }
+
+            if (value) {
+                container.querySelector("label").textContent = `${value.toFixed(1)} ${String.fromCodePoint("0x2103")}`;
             }
         },
         update: function (resourceData, criticalData) {
@@ -960,7 +995,7 @@ function Processor() {
 
             this.container.appendChild(df);
         },
-        add: function (index, oid) {
+        add: function (oid, index) {
             this.indexToOID.set(index, oid);
 
             this.container.onclick = e => onSelectResource({
@@ -1284,7 +1319,7 @@ function initialize(node) {
             , indexData[ITAhM.snmp.oid.ifName]
             , indexData[ITAhM.snmp.oid.ifAlias]);
             
-        //FAN
+        //Fan
         [
             ITAhM.snmp.oid.cisco.ciscoEnvMonFanState,
             ITAhM.snmp.oid.piolink.hFANStatus,
@@ -1292,7 +1327,7 @@ function initialize(node) {
             ITAhM.snmp.oid.juniper.jnxOperatingStateFan
         ].forEach(oid => {
             if (oid in indexData) {
-                $.fan.add(index, indexData);
+                $.fan.add(oid, index);
 
                 document.body.classList.add("fan");
             }
@@ -1304,7 +1339,7 @@ function initialize(node) {
             ITAhM.snmp.oid.axgate.hrProcessorLoad
         ].forEach(oid => {
             if (oid in indexData) {
-                $.processor.add(index, oid);
+                $.processor.add(oid, index);
 
                 document.body.classList.add("processor");
             }
@@ -1312,10 +1347,11 @@ function initialize(node) {
 
         //Power
         [
-            ITAhM.snmp.oid.axgate.powerStatus
+            ITAhM.snmp.oid.axgate.powerStatus,
+            ITAhM.snmp.oid.cisco.ciscoEnvmonSupplyState
         ].forEach(oid => {
             if (oid in indexData) {
-                $.power.add(index, indexData);
+                $.power.add(oid, index);
 
                 document.body.classList.add("power");
             }
@@ -1323,10 +1359,11 @@ function initialize(node) {
         
         //Temperature
         [
-            ITAhM.snmp.oid.axgate.temperature
+            ITAhM.snmp.oid.axgate.temperature,
+            ITAhM.snmp.oid.cisco.ciscoEnvmonTemperatureStatusValue
         ].forEach(oid => {
             if (oid in indexData) {
-                $.temperature.add(index, oid)
+                $.temperature.add(oid, index)
 
                 document.body.classList.add("temperature");
             }
