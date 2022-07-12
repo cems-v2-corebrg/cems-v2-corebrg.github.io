@@ -61,6 +61,10 @@ tr[data-critical] >td:nth-child(1) span {
     background-color: var(--var-color-critical);
 }
 
+tr[data-match] >td:nth-child(1) span {
+    background-color: var(--var-color-major);
+}
+
 tr[data-disabled] >td:nth-child(1) span {
     background-color: var(--var-color-disabled);
 }
@@ -131,7 +135,7 @@ summary::marker {
 }
 
 .status.match {
-    background: var(--var-color-match);
+    background: var(--var-color-major);
 }
 
 .status.disabled {
@@ -430,7 +434,7 @@ function createRow(id, node) {
 		else if ("match" in node && !node.match) {
 			row.dataset.match = true;
 
-            status.textContent = "Match";
+            status.textContent = "Major";
 		}
 		else {
 			row.dataset.normal = true;

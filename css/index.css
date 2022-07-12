@@ -121,65 +121,6 @@ a:visited {
     text-decoration: inherit;
 }
 
-/** account **/
-/*
-details {
-    position: relative;
-    display: inline-block;
-}
-
-details[open] summary::before {
-    content: "";
-    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-    background-color: transparent;
-}
-
-summary {
-    outline: none;
-}
-
-summary::marker {
-    content: "";
-}
-
-.popup {
-    position: absolute; top: 100%; right: 0;
-    border-radius: 3px;
-    border: 1px solid rgba(27,31,35,.15);
-    box-shadow: 0 1px 15px rgba(27,31,35,.15);
-    width: 160px;
-    padding: 1em 0;
-    margin-top: 8px;
-    background-color: #ffffff;
-    color: #24292e;
-    z-index: 1;
-    list-style: none;
-    padding: 1em; margin: 0;
-}
-
-.popup::after {
-    position: absolute; top: -14px; right: 10px; left: auto;
-    display: inline-block;
-    content: "";
-    border: 7px solid transparent;
-    border-bottom-color: #fff;
-}
-
-.popup li {
-    padding: 4px 8px;
-    cursor: pointer;
-}
-
-.popup li:hover {
-    background-color: #0366d6;
-    color: #ffffff;
-}
-
-.popup a {
-    display: block;
-}*/
-/** account **/
-
 /** 기본스킨 **/
 nav {
     display: flex; justify-content: space-between;
@@ -228,12 +169,16 @@ nav >ul >li:hover ul {
 nav >ul ul >li {
     white-space: nowrap;
     font-size: 12px;
-    padding: 3px 1em;
 }
 
 nav >ul ul >li:hover {
     background-color: #0084ff;
     color: #fefefe;
+}
+
+nav >ul ul >li >a {
+    padding: 0.5em 1em;
+    display: block;
 }
 
 nav >ul >li >a,

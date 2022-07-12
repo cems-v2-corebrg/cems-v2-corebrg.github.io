@@ -11,10 +11,16 @@
 body {
 	position: fixed; inset: 0 0 0 0;
     margin: 0; padding: 0;
-    background: #f9f9f9 url("/img/bg_signin.png") fixed center no-repeat;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: #000000 url("/img/bg_signin2.png") fixed center no-repeat;
+    background-size: contain;
+    display: flex; align-items: center; justify-content: center;
+}
+
+body::before {
+    content: "";
+    z-index: -1;
+    position: absolute; inset: 0 0 0 0;
+    background-color: #0000007f;
 }
 
 main {
@@ -104,6 +110,12 @@ body.ready {
         </script>
         <script>
 
+function initialize() {
+    document.body.classList.remove("ready");
+
+    document.body.querySelector("[name=address").focus();
+}
+
 function onConnect() {
     switch (this.status) {
     case 200:
@@ -137,7 +149,7 @@ function onConnect() {
                 <form id="connect">
                     <p>Agent Address</p>
                     <div class="input address">
-                        <input type="text" name="address" placeholder="protocol//ip:tcp" autocomplete="off" autofocus required>
+                        <input type="text" name="address" placeholder="protocol//ip:tcp" autocomplete="off" required>
                     </div>
                     <button type="submit">Connect</button>
                 </form>
@@ -222,9 +234,9 @@ if (!$.request.try(function () {
         } catch (e) {}
     }
 
-    document.body.classList.remove("ready");
+    initialize();
 })) {
-    document.body.classList.remove("ready");
+    initialize();
 }
 
 		</script>

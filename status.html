@@ -64,52 +64,6 @@ h1, h2 {
 		
 		<script>
 
-function initialize() {
-    const count = {
-            shutdown: 0,
-            critical: 0,
-            normal: 0
-        };
-
-    var node, type;
-
-    for (let id in $.nodeData) {
-        node = $.nodeData[id];
-
-        if ("protocol" in node) {
-            type = node.type || "unknown";
-
-            if (!(type in $.typeMap)) {
-                $.typeMap[type] = {
-                    shutdown: 0,
-                    critical: 0,
-                    normal: 0
-                }
-            }
-
-            if ("status" in node && !node.status) {
-                count.shutdown++;
-
-                $.typeMap[type].shutdown++;
-            }
-            else if ("critical" in node && !node.critical) {
-                count.critical++;
-
-                $.typeMap[type].critical++;
-            }
-            else {
-                count.normal++;
-
-                $.typeMap[type].normal++;
-            }
-        }
-    }
-
-    document.getElementById("normal").textContent = count.normal;
-    document.getElementById("critical").textContent = count.critical;
-    document.getElementById("shutdown").textContent = count.shutdown;
-}
-
 function showMessage(xhr) {
     if (xhr instanceof XMLHttpRequest) {
         switch (xhr.status) {
@@ -171,30 +125,67 @@ function showMessage(xhr) {
         
 		<script>
 
-const $ = {
-        request: new Request(),
-        typeMap: {}
-    };
-
-function initNode() {
-    switch (this.status) {
-    case 200:
-        $.nodeData = JSON.parse(this.responseText);
-        
-        initialize();
-
-        document.body.classList.remove("loading");
-
-        break;
-    default:
-        showMessage(this);
-    }
-}
-
-$.request.execute({
+new Request().query({
     command: "get",
     target: "node"
-}, initNode);
+}).then(data => {
+    const
+        count = {
+            shutdown: 0,
+            critical: 0,
+            major: 0,
+            normal: 0
+        },
+        typeMap = {};
+
+    var node, type;
+
+    for (let id in data) {
+        node = data[id];
+
+        if ("protocol" in node) {
+            type = node.type || "unknown";
+
+            if (!(type in typeMap)) {
+                typeMap[type] = {
+                    shutdown: 0,
+                    critical: 0,
+                    major: 0,
+                    normal: 0
+                }
+            }
+
+            if ("status" in node && !node.status) {
+                count.shutdown++;
+
+                typeMap[type].shutdown++;
+            }
+            else if ("critical" in node && !node.critical) {
+                count.critical++;
+
+                typeMap[type].critical++;
+            }
+            else if ("match" in node && !node.match) {
+                count.major++;
+
+                typeMap[type].major++;
+            }
+            else {
+                count.normal++;
+
+                typeMap[type].normal++;
+            }
+        }
+    }
+
+    document.getElementById("normal").textContent = count.normal;
+    document.getElementById("critical").textContent = count.critical;
+    document.getElementById("major").textContent = count.major;
+    document.getElementById("shutdown").textContent = count.shutdown;
+
+    document.body.classList.remove("loading");
+})
+.catch(showMessage);
 
 		</script>
 	

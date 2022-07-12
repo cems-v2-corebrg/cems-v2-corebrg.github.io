@@ -482,6 +482,26 @@ div.flex span {
 	flex: 1;
 }
 
+div.error {
+    position: fixed; inset: 0 0 0 0;
+    padding: 1em;
+    pointer-events: none;
+    background-color: #0000007f;
+    font-size: 2em;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+div.error::before {
+    font-family: "Font Awesome 5 Free";
+    content: "\f06a";
+}
+
+div.error::after {
+    content: attr(data-code);
+}
+
+body:not(.error) .error,
 body:not(.response) section.response,
 body:not(.response) section.rtt,
 body:not(.processor) section.processor,
@@ -811,45 +831,31 @@ function Power() {
 
             this.container.appendChild(container);
         },
-        set: function (container, indexData) {
+        set: function (container, status) {
             const oid = container.dataset.oid;
-            var status = false;
-        
-            switch (oid) {
-            case ITAhM.snmp.oid.axgate.powerStatus:
-            case ITAhM.snmp.oid.cisco.ciscoEnvmonSupplyState:
-                status = Number(indexData[oid]) === 1;
 
-                break;
-            }
-            
             container.classList.remove("normal");
 
             status && container.classList.add("normal");
-            
-            return status;
         },
-        update: function (resourceData, criticalData) {
-            var status = 0;
+        update: function (resourceData, criticalData, matchData) {
+            const classList = document.body.querySelector(".power.status").classList;
+            var size = 0, status;
 
             for (let [index, container] of this.indexToContainer) {
-                if (this.set(container, resourceData[index])) {
-                    status++;
-                }
+                status = matchData[index]?.[container.dataset.oid] !== false;
+
+                this.set(container, status);
+
+                status && size++;
             }
             
-            if (this.indexToContainer.size === status) {
-                const classList = document.body.querySelector(".power.status").classList;
-
-                ["critical", "shutdown"].forEach(status => classList.remove(status));
-            } else if (this.indexToContainer.size === 0) {
-                const classList = document.body.querySelector(".power.status").classList;
-
+            if (this.indexToContainer.size === size) {
+                classList.remove("critical", "shutdown");
+            } else if (size === 0) {
                 classList.remove("critical");
                 classList.add("shutdown");
             } else {
-                const classList = document.body.querySelector(".power.status").classList;
-
                 classList.remove("shutdown");
                 classList.add("critical");
             }
@@ -1216,6 +1222,11 @@ function initialize(node) {
 
     document.body.classList.add("response");
 
+    if (node.snmp && node.snmp !== 0) {
+        document.body.classList.add("error");
+        document.body.querySelector("div.error").dataset.code = node.snmp;
+    }
+
     {
         const toggle = document.getElementById("toggle");
     
@@ -1370,14 +1381,14 @@ function initialize(node) {
         });
     }
     
-    $.response.update(node.resource, node.critical);
-    $.processor.update(node.resource, node.critical);
-    $.memory.update(node.resource, node.critical);
-    $.storage.update(node.resource, node.critical);
-    $.portMap.update(node.resource, node.critical);
-    $.fan.update(node.resource, node.critical);
-    $.power.update(node.resource, node.critical);
-    $.temperature.update(node.resource, node.critical);
+    $.response.update(node.resource, node.critical, node.match);
+    $.processor.update(node.resource, node.critical, node.match);
+    $.memory.update(node.resource, node.critical, node.match);
+    $.storage.update(node.resource, node.critical, node.match);
+    $.portMap.update(node.resource, node.critical, node.match);
+    $.fan.update(node.resource, node.critical, node.match);
+    $.power.update(node.resource, node.match, node.match);
+    $.temperature.update(node.resource, node.critical, node.match);
 
     [].forEach.call(document.body.querySelectorAll("section"), section => {
 		section.draggable = true;
@@ -1441,7 +1452,7 @@ function update(node) {
     }
 
     ["response", "processor", "storage", "memory", "portMap", "fan", "power", "temperature"]
-        .forEach(resource => $[resource].update(node.resource, node.critical));
+        .forEach(resource => $[resource].update(node.resource, node.critical, node.match));
 
     refresh();
 }
@@ -1649,6 +1660,10 @@ function showMessage(xhr) {
                 </table>
             </section>
 		</article>
+
+        <div class="error">
+            SNMP 오류코드 : 
+        </div>
 
 		<div class="loading mask"></div>
 	

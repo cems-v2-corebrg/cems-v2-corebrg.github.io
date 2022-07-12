@@ -11,10 +11,16 @@
 body {
 	position: fixed; inset: 0 0 0 0;
     margin: 0; padding: 0;
-    background: #f9f9f9 url("/img/bg_signin.png") fixed center no-repeat;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: #000000 url("/img/bg_signin2.png") fixed center no-repeat;
+    background-size: contain;
+    display: flex; align-items: center; justify-content: center;
+}
+
+body::before {
+    content: "";
+    z-index: -1;
+    position: absolute; inset: 0 0 0 0;
+    background-color: #0000007f;
 }
 
 main {
@@ -46,10 +52,20 @@ h1, h2 {
     background-color: #fefefe;
 }
 
-.input >span {
+.input::before {
+    font-family: 'Font Awesome 5 Free';
     flex: none;
     display: inline-block;
     margin: 0 0.5em;
+    color: #1b1c2e;
+}
+
+.input.id::before {
+    content: "\f007";
+}
+
+.input.password::before {
+    content: "\f023";
 }
 
 .input >input {
@@ -63,8 +79,8 @@ h1, h2 {
     color: #0084ff;
 }
 
-input[type=submit],
-input[type=reset] {
+[type=submit],
+[type=reset] {
     width: 100%;
 	box-sizing: border-box;
 	padding: 10px;
@@ -73,12 +89,12 @@ input[type=reset] {
 	color: #fff;
 }
 
-input[type=submit] {
+[type=submit] {
     background-image: linear-gradient(#5cb85c, #398439 45%,  #398439 55%, #5cb85c);
 	border: 1px solid #398439;
 }
 
-input[type=reset] {
+[type=reset] {
     background-image: linear-gradient(#d9534f, #ac2925 45%,  #ac2925 55%, #d9534f);
 	border: 1px solid #ac2925;
 }
@@ -87,7 +103,7 @@ input[type=reset] {
     display: flex;
 }
 
-.footer >input {
+.footer >button{
     flex: 1;
     font-family: "Font Awesome 5 Free", "맑은 고딕", Tahoma, Arial;
 }
@@ -131,20 +147,16 @@ function onSignIn() {
             <section>
                 <form id="signin" class="account">
                     <p>Username</p>
-                    <div class="input">
-                        <span class="glyph">&#xf007;</span>
-                        <input type="text" name="id" required autocomplete="off" autofocus>
+                    <div class="input id">
+                        <input type="text" name="id" required autocomplete="off">
                     </div>
                     <p>Password</p>
-                    <div class="input">
-                        <span class="glyph">&#xf023;</span>
+                    <div class="input password">
                         <input type="password" name="password" required autocomplete="off">
                     </div>
                     <div class="footer">
-                        <input type="reset" value="Cancel" class="button" lang="en">
-                        <input type="submit" value="Sign in" class="button" lang="en">
-                        <input type="reset" value="&#xf55a; Disconnect" class="button">
-                        <input type="submit" value="&#xf2f6; Sign in" class="button">
+                        <button type="reset">&#xf55a; Disconnect</button>
+                        <button type="submit">&#xf2f6; Sign in</button>
                     </div>
                 </form>
             </section>
@@ -183,6 +195,7 @@ document.getElementById("signin").onreset = function (e) {
     window.location.replace("/connect.html");
 };
 
+document.body.querySelector("[name=id]").select();
 		</script>
 	
 	</body>
