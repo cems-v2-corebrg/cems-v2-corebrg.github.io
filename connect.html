@@ -20,7 +20,7 @@ body::before {
     content: "";
     z-index: -1;
     position: absolute; inset: 0 0 0 0;
-    background-color: #0000007f;
+    background: linear-gradient(#0000007f, #000000);
 }
 
 main {
@@ -48,10 +48,6 @@ a:visited,
 a:link,
 a:hover {
     color: #0084ff;
-}
-
-img {
-    display: none;
 }
 
 [type=submit] {
@@ -166,7 +162,8 @@ function onConnect() {
             </section>
             <h3>
                 <a href="https://github.com/cems-v2-corebrg/cems-v2-corebrg.github.io/releases/download/v2.0/CeMSFree.v2.0.jar" download="CeMSFree.v2.0.jar">Free download</a>
-                <a href="http://www.corebrg.com">
+                <a href="/manual.html">Manual</a>
+                <a href="http://www.corebrg.com" hidden>
                     <img width="64" height="64" src="/img/logo.png">
                 </a>
             </h3>
