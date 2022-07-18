@@ -366,6 +366,8 @@ function showDialog(src, parent) {
     dialog.onload = function () {
         $.parent = parent;
 
+        dialog.contentWindow.focus();
+
 		document.body.classList.add("dialog");
 	};
 

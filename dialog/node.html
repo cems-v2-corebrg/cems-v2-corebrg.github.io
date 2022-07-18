@@ -227,7 +227,7 @@ function showMessage(xhr) {
                         <tr class="ip">
                             <th>ip 주소</th>
                             <td>
-                                <input type="text" name="ip" autofocus>
+                                <input type="text" name="ip">
                             </td>
                         </tr>
                         <tr>
@@ -389,8 +389,10 @@ $.request.query({
         document.body.classList.add("edit");
     } else {
         $.form.elements["type"].value = "unknown";
-    }
 
+        $.form.elements["ip"].focus();
+    }
+    
     document.body.classList.remove("loading");
 })
 .catch(showMessage);

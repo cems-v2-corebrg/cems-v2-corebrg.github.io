@@ -11,7 +11,9 @@
 @import "/css/dialog.css";
 
 h3 {
-	margin-top: 0;
+	margin: unset;
+    padding: 1em;
+    background-color: #dddddd;
 }
 
 section {
@@ -105,37 +107,6 @@ section {
     content: "선택하지 않음";
 }
 
-div.details {
-    margin: 0.5em; padding: 0.5em;
-    border: 1px solid #aaa;
-}
-
-div.details ul {
-    padding: 0; margin: 0;
-    list-style: none;
-}
-
-div.details li {
-    display: flex;
-}
-
-div.details li >*:first-child {
-    flex: 2;
-}
-
-div.details li >*:last-child {
-    flex: 3;
-}
-
-div.details li >* {
-    padding: 0.5em;
-}
-
-div.details select {
-    width: 100%;
-    box-sizing: border-box;
-}
-
 .container {
     position: relative;
 }
@@ -165,9 +136,29 @@ nav::after {
     cursor: pointer;
 }
 
-body:not(.details) div.details,
+dialog {
+    width: 380px;
+    transform: translate(50px, -50px);
+}
+
+.close {
+    position: absolute; inset: 1em 1em auto auto;
+    font: 20px "Font Awesome 5 Free";
+    border-radius: 50%;
+    display: inline-flex; width: 32px; height: 32px;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+    cursor: pointer;
+}
+
+.close:hover {
+    transform: scale(1.2);
+}
+
 body:not(.initialized) form,
-body.initialized #create {
+body.initialized #create,
+dialog:not([data-id]) [type=reset] {
 	display: none;
 }
 
@@ -175,14 +166,6 @@ body.initialized #create {
 		
         <script src="/js/snmp.js"></script>
         <script>
-
-function onCloseDetails (e) {
-    const details = document.body.querySelector(".details");
-
-    details.previousElementSibling.classList.remove("selected");
-
-    document.body.classList.remove("details");
-}
 
 function onCreatePath (e) {
     document.body.classList.add("loading");
@@ -203,78 +186,16 @@ function onCreatePath (e) {
     .catch(showMessage);
 }
 
-function onSaveLink (e) {
-    document.body.classList.add("loading");
-
-    const link = {
-            nodeFrom: $.idFrom,
-            nodeTo: $.idTo,
-            id: Number(document.querySelector(".summary.selected").dataset.id)
-        };
-    var select;
-
-    select = document.getElementById("index_from");
-
-    if (select.value) {
-        link.indexFrom = Number(select.value);
-        link.indexFromName = select.options[select.selectedIndex].text;
-    }
-
-    select = document.getElementById("index_to");
-
-    if (select.value) {
-        link.indexTo = Number(select.value);
-        link.indexToName = select.options[select.selectedIndex].text;
-    }
-
-    if (Object.keys($.customInputMap).length > 0) {
-        const extra = {};
-    
-        for (let key in $.customInputMap) {
-            extra[key] = $.customInputMap[key].value;
-        }
-
-        link.extra = extra;
-    }
-
-    $.request.execute({
-        command: "set",
-        target: "link",
-        nodeFrom: $.idFrom,
-        nodeTo: $.idTo,
-        id: link.id,
-        link: link
-    }, function () {
-        switch(this.status) {
-        case 409:                
-            alert("Error!\n\n링크 수정 실패.\n"+"이미 다른 노드와 연결된 인터페이스 일 수 있습니다.");
-        case 200:
-            top.resetParent();
-            
-            window.location.reload();
-
-            break;
-        default:
-            throw showMessage(this);
-        }
-    });
+function onSelectLink() {
+    showDialog(this.dataset.id);
 }
 
-function openLinkDialog() {
-    const
-        details = document.body.querySelector(".details"),
-        selected = details.previousElementSibling,
-        link = $.linkData && $.linkData[this.dataset.id];
+function showDialog(id) {
+    const dialog = document.body.querySelector("dialog");
 
-    if (selected) {
-        selected.classList.remove("selected");
-    }
+    if (id) {
+        const link = $.linkData[id];
 
-    this.classList.add("selected");
-
-    this.parentNode.insertBefore(details, this.nextSibling);
-
-    if (link) {
         if (link.indexFrom) {
             document.getElementById("index_from").value = link.indexFrom;
         } else {
@@ -290,9 +211,13 @@ function openLinkDialog() {
         for (let key in $.customInputMap) {
             $.customInputMap[key].value = link.extra && link.extra[key] || "";
         }
+
+        dialog.dataset.id = id;
+    } else {
+        delete dialog.dataset.id;
     }
 
-    document.body.classList.add("details");
+    dialog.showModal();
 }
 
 function addLink(link) {
@@ -307,53 +232,15 @@ function addLink(link) {
 
     summary.dataset.id = link.id;
 
-    summary.onclick = openLinkDialog;
+    summary.onclick = onSelectLink;
 }
 
 function onAddLink (e) {
-    document.body.classList.add("loading");
+    const dialog = document.body.querySelector("dialog");
 
-    $.request.execute({
-        command: "add",
-        target: "link",
-        link: {
-            path: $.id
-        }
-    }, function () {
-        switch(this.status) {
-        case 409:                
-            alert("Error!\n\n링크 추가 실패.");
-        case 200:
-            window.location.reload();
+    dialog.classList.remove("edit");
 
-            break;
-        default:
-            throw showMessage(this);
-        }
-    });
-}
-
-function onRemoveLink (e) {
-    document.body.classList.add("loading");
-
-    $.request.execute({
-        command: "remove",
-        target: "link",
-        id: Number(document.querySelector(".summary.selected").dataset.id)
-    }, function () {
-        switch(this.status) {
-        case 409:                
-            alert("Error!\n\n링크 삭제 실패.");
-        case 200:
-            top.resetParent();
-
-            window.location.reload();
-
-            break;
-        default:
-            throw showMessage(this);
-        }
-    });
+    dialog.showModal();
 }
 
 function onSubmit (e) {
@@ -413,28 +300,6 @@ function onReset (e) {
     });
 }
 
-function initCustom(customArray) {
-    const
-        df = document.createDocumentFragment(),
-        details = document.body.querySelector(".details");
-    
-    customArray.forEach((custom, i) => {
-        const
-            li = df.appendChild(document.createElement("li")),
-            input = document.createElement("input");
-
-        li.appendChild(document.createElement("span")).textContent = custom;
-        
-        input.type = "text";
-
-        $.customInputMap[custom] = input;
-    
-        li.appendChild(input);
-    });
-    
-    details.insertBefore(df, details.querySelector("nav"));
-}
-
 function showMessage(xhr) {
     if (xhr instanceof XMLHttpRequest) {
         switch (xhr.status) {
@@ -473,32 +338,7 @@ function showMessage(xhr) {
                         <input type="button" class="button" id="add_link" title="링크 추가" value="&#xf067; Add">
                     </div>
                     <div class="link">
-                        <div id="list">
-                            <div class="details">
-                                <ul>
-                                    <li>
-                                        <span id="node_from">
-                                            node1
-                                        </span>
-                                        <select id="index_from" disabled></select>
-                                    </li>
-                                    <li>
-                                        <span id="node_to">
-                                            node2
-                                        </span>
-                                        <select id="index_to" disabled></select>
-                                    </li>
-                                </ul>
-                                <nav class="root">
-                                    <span class="button remove root" id="remove_link" title="삭제">
-                                        &#xf146;
-                                    </span>
-                                    <span class="button apply root" id="set_link" title="적용">
-                                        &#xf14a;
-                                    </span>
-                                </nav>
-                            </div>
-                        </div>
+                        <div id="list"></div>
                     </div>
                     <table>
                         <colgroup>
@@ -514,6 +354,7 @@ function showMessage(xhr) {
                                     <option value="clock">꺽은선(시계방향)</option>
                                     <option value="counter">꺽은선(반시계방향)</option>
                                 </select>
+                            </td>
                         </tr>
                         <tr>
                             <th>선 색상</th>
@@ -528,14 +369,46 @@ function showMessage(xhr) {
                     </table>
                     
                     <footer class="root">
-                        <input type="reset" value="&#xf1f8; 삭제">
-                        <input type="submit" value="&#xf0c7; 저장">
+                        <button type="reset">&#xf1f8; Remove</button>
+                        <button type="submit">&#xf00c; Apply</button>
                     </footer>
                 </form>
                 <div class="loading mask"></div>
             </section>
         </main>
         
+        <dialog>
+            <h3>Link</h3>
+            <form>
+                <table>
+                    <colgroup>
+                        <col width="160">
+                    </colgroup>
+                    <tbody>
+                        <tr>
+                            <th id="node_from"></th>
+                            <td>
+                                <select id="index_from" disabled></select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th id="node_to"></th>
+                            <td>
+                                <select id="index_to" disabled></select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <footer class="root">
+                    <button type="reset">&#xf1f8; Remove</button>
+                    <button type="submit">&#xf0c7; Apply</button>
+                </footer>
+            </form>
+            <span class="close" title="닫기">
+                &#xf00d;
+            </span>
+        </dialog>
+
         <script src="/js/request.js"></script>
         <script src="/js/constants.js"></script>
         <script src="/js/dialog.js"></script>
@@ -561,9 +434,92 @@ if (top.account.level === 0) {
 
 document.getElementById("create").onclick = onCreatePath;
 document.getElementById("add_link").onclick = onAddLink;
-document.getElementById("set_link").onclick = onSaveLink;
-document.getElementById("remove_link").onclick = onRemoveLink;
-document.body.querySelector("nav").onclick = onCloseDetails;
+
+{
+    const
+        dialog = document.body.querySelector("dialog"),
+        form = dialog.querySelector("form");
+
+    form.onsubmit = e => {
+        e.preventDefault();
+
+        document.body.classList.add("loading");
+
+        const
+            id = Number(dialog.dataset.id),
+            link = {
+                nodeFrom: $.idFrom,
+                nodeTo: $.idTo,
+            },
+            query = {
+                target: "link",
+                link: link
+            };
+
+        var select;
+
+        select = document.getElementById("index_from");
+
+        if (select.value) {
+            link.indexFrom = Number(select.value);
+            link.indexFromName = select.options[select.selectedIndex].text;
+        }
+
+        select = document.getElementById("index_to");
+
+        if (select.value) {
+            link.indexTo = Number(select.value);
+            link.indexToName = select.options[select.selectedIndex].text;
+        }
+
+        if (Object.keys($.customInputMap).length > 0) {
+            const extra = {};
+        
+            for (let key in $.customInputMap) {
+                extra[key] = $.customInputMap[key].value;
+            }
+
+            link.extra = extra;
+        }
+
+        if (id) {
+            query.command = "set";
+            link.id = id;
+        } else {
+            query.command = "add";
+            link.path = $.id;
+        }
+
+        $.request.query(query)
+        .then(data => {
+            top.resetParent();
+                
+            window.location.reload();
+        }).catch(showMessage);
+    };
+    
+    form.onreset = e => {
+        e.preventDefault();
+
+        if (!(confirm("Confirm.\n\n링크를 삭제합니까?"))) {
+            return;
+        }
+
+        document.body.classList.add("loading");
+
+        $.request.query({
+            command: "remove",
+            target: "link",
+            id: Number(dialog.dataset.id) || undefined
+        }).then(data => {
+            top.resetParent();
+
+            window.location.reload();
+        }).catch(showMessage);
+    };
+
+    dialog.querySelector(".close").onclick = e => dialog.close();
+}
 
 $.options.forEach(name => {
     $.form.elements["use_"+ name].onclick = e => {
@@ -579,29 +535,6 @@ $.options.forEach(name => {
         }
     };
 });
-
-function initLink(path) {
-    $.request.execute({
-        command: "get",
-        target: "link",
-        path: $.id
-    }, function () {
-        switch(this.status) {
-        case 200:
-            $.linkData = JSON.parse(this.responseText);
-
-            for (let id in $.linkData) {
-                addLink($.linkData[id]);
-            }
-
-            document.body.classList.remove("loading");
-
-            break;
-        default:
-            throw showMessage(this);
-        }
-    });
-}
 
 function initResource(resource, select) {
     const df = document.createDocumentFragment();
@@ -640,11 +573,26 @@ function initResource(resource, select) {
 $.request.query({
     command: "get",
     target: "config",
-    key: "customLink".toUpperCase(),
+    key: "CUSTOMLINE",
 })
 .then(configData => {
-    if (configData) {
-        initCustom(configData["customLink".toUpperCase()].split(','));
+    if (configData) {console.log(configData);
+        const df = document.createDocumentFragment();
+        
+        configData["CUSTOMLINE"].split(',').forEach((custom, i) => {
+            const
+                tr = df.appendChild(document.createElement("tr")),
+                input = document.createElement("input");
+
+            tr.appendChild(document.createElement("th")).textContent = custom;
+            tr.appendChild(document.createElement("td")).appendChild(input);
+
+            input.type = "text";
+
+            $.customInputMap[custom] = input;
+        });
+        
+        document.body.querySelector("dialog tbody").appendChild(df);
     }
 
     return $.request.query({
@@ -696,11 +644,24 @@ $.request.query({
             }
         });
         
-        initLink(data);
-
         document.body.classList.add("initialized", "edit");
+
+        return $.request.query({
+            command: "get",
+            target: "link",
+            path: $.id
+        });
     }
-    
+})
+.then(data => {
+    if (data) {
+        $.linkData = data;
+
+        for (let id in data) {
+            addLink(data[id]);
+        }
+    }
+
     document.body.classList.remove("loading");
 })
 .catch(showMessage);

@@ -8,16 +8,18 @@
 @import "/css/fa.css";
 
 body {
-	display: flex; inset: 1em;
+	position: fixed; inset: 1em;
+	display: flex;
 }
 
-nav {background-color: #ddd;
+nav {
 	flex: none;
 	min-width: 300px;
 }
 
 main {
 	flex: 1;
+	margin-left: 1em;
 }
 
 nav, main {
@@ -31,11 +33,18 @@ nav >a:first-of-type::before {
 	padding: 0 0.5em;
 }
 
+nav li {
+	padding: 0.5em;
+}
+
 a,
 a:visited,
 a:link,
 a:active {
 	color: #0f0f0f;
+}
+
+nav a {
 	text-decoration: none;
 }
 
@@ -43,7 +52,65 @@ a[href]:hover {
 	text-decoration: underline;
 }
 
+figure {
+	padding: 1em;
+	background-color: #1b1c2e;
+	color: #efefef;
+	border-radius: 5px;
+}
 
+figure, blockquote, figcaption {
+	margin: 1em;
+}
+
+h2 {
+	margin: unset;
+	padding: 1em;
+	background-color: #0000001f;
+}
+
+main img {
+	cursor: pointer;
+	display: block;
+}
+
+dialog img {
+	cursor: default;
+}
+
+dialog {
+    width: 80%;
+    border: 3px solid #dd3a7e;
+    text-align: center;
+	padding: unset;
+}
+
+dialog img {
+	width: 100%;
+	display: block;
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+dialog button {
+    position: absolute; inset: 1em 1em auto auto;
+    font: 20px "Font Awesome 5 Free";
+    border-radius: 50%;
+	border: none;
+    display: inline-flex; width: 32px; height: 32px;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    color: #000000;
+    cursor: pointer;
+	outline: none;
+}
+
+dialog button:hover {
+    transform: scale(1.2);
+}
 		</style>
 
 	</head>
@@ -53,20 +120,423 @@ a[href]:hover {
 			<a href="/connect.html">Home</a>
 			<ul>
 				<li>
-					<a href="#ready">준비</a>
+					<a href="#ready">Ready</a>
 					<ul>
 						<li>
-							<a>Download</a>
+							<a href="#terms">Terms</a>
+						</li>
+						<li>
+							<a href="#download">Download</a>
+						</li>
+						<li>
+							<a href="#java">Java</a>
+						</li>
+						<li>
+							<a href="#open">Open</a>
+						</li>
+					</ul>
+				</li>
+				<li>
+					<a href="#start">Start</a>
+					<ul>
+						<li>
+							<a href="#connect">Connect</a>
+						</li>
+						<li>
+							<a href="#signin">Sign in</a>
+						</li>
+					</ul>
+				</li>
+				<li>
+					<a href="#required">Required</a>
+					<ul>
+						<li>
+							<a href="#profile">SNMP Profile</a>
+						</li>
+					</ul>
+				</li>
+				<li>
+					<a href="#menu">Menu</a>
+					<ul>
+						<li>
+							<a href="#dashboard">Dashboard</a>
+						</li>
+						<li>
+							<a href="#event">Event</a>
+						</li>
+						<li>
+							<a href="#node">Node</a>
+						</li>
+						<li>
+							<a href="#branch">Branch</a>
+						</li>
+						<li>
+							<a href="#line">Line</a>
+						</li>
+						<li>
+							<a href="#user">User</a>
+						</li>
+						<li>
+							<a href="#function">Function</a>
+						</li>
+					</ul>
+				</li>
+				<li>
+					<a href="#editor">Editor</a>
+					<ul>
+						<li>
+							<a href="#topology">Topology</a>
+						</li>
+					</ul>
+				</li>
+				<li>
+					<a href="#dialog">Dialog</a>
+					<ul>
+						<li>
+							<a href="#node_dialog">Node</a>
+						</li>
+						<li>
+							<a href="#branch_dialog">Branch</a>
+						</li>
+						<li>
+							<a href="#path_dialog">Path</a>
+						</li>
+						<li>
+							<a href="#icon_dialog">Icon</a>
+						</li>
+						<li>
+							<a href="#monitor_dialog">Monitor</a>
+						</li>
+						<li>
+							<a href="#user_dialog">User</a>
+						</li>
+						<li>
+							<a href="#search_dialog">Smart Search</a>
+						</li>
+						<li>
+							<a href="#password_dialog">Password</a>
+						</li>
+					</ul>
+				</li>
+				<li>
+					<a href="#performance">Performance</a>
+					<ul>
+						<li>
+							<a href="#summary">Summary</a>
+						</li>
+						<li>
+							<a href="#chart">Chart</a>
 						</li>
 					</ul>
 				</li>
 			</ul>
 		</nav>
-		<main></main>
+		<main>
+			<article id="ready">
+				<h2>Ready</h2>
+				<section id="terms">
+					<h3>Terms</h3>
+					<p>CeMS 는 Java Framework 에서 동작하는 모니터링 솔루션으로 켐스라 읽습니다.</p>
+					<p>서비스를 운영하기 위해 별도의 디스크 공간이 필요하며 이를 <q>루트</q> 라고 합니다.</p>
+					<p>토폴로지는 구성도를 기반으로 하는 대시보드의 형식입니다.</p>
+					<p>RealDC3D는 3d WebGL (graphick library) 을 기반으로 구현된 입체 IDC 센터 대시보드의 형식입니다.</p>
+					<p>Java 버전은 OpenJDK 12.0.1 에서 컴파일 되었으므로 이보다 낮은 버전에서는 동작하지 않을 수 있습니다.</p>
+					<p>기업의 방화벽과 서버의 OS레벨 방화벽이 CeMS가 필요로 하는 모든 통신을 허용한다고 가정합니다.</p>
+					<p>매뉴얼은 Windows 기반 사용자를 대상으로 전재하였으며 최신 버전의 크롬, 엣지, 파이어폭스 등에서 테스트 하였습니다.</p>
+					<p>사용자는 UI 화면에 접근 가능하도록 인터넷에 연결할 수 있어야 합니다. 화면의 일부분에 광고가 송출될 수 있습니다.</p>
+					<p>홈페이지에서는 HTML, Javascript, 이미지 등 정적 파일만을 다운로드 한후 사용자의 PC와 서버가 통신을 하게 됩니다.
+						보안상의 이유로 우려할 만한 취약점이 없음을 상기시켜 드립니다.
+						CORS(Cross Origin Resource Sharing), PNA(Private Network Access - RFC1918) 등의 보안 규약을 준수하였습니다.</p>
+				</section>
+				<section id="download">
+					<h3>Download</h3>
+					<p>홈페이지 <a href="https://cems.v2.corebrg.com" target="about:blank">https://cems.v2.corebrg.com</a> 에서
+						<a href="https://github.com/cems-v2-corebrg/cems-v2-corebrg.github.io/releases/download/v2.0/CeMSFree.v2.0.jar"
+							download="CeMSFree.v2.0.jar">CeMSFree.v2.0.jar</a>
+						실행파일을 다운로드 합니다.</p>
+				</section>
+				<section id="java">
+					<h3>Java</h3>
+					<p>서버에 Java가 설치되어 있어야 합니다. 라이선스 문제가 발생하지 않도록 OpenJDK 사용을 권장하며,
+						<a href="https://jdk.java.net/archive/" target="about:blank">https://jdk.java.net/archive/</a> 에서 다운로드 할 수 있습니다.
+							zip 압축파일을 원하는 위치에 풀어주는 것으로 설치는 완료됩니다.
+							12.0.1 이후 최신의 버전(18 GA) 까지 지원합니다.</p>
+					<p>Java를 설치하는 경우 시스템 환경변수 JAVA_HOME 과 PATH 를 설정해 주어야 합니다.
+						Java의 설치에 문제가 있다면 <a href="#custom">다른 방법</a>을 사용할 수 있습니다.</p>
+				</section>
+				<section id="open">
+					<h3>Open</h3>
+					<ol>
+						<li>CeMS 를 실행하고 동작에 필요한 데이터 등을 보관할 수 있도록 루트 폴더를 생성합니다.</li>
+						<li>루트에 CeMSFree.v2.0.jar 실행파일을 저장합니다.</li>
+						<li id="custom">JAVA_HOME, PATH 등 시스템 환경변수 설정이 어렵거나 다른 버전의 Java 를 사용하고자 한다면
+							루트에 java 폴더를 생성하고 하위에 다운로드 한 OpenJDK 를 저장합니다. java 폴더 하위에 bin 폴더가
+							위치 할 수 있도록 하십시오.</li>
+						<li>jar 파일을 실행하기 위해 생성한 폴더 위치에 cems.bat 배치파일을 작성합니다.
+							<p>
+								배치파일을 실행시킬때 바로가기를 사용할 수 있기 때문에 배치파일 위치로 디렉토리를 이동하고
+								시스템 java.exe 를 통해 서비스를 실행 시킵니다.</p>
+							<figure>
+								<blockquote>
+									@echo off<br>
+									cd %~dp0<br>
+									java -jar CeMSFree.v2.0.jar
+								</blockquote>
+								<figcaption>&mdash; 시스템 환경변수가 설정되어 있는 경우</figcaption>
+							</figure>
+							<p>
+								루트에 java 라는 폴더가 존재해야 하고 하위에 순서대로 bin 폴더와 java.exe 파일이 존재 해야 합니다.
+							</p>
+							<figure>
+								<blockquote>
+									@echo off<br>
+									cd %~dp0<br>
+									java\bin\java -jar CeMSFree.v2.0.jar
+								</blockquote>
+								<figcaption>&mdash; 커스텀 Java 를 사용하는 경우</figcaption>
+							</figure>
+							<p>
+								TCP 서비스 포트를 변경하고자 한다면 -tcp 옵션을 사용합니다. 생략하면 기본값은 2014 입니다.
+							</p>
+							<figure>
+								<blockquote>
+									@echo off<br>
+									cd %~dp0<br>
+									java -jar CeMSFree.v2.0.jar -tcp 2014
+								</blockquote>
+								<figcaption>&mdash; 시스템 환경변수가 설정되어 있고 TCP 서비스 포트를 지정하는 경우</figcaption>
+							</figure>
+						</li>
+						<li>cems.bat 를 실행시켜서 서비스를 시작합니다. 콘솔창이 활성화되고 서비스 수행 메세지가 출력되면 정상입니다.</li>
+						<li>서비스를 종료하는 경우 콘솔창을 강제 종료하면 데이터베이스에 문제가 생길 수 있습니다.
+							반드시 <q>Ctrl + c</q> 를 통해 서비스에 Shutdown hook을 전달하여 정상 종료 해야 합니다.
+						</li>
+					</ol>
+				</section>
+			</article>
+			<article id="start">
+				<h2>Start</h2>
+				<section id="connect">
+					<h3>Connect</h3>
+					<img src="/img/manual/connect.png" width="640">
+					<p>홈페이지 <a href="https://cems.v2.corebrg.com" target="about:blank">https://cems.v2.corebrg.com</a> 에접속합니다.</p>
+					<p>CeMS 를 설치한 서버와 사용자의 위치가 동일하다면 127.0.0.1:2014 를 입력하고
+						다른 경우 ipaddress:tcp 의 형식으로 입력합니다. 후자의 경우 서버의 방화벽이 통신을 허용해야 합니다.</p>
+				</section>
+				<section id="signin">
+					<h3>Sign in</h3>
+					<img src="/img/manual/signin.png" width="640">
+					<p>통신이 성공하면 로그인 화면으로 이동합니다.</p>
+					<p>최초로 입력한 아이디와 비밀번호가 관리자 계정으로 사용됩니다.</p>
+				</section>
+			</article>
+			<article id="required">
+				<h2>Required</h2>
+				<section id="profile">
+					<h3>Profile</h3>
+					<p>CeMS 는 모니터링을 위해 세가지 프로토콜을 제공합니다.</p>
+					<ol>
+						<li>SNMP
+							<div>v2c, v3 두가지 버전을 사용할 수 있습니다.</div>
+						</li>
+						<li>ICMP
+							<div>ICMP가 실패하는 경우 SNMP 성능정보를 수집하지 않습니다.</div>
+						</li>
+						<li>TCP
+							<div>127.0.0.1:2014 와 같은 형식을 지켜야 합니다.</div>
+						</li>
+					</ol>
+					<p>SNMP 를 사용하는 경우에는 반드시 하나 이상의 프로파일이 필요합니다.</p>
+					<img src="/img/manual/profile.png" width="640">
+					<p><a href="#menu">메뉴</a> >> <a href="#function">기능</a> >> <a href="#setting">설정</a>
+						페이지로 이동한후 SNMP 프로파일 항목의 추가 버튼을 눌러
+						각 SNMP 버전에 맞는 정보를 입력하여 모니터링을 준비 합니다.</p>
+				</section>
+			</article>
+			<article id="menu">
+				<h2>Menu</h2>
+				<section id="dashboard">
+					<h3>Dashboard</h3>
+					<img src="/img/manual/dashboard.png" width="640">
+					<p>좌측 상단 제어버튼을 통해 편집모드로 진입하거나 토폴로지 맵의 표기를 이름 또는 IP 주소로 변경할 수 있습니다. 검색을 통해 노드를 찾아 포커스 합니다.</p>
+					<p>우측 상단에는 전체 노드의 상태를 4단계(Shutdown:장애, Critical:임계, Major:상태, Normal:정상)로 구분하여 보여줍니다.</p>
+					<p>이벤트가 발생하면 우측 하단에 시간순으로 출력합니다.</p>
+					<p>대시보드는 토폴로지 맵이 기본이며 필요에 따라 RealDC3D(3D Rack view) 모드와 카카오맵 연동 모드를 구현할 수 있습니다.</p>
+				</section>
+				<section id="event">
+					<h3>Event</h3>
+					<img src="/img/manual/event.png" width="640">
+					<p>날짜별, 기간별 발생한 이벤트를 조회합니다. 조회된 결과를 필터할 수 있고 CSV 파일로 저장할 수 있습니다.</p>
+				</section>
+				<section id="node">
+					<h3>Node list</h3>
+					<img src="/img/manual/node.png" width="640">
+					<p>노드를 <a href="">등록</a> 하거나 조회하고 CSV 파일로 저장할 할 수 있습니다.</p>
+					<p>노드목록은 상태별, 라벨별, 키워드별 필터를 제공합니다.</p>
+				</section>
+				<section id="branch">
+					<h3>Branch list</h3>
+					<img src="/img/manual/branch.png" width="640">
+					<p>브랜치를 등록하거나 조회하고 CSV 파일로 저장할 할 수 있습니다.</p>
+					<p>브랜치목록은 키워드별 필터를 제공합니다.</p>
+					<p>브랜치는 토폴로지, RealDC3D, 카카오맵 에서 각각 부모 레이어의 역할과 지점(거점 센터)의 역할을 합니다.</p>
+				</section>
+				<section id="line">
+					<h3>Line list</h3>
+					<img src="/img/manual/line.png" width="640">
+					<p>회선목록을 조회하고 CSV 파일로 저장할 할 수 있습니다. 등록 기능은 토폴로지 편집기에서 제공합니다.</p>
+					<p>회선목록은 키워드별 필터를 제공합니다.</p>
+				</section>
+				<section id="user">
+					<h3>User list</h3>
+					<img src="/img/manual/user.png" width="640">
+					<p>사용자를 <a href="">등록</a> 하거나 조회하고 CSV 파일로 저장할 할 수 있습니다.</p>
+					<p>사용자는 관리자(모든 권한), 사용자(읽기), 수신자(이벤트 수신) 세가지 권한을 구분하여 가질수 있습니다.</p>
+				</section>
+				<section id="function">
+					<h3 id="icon">기능/아이콘</h3>
+					<img src="/img/manual/icon.png" width="640">
+					<p>아이콘을 <a href="">등록</a> 하거나 조회할 수 있습니다. 이 아이콘은 토폴로지에 노드를 표현할때 사용됩니다.</p>
+					<p>CI, BI 에 어울리는 아이콘을 제작해서 적용해 보세요.</p>
+					<h3 id="setting">기능/설정</h3>
+					<img src="/img/manual/setting1.png" width="640">
+					<p>자바와 서비스(에이전트)버전, 데이터베이스와 같은 저장공간 정보를 제공합니다.</p>
+					<img src="/img/manual/setting2.png" width="640">
+					<p>모니터링 동작 방식의 기준과 데이터베이스 관리 방식을 설정합니다.</p>
+					<img src="/img/manual/setting3.png" width="640">
+					<p>이벤트 발생시 소리 알람여부, 노드와 회선의 관리 정보 그리고 토폴로지 기본 선 스타일등을 정의합니다.</p>
+					<img src="/img/manual/setting4.png" width="640">
+					<p>SMTP를 제공하는 사내 메일서버 또는 개인서버와 연동하여 이벤트를 전송할 수 있습니다.</p>
+					<img src="/img/manual/setting5.png" width="640">
+					<p>SNMP 모니터링을 위해 최소 하나 이상의 프로파일이 필요합니다.</p>
+					<p>주요한 설정의 변화가 있다면 반드시 백업하고 보관합니다.</p>
+					<p>서비스 콘솔에 접근하기 어려운 상황이라면 반드시 원격에서 중지시켜야 합니다.</p>
+				</section>
+			</article>
+			<article id="editor">
+				<h2>Editor</h2>
+				<section id="topology">
+					<h3>Topology</h3>
+					<img src="/img/manual/editor_menu.png" width="640">
+					<p>구성의 변경시 반드시 저장 해야 합니다.</p>
+					<p>노드와 브랜치를 <a href="">등록</a>할 수 있으며 이는 목록에서 수행하는 결과와 동일합니다.</p>
+					<img src="/img/manual/editor_menu.png" width="640">
+					<p>최초 등록된 노드는 맵의 중앙에 위치 합니다. 노드를 먼저 선택하고 드래그 하여 이동 시킵니다. 선택된 노드가 없다면 맵 전체가 이동합니다.</p>
+					<p>Shift 키와 함께 드래그하여 영역을 선택하면 선택이 추가되고 Ctrl 키와 함께 선택하면 선택이 반전 됩니다.</p>
+					<img src="/img/manual/editor_select.png" width="640">
+					<p>노드를 이동하기 위해 선택해야 합니다. 노드를 클릭하면 선택 되고 다른 노드를 클릭하면 이전 선택은 해제 됩니다.</p>
+					<p>여러 노드를 선택하기 위해 Shift키와 Ctrl 키를 사용할 수 있습니다. Shift 키는 선택을 추가하고 Ctrl 키는 선택을 반전합니다.</p>
+					<p>Shit키와 Ctrl키를 사용하고 드래그 하면 영역 선택이 가능합니다. 각각의 키의 역할은 설명한 바와 같습니다.</p>
+					<img src="/img/manual/editor_link.png" width="640">
+					<p>두 노드를 연결하여 선을 그릴 때에는 Alt 키를 누른채로 한 노드를 클릭하고 앵커를 상대 노드로 이동시켜 녹색이 되면 클릭합니다.</p>
+					<p>대화상자가 팝업되면 <a href="">등록</a> 작업을 완료합니다.</p>
+					<img src="/img/manual/editor_uplink.png" width="640">
+					<p>노드와 브랜치는 직접 연결할 수 없습니다. 노드간 연결을 완료 한 후 노드를 브랜치 하위로 이동시키면 자동으로 연결이 생성됩니다.</p>
+					<p>노드를 선택하여 브랜치로 드래그하면 브랜치에 녹색 테두리가 생깁니다. 이때 노드를 드랍하면 노드가 브랜치 하위로 이동합니다.</p>
+				</section>
+			</article>
+			<article id="dialog">
+				<h2>Dialog</h2>
+				<section id="node_dialog">
+					<h3>Node</h3>
+					<img src="/img/manual/node_dialog.png" width="640">
+					<p>IP주소를 입력하지 않아도 되지만 모니터링이 목적인 경우 입력해야 합니다. ICMP와 SNMP 프로토콜을 사용한다면 IPv4 형식에 맞도록 하고
+						TCP 프로토콜을 사용하고자 한다면 IPv4:TCP 와 같은 형식에 맞도록 합니다.</p>
+					<p>기본으로 제공되는 항목 이외에 사용자가 원하는 <a href="#setting">추가정보</a> 를 관리할 수 있습니다. 예시로 시리얼번호를 추가하였습니다.</p>
+					<p>Type을 설정하면 토폴로지에서 원하는 이미지를 구현할 수 있습니다. 특별한 아이콘이 필요하다면 직접 <a href="#icon_dialog">제작</a> 하여 적용 가능합니다.</p>
+				</section>
+				<section id="branch_dialog">
+					<h3>Branch</h3>
+					<img src="/img/manual/branch_dialog.png" width="640">
+					<p>Type을 설정하면 토폴로지에서 원하는 이미지를 구현할 수 있습니다. 특별한 아이콘이 필요하다면 직접 <a href="#icon_dialog">제작</a> 하여 적용 가능합니다.</p>
+					<p>대시보드를 카카오맵과 연동하는 경우 지도에 표시할 수 있도록 주소를 지정할 수 있습니다.</p>
+				</section>
+				<section id="path_dialog">
+					<h3>Path</h3>
+					<img src="/img/manual/path_dialog1.png" width="640">
+					<p>토폴로지 편집기에서 Alt 키와 함께 두 노드를 차례로 클릭하면 경로를 편집할 수 있습니다. 경로가 존재하지 않으면 경로를 생성하는 대화상자가 팝업 됩니다.</p>
+					<img src="/img/manual/path_dialog2.png" width="640">
+					<p>생성된 경로의 타입(꺾은선 및 직선)과 색상 그리고 두께를 설정할 수 있고 설정하지 않는 경우 기본값으로 표현 됩니다.
+						경로는 논리적인 연결상태를 표현하며 물리적인 연결관계는 링크로 표현합니다. 경로를 삭제하면 결과로써 링크는 자동으로 삭제 됩니다.</p>
+					<img src="/img/manual/link_dialog.png" width="640">
+					<p>하나의 논리적인 경로에 복수의 물리적인 링크가 존재할 수 있습니다. 링크를 추가하여 연결된 인터페이스를 설정하고
+						<a href="#setting">추가정보</a> 를 관리할 수 있습니다. 예시로 회선번호를 추가하였습니다.</p>
+				</section>
+				<section id="icon_dialog">
+					<h3>Icon</h3>
+					<img src="/img/manual/icon_dialog.png" width="640">
+					<p>토폴로지 아이콘 이미지를 편집하거나 추가할 수 있습니다. 인터넷과 연결된 서버에 이미지를 업로드 하고, 이미지의 절대경를 저장하세요.</p>
+				</section>
+				<section id="monitor_dialog">
+					<h3>Monitor</h3>
+					<img src="/img/manual/monitor_dialog1.png" width="640">
+					<p>노드의 IP주소가 IPv4 형식에 맞게 설정된 경우 SNMP 및 ICMP 모니터링을 설정할 수 있습니다.</p>
+					<img src="/img/manual/monitor_dialog2.png" width="640">
+					<p>노드의 IP주소가 IPv4:TCP 형식에 맞게 설정된 경우 TCP 모니터링을 설정할 수 있습니다.</p>
+				</section>
+				<section id="user_dialog">
+					<h3>User</h3>
+					<img src="/img/manual/user_dialog.png" width="640">
+					<p>사용자를 등록하면 기본 권한은 수신자 입니다. 수신자의 이메일을 등록하면 이벤트를 수신 할 수 있습니다.</p>
+					<p>서비스를 이용하고자 하는 경우 권한을 관리자 또는 사용자로 변경해 줍니다. 권한이 변경되면 로그인을 위한 비밀번호를 설정할 수 있습니다.</p>
+					<p>계정의 비밀번호를 분실한 사용자가 있다면 다른 관리자 계정이 대상 계정의 권한을 수신자로 변경한 수 다시 원래 권한을 부여해 비밀번호를 변경해 주어야 합니다.
+						하나뿐인 관리자 계정의 비밀번호를 분실한다면 복구 방법이 없으니 반드시 백업 관리자를 등록해 두어야 합니다.</p>
+					<p>사용자 등록 및 편집 권한은 관리자가 가지고 본인의 계정을 스스로 삭제할 수 없습니다.</p>
+				</section>
+				<section id="search_dialog">
+					<h3>Smart Search</h3>
+					<img src="/img/manual/search_dialog.png" width="640">
+					<p>토폴로지 편집기에서 스마트서치 기능을 사용할 수 있습니다. 설정한 범위의 네트워크를 자동으로 탐색합니다.
+						ICMP search는 지원하지 않습니다. 이 기능을 사용하기 전에 반드시 하나 이상의 SNMP 프로파일이 존재해야 합니다.</p>
+					<p>탐지된 노드는 토폴로지 맵의 가장 상위 중앙에 위치하게 됩니다.</p>
+				</section>
+				<section id="password_dialog">
+					<h3>Password</h3>
+					<img src="/img/manual/password_dialog.png" width="640">
+					<p>대시보드 좌측 하단의 버튼을 사용하여 로그아웃 하거나 비밀번호를 변경할 수 있습니다.</p>
+				</section>
+			</article>
+			<article id="performance">
+				<h2>Performance</h2>
+				<section id="summary">
+					<h3>Summary</h3>
+					<img src="/img/manual/summary.png" width="640">
+					<p>SNMP 기본정보, 프로세서 로드, 물리 메모리, 스토리지, 인터페이스, 팬 상태, 전원 상태, 온도 등의 템플릿을 제공합니다.</p>
+					<p>표준 MIB이 아닌 Enterprise MIB 값을 사용하는 정보는 업데이트 되어야 합니다. ejjeon@corebrg.com 으로 해당 정보를 보내 주세요.</p>
+				</section>
+				<section id="chart">
+					<h3>Chart</h3>
+					<img src="/img/manual/chart1.png" width="640">
+					<img src="/img/manual/chart3.png" width="640">
+					<p>성능 정보를 요약하고 저장할 수 있는 경우 차트를 제공합니다. 차트를 불러오면 기본적으로 하루 동안의 데이터를 한시간 단위로 최대 최소 평균하여 차트에 표현하고
+						사용자가 지정한 주기로 저장된 세부 데이터까지 표현할 수 있습니다.</p>
+					<p>임계를 설정하면 그 값을 넘어서는 즉시 이벤트를 발생시킵니다.</p>
+					<p>데이터를 CSV 파일로 저장할 수 있습니다.</p>
+					<img src="/img/manual/chart2.png" width="640">
+					<p>차트는 기간을 정하여 데이터를 불러올 수 있고 하단의 커서를 이동하거나 드래그하여 필요한 기간만큼의 데이터를 표현할 수 있습니다.</p>
+					<img src="/img/manual/chart4.png" width="640">
+					<p>실시간 차트를 제공합니다.</p>
+				</section>
+		</main>
+
+		<dialog>
+			<img>
+			<button>&#xf00d;</button>
+		</dialog>
 	</body>
 
 	<script>
+const
+	dialog = document.body.querySelector("dialog"),
+	onShowImage = function (e) {
+		dialog.querySelector("img").src = this.src;
 
+		dialog.showModal();
+	};
+
+dialog.querySelector("button").onclick = e => dialog.close();
+
+Array.from(document.body.querySelectorAll("img")).forEach(img => img.onclick = onShowImage);
 	</script>
 
 </html>

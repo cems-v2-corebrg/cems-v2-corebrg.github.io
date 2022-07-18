@@ -32,52 +32,6 @@ function getByteLength(s) {
 	return length;
 }
 
-function initialize (profile) {
-    if (profile) {
-        $.form.elements["name"].disabled = true;
-
-        $.form.elements["name"].value = profile.name;
-        $.form.elements["port"].value = profile.port;
-        $.form.elements["version"].value = profile.version;
-        
-        if (profile.version === 3) {
-            $.form.elements["user"].value = profile.security;
-            console.log(profile);
-            if ("authProto" in profile) {
-                const authKey = $.form.elements["authKey"];
-
-                $.form.elements["authProto"].value = profile.authProto;
-                
-                authKey.disabled = false;
-                authKey.value = profile.authKey;
-                
-                if ("privProto" in profile) {
-                    ["privProto", "privKey"].forEach(s => {
-                        const e = $.form.elements[s];
-
-                        e.value = profile[s];
-                        e.disabled = false;
-                    });
-                }
-            }
-        }
-        else {
-            $.form.elements["community"].value = profile.security;
-        }
-        
-        $.form.className = `v${profile.version}`;
-        
-        document.body.classList.add("edit");
-        
-        document.querySelector("input[type=submit]").disabled = true;
-    }
-    else {
-        $.form.elements["name"].focus();
-    }
-
-    document.body.classList.remove("loading");
-}
-    
 function onSubmit (e) {
     e.preventDefault();
     
@@ -235,14 +189,13 @@ function showMessage(xhr) {
                     <tr>
                         <th>profile name</th>
                         <td>
-                            <input type="text" name="name" class="table text"
-                                placeholder="snmp profile name" required autofocus>
+                            <input type="text" name="name" placeholder="snmp profile name" required>
                         </td>
                     </tr>
                     <tr>
                         <th>udp port</th>
                         <td>
-                            <input type="number" min="1" step="1" value="161" name="port" class="table text"
+                            <input type="number" min="1" step="1" value="161" name="port"
                                 placeholder="snmp udp port" pattern="\d*" required>
                         </td>
                     </tr>
@@ -258,15 +211,13 @@ function showMessage(xhr) {
                     <tr class="version">
                         <th>community</th> 
                         <td>
-                            <input type="text" name="community" class="table text"
-                                placeholder="snmp community string">
+                            <input type="text" name="community" placeholder="snmp community string">
                         </td>
                     </tr>
                     <tr class="version v3">
                         <th>user</th>
                         <td>
-                            <input type="text" name="user" class="table text"
-                                placeholder="user name">
+                            <input type="text" name="user" placeholder="user name">
                         </td>
                     </tr>
                     <tr class="version v3">
@@ -378,22 +329,57 @@ $.form.elements["privProto"].onchange = function (e) {
 };
 
 if ($.name) {
-    $.request.execute({
+    $.request.query({
         command: "get",
         target: "profile",
         name: $.name
-    }, function () {
-        switch (this.status) {
-        case 200:
-            initialize(JSON.parse(this.responseText));
+    })
+    .then(profile => {
+        $.form.elements["name"].disabled = true;
 
-            break;
-        default:
-            showMessage(this);
+        $.form.elements["name"].value = profile.name;
+        $.form.elements["port"].value = profile.port;
+        $.form.elements["version"].value = profile.version;
+
+        if (profile.version === 3) {
+            $.form.elements["user"].value = profile.security;
+            console.log(profile);
+            if ("authProto" in profile) {
+                const authKey = $.form.elements["authKey"];
+
+                $.form.elements["authProto"].value = profile.authProto;
+                
+                authKey.disabled = false;
+                authKey.value = profile.authKey;
+                
+                if ("privProto" in profile) {
+                    ["privProto", "privKey"].forEach(s => {
+                        const e = $.form.elements[s];
+
+                        e.value = profile[s];
+                        e.disabled = false;
+                    });
+                }
+            }
         }
-    });
+        else {
+            $.form.elements["community"].value = profile.security;
+        }
+
+        $.form.className = `v${profile.version}`;
+
+        document.body.classList.add("edit");
+
+        document.querySelector("input[type=submit]").disabled = true;
+
+        document.body.classList.remove("loading");
+    })
+    .catch(showMessage);
+    
 } else {
-    initialize();
+    $.form.elements["name"].focus();
+
+    document.body.classList.remove("loading");
 }
 		</script>
 	
