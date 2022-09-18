@@ -2,67 +2,98 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>CeMS oid</title>
-        <style>
+		<title>dialog</title>
+		
+		<style>
 @import "/css/style.css";
-@import "/css/dialog.css";
 @import "/css/fa.css";
+@import "/css/dialog.css";
 
-        </style>
-        <script>
+.preview {
+    background-size: 2em;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+		</style>
+		<script>
+
+function initialize(icon) {
+    if(icon) {
+        $.form.elements["type"].value = icon.type;
+        $.form.elements["group"].value = icon.group;
+        $.form.elements["url"].value = icon.src;
+        $.form.elements["disabled"].value = icon.disabled || icon.src;
+        $.form.elements["shutdown"].value = icon.shutdown || icon.src;
+
+        drawImage($.form.elements["url"], icon.src);
+        drawImage($.form.elements["disabled"], icon.disabled || icon.src);
+        drawImage($.form.elements["shutdown"], icon.shutdown || icon.src);
+    }
+
+    document.body.classList.remove("loading");
+}
 
 function onSubmit (e) {
-    document.body.classList.add("loading");
-
     e.preventDefault();
-
-    const
-        form = document.body.querySelector("form"),
-        value = {},
-        request = {
-            target: "oid",
-            command: "set",
-            value: value
-        };
     
-    value[form.elements["name"].value] = {
-        type: form.elements["type"].value,
-        value: form.elements["value"].value,
-        log: form.elements["log"].value? true: undefined
-    };
-    
-    $.request.query(request)
-    .then(() => {
-        alert("Information.\n\n.OID 저장 성공.");
+    $.request.execute({
+        target: "icon",
+        command: document.body.classList.contains("edit")? "set": "add",
+        icon: {
+            type: this.elements["type"].value,
+            group: this.elements["group"].value,
+            src: this.elements["url"].value,
+            disabled: this.elements["disabled"].value || this.elements["url"].value,
+            shutdown: this.elements["shutdown"].value || this.elements["url"].value
+        }
+    }, function () {
+        switch (this.status) {
+        case 200:
+            top.closeDialog(true);
 
-        top.closeDialog(true);
-    })
-    .catch(showMessage);
-};
+            break;
+        case 409:
+            alert("Error.\n\n명령을 처리하지 못하였습니다.");
+
+            break;
+        default:
+            showMessage(this);
+        }
+
+        document.body.classList.remove("loading");
+    });
+}
 
 function onReset (e) {
-    document.body.classList.add("loading");
-
     e.preventDefault();
 
-    $.request.query({
-        target: "oid",
+    if (!confirm("Confirm.\n\n아이콘 설정을 초기화 하겠습니까?")) {
+        return;
+    }
+    
+    $.request.execute({
+        target: "icon",
         command: "remove",
-        key: $.name
-    })
-    .then(() => {
-        alert("Information.\n\n.OID 삭제 성공.");
+        type: this.elements["type"].value
+    }, function () {
+        switch (this.status) {
+        case 200:
+            top.closeDialog(true);
 
-        top.closeDialog(true);
-    })
-    .catch(showMessage);
+            break;
+        default:
+            showMessage(this);
+        }
+
+        document.body.classList.remove("loading");
+    });
 }
 
-function initialze () {
-    console.log("initialized");
+function drawImage(input, url) {
+    input.parentNode.previousElementSibling.style.backgroundImage = "url("+url+")";
 }
-
-function showMessage (xhr) {
+    
+function showMessage(xhr) {
     if (xhr instanceof XMLHttpRequest) {
         switch (xhr.status) {
         case 401:
@@ -79,117 +110,155 @@ function showMessage (xhr) {
     } else if (xhr instanceof Error) {
         console.error(xhr);
     } else {
-        console.trace();
+        console.trace(xhr);
     }
 }
 
-		</script>
-    </head>
-    <body class="loading">
-        <main>
+        </script>
+	</head>
+	
+	<body class="loading">
+		<main>
             <h2>
                 <span  id="close" title="대화창 닫기">&#xf00d;</span>
-                OID
+                Icon
             </h2>
-            <form>
+            <form autocomplete="off">
                 <table>
+                    <colgroup>
+                        <col width="120">
+                        <col width="50">
+                    </colgroup>
                     <tbody>
                         <tr>
-                            <th title="OID 이름">Name</th>
-                            <td>
-                                <input type="text" name="name" required autocomplete="off">
+                            <th>타입</th>
+                            <td colspan="2">
+                                <input type="text" name="type" placeholder="아이콘 타입" required>
                             </td>
                         </tr>
                         <tr>
-                            <th title="OID 종류">Type</th>
-                            <td>
-                                <select name="type" required>
-                                    <option>Counter32</option>
-                                    <option>Gauge32</option>
-                                    <option>Integer32</option>
-                                    <option>OctetString</option>
-                                    <option>OID</option>
-                                    <option>TimeTicks</option>
-                                </select>
+                            <th>그룹</th>
+                            <td colspan="2">
+                                <input type="text" name="group" placeholder="아이콘 그룹" required>
                             </td>
                         </tr>
                         <tr>
-                            <th title="OID 값">Value</th>
+                            <th>기본</th>
+                            <td class="preview"></td>
                             <td>
-                                <input type="text" name="value" required autocomplete="off">
+                                <input type="text" name="url" placeholder="Image URL" required>
                             </td>
                         </tr>
                         <tr>
-                            <th title="기록 여부">Logging</th>
+                            <th>비활성</th>
+                            <td class="preview"></td>
                             <td>
-                                <select name="log">
-                                    <option value="true">Yes</option>
-                                    <option value="" selected>No</option>
-                                </select>
+                                <input type="text" name="disabled" placeholder="Image URL">
                             </td>
                         </tr>
-                    </tbody>
+                        <tr>
+                            <th>장애</th>
+                            <td class="preview"></td>
+                            <td>
+                                <input type="text" name="shutdown" placeholder="Image URL">
+                            </td>
+                        </tr>
+				    </tbody>
                 </table>
                 <footer>
-                    <input type="reset" value="&#xf1f8; Remove">
-                    <input type="submit" value="&#xf00c; Apply">
+                    <input type="reset" value="&#xf2ea; 초기화">
+                    <input type="submit" value="&#xf0c7; 저장">
                 </footer>
-
                 <div class="loading mask"></div>
-            </form>
+	    	</form>
         </main>
-
+        
         <script src="/js/request.js"></script>
         <script src="/js/constants.js"></script>
-        <script src="/js/dialog.js"></script>
-        <script>
+        <script src="/js/icon.js"></script>
+		<script>
 
 const
     search = new URLSearchParams(window.location.search),
     $ = {
         request: new Request(),
-        name: search.get("name")
+        type: search.get("type") || undefined,
+        form: document.querySelector("form")
     };
 
-if (top.account.level === 0) {
-    const form = document.body.querySelector("form");
+document.addEventListener("keydown", function (e) {
+	switch (e.keyCode) {
+	case 27:
+        top.closeDialog();
+		
+		break;
+	}
+});
 
-    form.onsubmit = onSubmit;
-    form.onreset = onReset;
-    
+document.getElementById("close").onclick = e => top.closeDialog();
+
+if (top.account.level === 0) {
     document.body.classList.add("root");
+
+    $.form.onreset = onReset;	
+    $.form.onsubmit = onSubmit;
 }
 
-if ($.name) {
-    $.request.query({
+(function (delay) {
+    var active;
+
+    $.form.elements["url"].oninput =
+    $.form.elements["disabled"].oninput =
+    $.form.elements["shutdown"].oninput = function (e) {
+        const
+            input = this,
+            start = performance.now();
+        let id;
+        
+        active = id = requestAnimationFrame(function f(t) {
+            if (active != id) {
+                return;
+            }
+
+            if (t - start > delay) {
+                drawImage(input, input.value);
+            }
+            else {
+                requestAnimationFrame(f);
+            }
+        });
+    };
+})(500);
+
+if ($.type) {
+    let icon = ITAhM.iconData[$.type];
+
+    $.form.elements["type"].disabled = true;
+
+    $.request.execute({
         command: "get",
-        target: "oid",
-        key: $.name
-    })
-    .then(oid => {
-        const form = document.body.querySelector("form");
+        target: "icon",
+        type: $.type
+    }, function () {
+        switch(this.status) {
+        case 200:
+            icon = JSON.parse(this.responseText);
 
-        form.elements["name"].value = $.name;
-        form.elements["type"].value = oid.type;
-        form.elements["value"].value = oid.value;
+            document.body.classList.add("edit");
+        case 204:
+            initialize(icon);
 
-        if (oid.log) {
-            form.elements["log"].value = "true";
+            break;
+        default:
+            throw showMessage(this);
         }
-
-        document.body.classList.add("edit");
-
-        document.body.classList.remove("loading");
-    })
-    .catch(showMessage);
+    });
 } else {
-    const form = document.body.querySelector("form");
-
-    form.elements["type"].selectedIndex = -1;
-
     document.body.classList.remove("loading");
 }
-        </script>
-    </body>
 
+		</script>
+	
+	</body>
+	
 </html>

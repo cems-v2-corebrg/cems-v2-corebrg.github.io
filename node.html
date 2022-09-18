@@ -185,6 +185,7 @@ body.keyword #list tr:not(.keyword),
 body:not(.selected) header .selected,
 body:not(.chart) #chart,
 body:not(.monitor) #monitor,
+body:not(.root) .root,
 #list.normal tr:not([data-normal]),
 #list.critical tr:not([data-critical]),
 #list.match tr:not([data-match]),
@@ -662,12 +663,12 @@ function showMessage(xhr) {
                         <option selected>모두 보기
                     </optgroup>
                 </select>
-                <input type="button" value="&#xf067; Add" id="add" title="노드 추가">
+                <input type="button" value="&#xf067; Add" id="add" class="root" title="노드 추가">
                 <input type="button" value="&#xf019; Export" id="export" title="CSV 내보내기">
                 <span class="selected">
                     <input type="button" value="&#xf1fe; Chart" id="chart" title="성능 정보">
                     <input type="button" value="&#xf044; Information" id="edit" title="노드 정보">
-                    <input type="button" value="&#xf1e5; Monitor" id="monitor" title="모니터 설정">
+                    <input type="button" value="&#xf1e5; Monitor" id="monitor" class="root" title="모니터 설정">
                 </span>
             </div>
             <i id="count"></i>
@@ -738,8 +739,12 @@ const
         }
     };
 
-document.getElementById("add").onclick = e =>
-    top.showDialog("/dialog/node.html", window);
+    
+if (top.account.level === 0) {
+    document.getElementById("add").onclick = e => top.showDialog("/dialog/node.html", window);
+
+    document.body.classList.add("root");
+}
 
 document.getElementById("label").onchange = function () {
 	const

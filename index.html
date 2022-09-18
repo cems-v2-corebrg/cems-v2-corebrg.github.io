@@ -400,7 +400,8 @@ function signOut() {
     document.body.classList.add("loading");
 
     $.request.execute({
-        command: "signout"
+        command: "order",
+        target: "signout"
     }, function () {
         window.location.reload();
     });
@@ -482,13 +483,13 @@ function showMessage(xhr) {
                             <div>회선</div>
                         </a>
                     </li>
-                    <li title="사용자 목록">
+                    <li title="사용자 목록" class="root">
                         <a href="/user.html" target="view">
                             &#xf0c0;
                             <div>사용자</div>
                         </a>
                     </li>
-                    <li title="기능">
+                    <li title="기능" class="root">
                         <a>
                             &#xf141;
                             <div>기능</div>
@@ -506,12 +507,12 @@ function showMessage(xhr) {
                             </li>
                         </ul>
                     </li>
-                    <li title="테스트">
+                    <!--li title="테스트">
                         <a href="/dc.html" target="main">
                             &#xf1b2;
                             <div>DC</div>
                         </a>
-                    </li>
+                    </li-->
                 </ul>
                 <ul>
                     <li id="user">

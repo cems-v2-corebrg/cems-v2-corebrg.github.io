@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="No-Cache">
+		
+		<title>ITAhM</title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/fa.css";
+
+body {
+	position: fixed; inset: 0 0 0 0;
+}
+
+svg {
+    width: 100%; height: 100%;
+}
+
+#graph path {
+    stroke-width: 2px;
+    fill-opacity: 0.5;
+}
+
+circle {
+    fill: #fefefe;
+    filter: drop-shadow(0 0 5px #ffffff);
+}
+
+		</style>
+		<script>
+
+function bezierCommand (point, i, a) {
+    const
+        [cpsX, cpsY] = controlPoint(a[i - 1], a[i - 2], point),
+        [cpeX, cpeY] = controlPoint(point, a[i - 1], a[i + 1], true);
+
+    return `C ${cpsX},${cpsY} ${cpeX},${cpeY} ${point[0]},${point[1]}`;
+}
+
+function line (p1, p2) {
+	const
+		x = p2[0] - p1[0],
+		y = p2[1] - p1[1];
+
+	return {
+		length: Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)),
+		angle: Math.atan2(y, x)
+	}
+}
+
+function controlPoint (current, previous, next, reverse) {
+	const
+		p = previous || current,
+		n = next || current,
+		o = line(p, n),
+		smoothing = 0.2,
+		angle = o.angle + (reverse ? Math.PI : 0),
+		length = o.length * smoothing;
+	
+	return [current[0] + Math.cos(angle) * length, current[1] + Math.sin(angle) * length];
+}
+
+		</script>
+	</head>
+	
+	<body>
+		<svg id="chart" xmlns="http://www.w3.org/2000/svg">
+			<g id="graph" transform="translate(0) scale(-1 -1)">
+				<g id="path" transform="translate(0) translate(0)">
+					<path stroke="#ffffff" fill="none"></path>
+				</g>
+			</g>
+		</svg>
+        
+		<script>
+
+const
+    PERIOD = 60 *1000,
+    COLOR = "#ffffff",
+	OVERFLOW = 0.1, // 1 = PERIOD
+	DELAY = 0.1, // 1 = PERIOD
+    container = document.getElementById("path");
+
+/** public **/
+{
+    let
+        st, chartTPP, chartHeight,
+        resetAnimation = false,
+        valueArray = [],
+		dateArray = [];
+
+    function update(value) {
+        if (!isNaN(value)) {
+            const timestamp = new Date().getTime();
+
+            dateArray.push(timestamp);
+            valueArray.push(value);
+            
+            while (dateArray[0] < timestamp - PERIOD *(1 + DELAY + OVERFLOW)) {
+                dateArray.shift();
+                valueArray.shift();
+            }
+
+            requestAnimationFrame(function animation () {
+                if (i > 0) {
+                    requestAnimationFrame(animation);
+                }
+            });
+        } else if (dateArray.length === 0) {
+            return;
+        }
+
+		let
+            max = Math.max.apply(undefined, valueArray),
+		    min = Math.min.apply(undefined, valueArray),
+            i = 10;
+        
+        if (max == min) {
+            max++;
+            min--;
+        } else {
+            max += (max - min) /2;
+            min -= (max - min) /2;
+        }
+        
+        const
+            points = [],
+            now = new Date(),
+            valueRatio = max === min? undefined: chartHeight / (max - min);
+
+        dateArray.forEach((millis, i) => {
+            const
+                x = (now - millis) / chartTPP,
+                y = valueRatio? (valueArray[i] - min) * valueRatio: chartHeight /2;
+
+            points.push([x, y]);
+        });
+
+		document.body.querySelector("path")
+			.setAttributeNS(null, "d", `M ${points.reduce((acc, point, i, a) => 
+				`${acc} ${bezierCommand(point, i, a)}`
+		    )}`);
+
+        Array.from(container.querySelectorAll("circle")).forEach(c => container.removeChild(c));
+
+        points.forEach(p => {
+            const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+
+            c.setAttribute("cx", p[0]);
+            c.setAttribute("cy", p[1]);
+            c.setAttribute("r", 3);
+
+            container.appendChild(c);
+        });
+
+        resetAnimation = true;
+    }
+
+    function optimize() {
+        requestAnimationFrame(resize);
+	}
+	
+    function resize() {
+        var rect = document.getElementById("chart").getBoundingClientRect();
+
+        chartTPP = PERIOD / rect.width;
+		chartHeight = rect.height;
+
+        document.getElementById("graph").transform.baseVal.getItem(0)
+            .setTranslate(rect.width, rect.height);
+
+        // delay
+        container.transform.baseVal.getItem(0).setTranslate(PERIOD *-1 * DELAY / chartTPP, 0);
+
+        st = undefined;
+
+        update();
+    }
+
+	window.addEventListener("resize", e => {
+        st && clearTimeout(st);
+            
+        st = setTimeout(optimize, 300);
+    });
+
+    function animation (start) {
+        return function (timestamp) {
+            if (!start) {
+                start = timestamp;
+            }
+
+            if (resetAnimation) {
+                resetAnimation = false;
+
+                start = undefined;
+
+                container.transform.baseVal.getItem(1).setTranslate(0, 0);
+            }
+            else {
+                container.transform.baseVal.getItem(1).setTranslate((timestamp - start) / chartTPP, 0);
+            }
+            
+            requestAnimationFrame(animation(start));
+        };
+    }
+
+    resize();
+
+    requestAnimationFrame(animation());
+}
+
+setInterval(()=> update(Math.random() *10), 1000);
+		</script>
+	
+	</body>
+	
+</html>

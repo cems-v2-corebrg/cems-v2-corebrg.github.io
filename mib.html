@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <title>test</title>
+		<meta charset="UTF-8">		
+		<style>
+
+@import "/css/style.css";
+@import "/css/list.css";
+@import "/css/var.css";
+@import "/css/fa.css";
+
+header {
+    color: #ffffff;
+    user-select: none;
+}
+
+main.from td:is(:nth-child(2), :nth-child(3)) {
+	text-align: center;
+}
+
+main.to td:is(:nth-child(4), :nth-child(5)) {
+	text-align: center;
+}
+
+main.to.drop {
+	outline: 5px dotted #0f0f0f;
+}
+
+header {
+	line-height: 3em;
+}
+
+header :is(button, select) {
+	height: 100%;
+	padding: 0 0.5em;
+}
+
+tbody {
+	user-select: none;
+}
+
+main.to td:first-child {
+    color: #efefef;
+    position: relative;
+}
+
+main.to td:first-child span {
+    position: absolute; inset: 0.5em;
+    border-radius: 1em 1em 1em 1em;
+    display: inline-flex; justify-content: center; align-items: center;
+    background-color: var(--var-color-normal);
+}
+
+main.to td:first-child >span {
+    background-color: var(--var-color-normal);
+}
+
+main.to tr.remove >td:first-child >span {
+    background-color: var(--var-color-shutdown);
+}
+
+main.to tr.add >td:first-child >span {
+    background-color: var(--var-color-major);
+}
+
+main.to tr.noresponse >td:first-child >span {
+    background-color: var(--var-color-disabled);
+}
+
+#dialog {
+	position: fixed; inset: 0 0 0 0;
+	padding: 0; margin: 0;
+}
+
+iframe {
+	width: 100%; height: 100%;
+	border: none;
+}
+
+button.icon::before {
+	font-family: "Font Awesome 5 Free";
+	display: inline-block; margin: auto 0.5em;
+}
+
+#sync::before {
+	content: "\f362";
+}
+
+#reload::before {
+	content: "\f2f1";
+}
+
+body:not(.dialog) #dialog {
+	display: none;
+}
+
+		</style>
+		<script>
+
+function showDialog(src) {
+    const dialog = document.getElementById("dialog");
+
+    dialog.onload = function () {
+        dialog.contentWindow.focus();
+
+		document.body.classList.add("dialog");
+	};
+
+    dialog.src = src;
+}
+
+function closeDialog(reset) {
+    const dialog = document.getElementById("dialog");
+
+    document.body.classList.remove("dialog");
+
+    dialog.onload = undefined;
+    
+    dialog.src = "about:blank";
+}
+
+function createItem(oid, mib) {
+	const tr = document.createElement("tr");
+
+	tr.appendChild(document.createElement("td")).textContent = oid;
+	tr.appendChild(document.createElement("td")).textContent = mib.match? "Match": mib.trace? "Trace": "None";
+	tr.appendChild(document.createElement("td")).textContent = mib.match || mib.trace || "";
+
+	tr.dataset.oid = oid;
+
+	tr.onclick = onSelectItem;
+
+	return tr;
+}
+
+function onSelectItem () {
+	showDialog(`/dialog/mib.html?oid=${this.dataset.oid}`);
+}
+
+function createListItem (oid, mib) {
+	const
+		tr = document.createElement("tr"),
+		status = tr.appendChild(document.createElement("td")).appendChild(document.createElement("span"));
+
+	tr.dataset.oid =oid;
+
+	tr.onclick = onSetMIB;
+
+	if (mib.index) {
+		oid = oid.substring(0, oid.lastIndexOf(mib.index) -1);
+
+		tr.dataset.index = mib.index
+	}
+
+	if (mib.status) {
+		$.sync = true;
+
+		switch (mib.status) {
+		case "add":
+			status.textContent = "Add";
+
+			break;
+		case "remove":
+			status.textContent = "Remove";
+
+			break;
+		}
+
+		tr.classList.add(mib.status);
+	} else if (mib.count === 0) {
+		status.textContent = "No response";
+
+		tr.classList.add("noresponse");
+	} else {
+		status.textContent = "Running";
+	}
+	
+	tr.appendChild(document.createElement("td")).textContent = oid;
+	tr.appendChild(document.createElement("td")).textContent = mib.index;
+	tr.appendChild(document.createElement("td")).textContent = mib.match? "Match": mib.trace? "Trace": "None";
+	tr.appendChild(document.createElement("td")).textContent = mib.match || mib.trace || "";
+
+	return tr;
+}
+
+function onSetMIB () {
+	const query = {
+		target: "mib",
+		mib: {
+			node: $.node,
+			oid: this.dataset.oid,
+			index: this.dataset.index || ""
+		}
+	};
+
+	if (this.classList.contains("remove")) {
+		if (!confirm("Confirm.\n\n선택한 MIB 값 제거를 동기화에서 제외합니까?")) {
+			return;
+		}
+
+		query.command = "set";
+		query.mib.status = "add"
+	} else if (this.classList.contains("add")) {
+		if (!confirm("Confirm.\n\n선택한 MIB 값 추가를 동기화에서 제외합니까?")) {
+			return;
+		}
+
+		query.command = "remove";
+	} else {
+		if (!confirm("Confirm.\n\n선택한 MIB 값 제거를 동기화에 포함합니까?")) {
+			return;
+		}
+
+		query.command = "set";
+		query.mib.status = "remove"
+	}
+
+	$.request.query(query)
+	.then(mib => {
+		window.location.reload();
+	})
+	.catch(showMessage);
+}
+
+/** public **/
+function setMIB (oid, index) {
+	if (index && !index.split(".").some(n => !isNaN(n)) || isNaN(index)) {
+		return alert("Error.\n\n Index 값이 OID 형식에 맞지 않습니다.");
+	}
+
+	const mib = getMIB(oid);
+
+	if (index) {
+		if ($.mibData[oid]) {
+			return alert("Error.\n\n 상위 OID 값이 이미 존재합니다.");
+		}
+
+		oid = `${oid}.${index}`;
+	} else {
+		for (let key in $.mibData) {
+			if (key.indexOf(oid) !== -1) {
+				return alert("Error.\n\n 하위 OID 값이 이미 존재합니다.");
+			}
+		}
+	}
+	
+	if ($.mibData[oid]) {
+		return alert("Error.\n\n 같은 OID 값이 이미 존재합니다.");
+	}
+
+	mib.node = $.node;
+	mib.oid = oid;
+	mib.index = index;
+
+	$.request.query({
+		command: "add",
+		target: "mib",
+		mib : mib
+	})
+	.then(mib => {
+		window.location.reload();
+	})
+	.catch(showMessage);
+}
+
+function onSyncMIB() {
+	if (!confirm(`Confirm.\n\nMIB 정보 동기화를 실행합니까?`)) {
+		return;
+	}
+
+	document.body.classList.add("loading");
+
+	$.request.query({
+		command: "set",
+		target: "mib",
+		mib: {
+			node: $.node
+		}
+	})
+	.then(() => {
+		alert ("Information.\n\n동기화 결과는 요청 주기에 따라 수초 후 반영될 수 있습니다.");
+
+		window.location.reload();
+	})
+	.catch(showMessage);
+}
+
+function selectPEN(pen) {
+	const
+		list = document.body.querySelector("main.from tbody"),
+		df = document.createDocumentFragment(),
+		oid = `1.3.6.1.4.1.${pen}`;
+
+	Array.from($.cache.children).forEach(tr => {
+		if (tr.children[0].textContent.indexOf(oid) === 0) {
+			df.appendChild(tr);
+		}
+	});
+
+	Array.from(list.children).forEach(tr => $.cache.appendChild(tr));
+
+	list.appendChild(df);
+}
+
+function onSelectPEN () {
+	selectPEN(this.value);
+}
+
+function showMessage (xhr) {
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
+
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
+    }
+}
+		</script>
+	</head>
+	
+	<body class="loading">
+		<header>
+			<div>
+				<button type="button" id="reload" class="icon" title="새로고침">Reload</button>
+				<span>Select PEN</span>
+				<select id="pen"></select>
+			</div>
+			<div>
+				<button type="button" id="sync" class="icon" title="동기화" disabled>Sync</button>
+			</div>
+		</header>
+		<main class="from">
+			<table>
+				<colgroup>
+					<col width="400">
+					<col>
+					<col>
+				</colgroup>
+				<thead>
+					<tr>
+						<th>OID</th>
+						<th>Monitor</th>
+						<th>Match value or Unit size</th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</main>
+		<main class="to">
+			<table>
+				<colgroup>
+					<col width="160">
+					<col width="400">
+					<col>
+					<col>
+					<col>
+				</colgroup>
+				<thead>
+					<tr>
+						<th>Status</th>
+						<th>OID</th>
+						<th>Index</th>
+						<th>Monitor</th>
+						<th>Match value or Unit size</th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</main>
+
+		<iframe id="dialog" name="dialog"></iframe>
+		
+		<div class="loading mask"></div>
+
+		<script src="/js/request.js"></script>
+		<script src="/js/query.js"></script>
+		<script src="/js/constants.js"></script>
+		<script>
+const
+	search = new URLSearchParams(window.location.search),
+	$ = {
+		request: new Request(),
+		node: Number(search.get("node")),
+		pen: search.get("pen"),
+		cache: document.createDocumentFragment()
+	};
+
+document.getElementById("reload").onclick = e => window.location.reload();
+
+		</script>			
+		<script type="module">
+import {mibData} from "../js/mib.js";
+
+const
+	select = document.getElementById("pen"),
+	df = document.createDocumentFragment(),
+	penToNull = new Map();
+let option;
+
+for (let oid in mibData) {
+	penToNull.set(oid.split("1.3.6.1.4.1.")[1].split(".")[0], null);
+
+	$.cache.appendChild(createItem(oid, mibData[oid]));
+}
+
+for (let pen of penToNull.keys()) {
+	df.appendChild(document.createElement("option")).text = pen;
+}
+
+select.appendChild(df);
+
+if ($.pen) {
+	select.value = $.pen;
+
+	selectPEN($.pen);
+} else {
+	select.selectedIndex = -1;
+}
+
+select.onchange = onSelectPEN;
+
+window.getMIB = oid => mibData[oid];
+		</script>
+        <script>
+$.request.query({
+    command: "get",
+    target: "mib",
+	node: $.node
+})
+.then(data => {
+	const df = document.createDocumentFragment();
+
+	$.mibData = data;
+
+	Object.keys(data)
+		.sort()
+		.forEach(oid => df.appendChild(createListItem(oid, data[oid])));
+
+	document.body.querySelector("main.to tbody").appendChild(df);	
+})
+.then(() => {
+	if ($.sync) {
+		const sync = document.getElementById("sync");
+
+		sync.disabled = false;
+
+		sync.onclick = onSyncMIB;
+	}
+
+	document.body.classList.remove("loading");
+})
+.catch(showMessage);
+		</script>	
+	</body>
+	
+</html>

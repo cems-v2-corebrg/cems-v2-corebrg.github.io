@@ -142,6 +142,7 @@ body:not(.label) .node tspan,
 body.name .node tspan:last-child,
 body:not(.name) .node tspan:first-child,
 body:not(.exit) #exit,
+body:not(.root) .root,
 body:not(.loading) .loading.mask {
 	display: none;
 }
@@ -272,7 +273,7 @@ function showMessage(xhr) {
         
         <body class="loading">
             <nav>
-                <span title="편집 모드" id="edit">
+                <span title="편집 모드" id="edit" class="root">
                     &#xf013;
                 </span>
                 <span title="라벨 표시" id="display">
@@ -311,9 +312,15 @@ const
         deviceMap: {}
     };
 
+if (top.account.level === 0) {
+    document.getElementById("edit").onclick = e => location.replace("/topology/editor.html");
+
+    document.body.classList.add("root");
+}
+
 document.getElementById("display").onclick = e => $.display.update();
 document.getElementById("search").onclick = onSearch;
-document.getElementById("edit").onclick = e => location.replace("/topology/editor.html");
+
 
 if ($.branch) {
     document.getElementById("exit").onclick = e => moveStage(window.positionData[$.branch].parent);

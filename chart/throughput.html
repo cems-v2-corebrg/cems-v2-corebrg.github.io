@@ -20,6 +20,23 @@ body {
 
 header {
     flex: none;
+    position: relative;
+}
+
+label {
+    position: absolute; inset: 0.5em 1em auto auto;
+    display: block; line-height: 2em;
+    padding-left: 3em;
+    padding-right: 3em;
+    border-radius: 1.5em 1.5em 1.5em 1.5em;
+    background-color: #fefefe;
+    color: #0f0f0f;
+}
+
+label span {
+    font: 2em "Font Awesome 5 Free";
+    display: inline-block;
+    vertical-align: middle;
 }
 
 main {
@@ -45,6 +62,16 @@ h2 {
     text-shadow: 0 2px 3px #000;
 }
 
+#monitor ~span:first-of-type {
+    color: gray;
+}
+
+#monitor ~span:last-of-type {
+    color: #dd3a7e;
+}
+
+#monitor:checked ~span:first-of-type,
+#monitor:not(:checked) ~span:last-of-type,
 body:not(.root) form {
     display: none;
 }
@@ -78,12 +105,62 @@ function preview (resourceData) {
     parent.preview(resourceData);
 }
 
+function onCheckMonitor (e) {
+    const checked = this.checked;
+
+    if (!confirm(`Confirm.\n\n${checked? "인터페이스의 상태를 모니터 하겠습니까?": "인터페이스의 모니터를 해제 하겠습니까?"}`)) {
+        return this.checked = !checked;
+    }
+
+    $.request.query({
+        command: checked? "set": "remove",
+        target: "match",
+        match: {
+            id: $.id,
+            oid: ITAhM.snmp.oid.ifOperStatus,
+            index: $.index,
+            value: "1"
+        }
+    }).then(match => {
+    }).catch(showMessage);
+}
+
+function showMessage(xhr) {
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
+
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace(xhr);
+    }
+}
 		</script>
 	</head>
 	
 	<body class="loading">
         <header>
 			<h2>Interface throughput: <i>"</i> <span id="if_name">인터페이스</span> <i>"</i></h2>
+            <label>
+                인터페이스 상태 감시 
+                <input type="checkbox" hidden id="monitor">
+                <span>
+                    &#xf204;
+                </span>
+                <span title="감시중">
+                    &#xf205;
+                </span>
+            </label>
         </header>
         <main>
             <div class="chart">
@@ -97,6 +174,7 @@ function preview (resourceData) {
 
         <script src="/js/ITAhM.js"></script>
         <script src="/js/snmp.js"></script>
+        <script src="/js/constants.js"></script>
         <script src="/js/request.js"></script>
 		<script>
 
@@ -115,19 +193,32 @@ const
     };
 
 if (top.account.level == 0) {
+    document.getElementById("monitor").onclick = onCheckMonitor;
+
     document.body.classList.add("root");
 }
 
 $.title && (document.getElementById("if_name").textContent =  $.title);
 
 search.delete ("title");
-//search.set("unit", 8);
 
 search.set("oid", ITAhM.snmp.oid[`${$.oid}InOctets`]);
 document.getElementById("chart_in").src=`/chart/throughputIn.html?${search.toString()}`;
 
 search.set("oid", ITAhM.snmp.oid[`${$.oid}OutOctets`]);
 document.getElementById("chart_out").src=`/chart/throughputOut.html?${search.toString()}`;
+
+$.request.query({
+    command: "get",
+    target: "match",
+    match: {
+        id: $.id,
+        oid: ITAhM.snmp.oid.ifOperStatus,
+        index: $.index
+    }
+}).then(match => {
+    document.getElementById("monitor").checked = "value" in match;
+}).catch(showMessage);
 
 document.body.classList.remove("loading");
 		</script>

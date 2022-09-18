@@ -53,10 +53,12 @@ function IP2Int(s) {
 		
 		<script>
 
-function createRow(id, nodeFrom, nodeTo, ifName, extra) {
-	const row = document.createElement("tr");
+function createRow(id, link) {
+	const
+        row = document.createElement("tr"),
+        ifName = [link.indexFromName, link.indexToName];
 
-    [$.nodeData[nodeFrom], $.nodeData[nodeTo]].forEach((node, i) => {
+    [$.nodeData[link.nodeFrom], $.nodeData[link.nodeTo]].forEach((node, i) => {
         row.appendChild(document.createElement("td")).textContent = node.ip || "";
         row.appendChild(document.createElement("td")).textContent = node.name || "";
         row.appendChild(document.createElement("td")).textContent = ifName[i] || "";
@@ -64,7 +66,7 @@ function createRow(id, nodeFrom, nodeTo, ifName, extra) {
     
 	if ($.customData) {
         $.customData.forEach(custom => {
-            row.appendChild(document.createElement("td")).textContent = extra && extra[custom] || "";
+            row.appendChild(document.createElement("td")).textContent = link.extra && link.extra[custom] || "";
         });
 	};
 	
@@ -309,31 +311,26 @@ $.request.query({
 
     return $.request.query({
         command: "get",
-        target: "link"
-    });
-})
-.then(linkData => {
-    $.linkData = linkData;
-        
-    return $.request.query({
-        command: "get",
         target: "node"
     });
 })
 .then(nodeData => {
     $.nodeData = nodeData;
-            
+    
+    return $.request.query({
+        command: "get",
+        target: "link"
+    });
+})
+.then(linkData => {
     const df = document.createDocumentFragment();
-    var link;
 
-    for (let id in $.linkData) {
-        link = $.linkData[id];
-
-        df.appendChild(createRow(id, link.nodeFrom, link.nodeTo, [link.indexFromName, link.indexToName], link.extra));
+    for (let id in linkData) {
+        df.appendChild(createRow(id, linkData[id]));
     }
 
     $.list.appendChild(df);
-    
+
     document.body.classList.remove("loading");
 
     document.getElementById("count").textContent = count();

@@ -9,8 +9,12 @@
 @import "/css/list.css";
 @import "/css/fa.css";
 
-.sync tbody :is(th, td) {
-	padding: 5px;
+main.from {
+	flex: 0.5;
+}
+
+main.to.drop {
+	outline: 5px dotted #0f0f0f;
 }
 
 header {
@@ -23,16 +27,33 @@ header :is(input, select) {
 	padding: 0 0.5em;
 }
 
-main.sync {
-	flex: 0.5;
-}
-
-table {
-	
+tbody {
+	user-select: none;
 }
 
 		</style>
 		<script>
+function createItem(oid, mib) {
+	const
+		tr = document.createElement("tr"),
+		checkbox = document.createElement("input");
+
+	checkbox.type = "checkbox";
+
+	tr.appendChild(document.createElement("th")).appendChild(checkbox);
+	tr.appendChild(document.createElement("td")).textContent = oid;
+	tr.appendChild(document.createElement("td")).textContent = mib.match || "";
+	tr.appendChild(document.createElement("td")).textContent = "";
+	tr.appendChild(document.createElement("td")).textContent = mib.trace? "Y": "";
+
+	checkbox.dataset.oid = oid;
+	
+	tr.draggable = true;
+	tr.ondragstart = onDragStart;
+
+	return tr;
+}
+
 function createSyncItem (name, oid) {
 	const
 		tr = document.createElement("tr"),
@@ -72,6 +93,14 @@ function createListItem (name, oid) {
 	return tr;
 }
 
+function onDragStart (e) {
+	if (!this.querySelector("[type=checkbox]").checked) {
+		return e.preventDefault();
+	}
+
+	e.dataTransfer.effectAllowed = "copy";
+}
+
 function onSelectItem () {
 	top.showDialog(`/dialog/oid.html?name=${this.dataset.name}`, window);
 }
@@ -79,26 +108,16 @@ function onSelectItem () {
 function onCheckAll () {
 	const checked = this.checked;
 
-	document.getElementById("sync").disabled = checked? false: true;
-
 	Array
-		.from(document.body.querySelectorAll(".sync tbody input[type=checkbox]"))
+		.from(document.body.querySelectorAll("main.from tbody input[type=checkbox]"))
 		.forEach(checkbox => checkbox.checked = checked);
 }
 
 function onCheckItem () {
-	if (this.checked) {
-		document.getElementById("sync").disabled = false;
-
-		if (document.body.querySelectorAll(".sync tbody input[type=checkbox]:not(:checked)").length === 0) {
-			document.body.querySelector(".sync thead input[type=checkbox]").checked = true;
-		}
-	} else {
-		document.body.querySelector(".sync thead input[type=checkbox]").checked = false;
-
-		if (document.body.querySelectorAll(".sync tbody input[type=checkbox]:checked").length === 0) {
-			document.getElementById("sync").disabled = true;
-		}
+	if (!this.checked) {
+		document.body.querySelector("main.from thead input[type=checkbox]").checked = false;
+	} else if (document.body.querySelectorAll("main.from tbody input[type=checkbox]:not(:checked)").length === 0) {
+		document.body.querySelector("main.from thead input[type=checkbox]").checked = true;
 	}
 }
 
@@ -123,34 +142,42 @@ function sync(array) {
 }
 
 function onSync() {
-	const checked = document.body.querySelectorAll(".sync tbody input[type=checkbox]:checked");
+	const checked = document.body.querySelectorAll("main.from tbody input[type=checkbox]:checked");
 
 	if (!confirm(`Confirm.\n\n선택한 ${checked.length} 개의 OID를 동기화 하겠습니까?`)) {
 		return;
 	}
 
-	const value = {};
+	const
+		sync = array => {
+			const query = array.pop();
 
-	Array
-		.from(checked)
-		.forEach(checkbox => value[checkbox.dataset.name] = {
-				type: checkbox.dataset.type,
-				value: checkbox.dataset.value,
-				log: checkbox.dataset.log? true: undefined
+			if (query) {
+				$.request.query({
+					command: "set",
+					target: "mib",
+					mib: value
+				})
+				.then(mib => {
+					sync(array);
+				})
+				.catch(showMessage);		
+			} else {
+				alert("Information.\n\nOID 동기화 성공.");
+
+				window.location.reload();
 			}
-		);
-		
-	$.request.query({
-		"command": "set",
-		"target": "oid",
-		"value": value
-	})
-	.then(oidData => {
-		alert("Information.\n\nOID 동기화 성공.");
+		},
+		queryArray = [];
 
-		window.location.reload();
-	})
-	.catch(showMessage);
+	Array.from(checked).forEach(checkbox => {
+		queryArry.add({
+			//checkbox.oid
+		});
+	});
+	
+	sync(queryArray);
+	
 }
 
 function showMessage (xhr) {
@@ -180,9 +207,10 @@ function showMessage (xhr) {
 		<header>
 			<div>
 				<input type="button" value="&#xf2f1; Sync" id="sync" title="동기화" disabled>
+				<input type="button" value="&#xf067; Add" id="add" title="OID 추가">
 			</div>
 		</header>
-		<main class="sync">
+		<main class="from">
 			<table>
 				<colgroup>
 					<col width="50">
@@ -192,21 +220,17 @@ function showMessage (xhr) {
 						<th>
 							<input type="checkbox">
 						</th>
-						<th>Name</th>
-						<th>Type</th>
 						<th>OID</th>
-						<th>Logging</th>
+						<th>Match</th>
+						<th></th>
+						<th>Trace</th>
 					</tr>
 				</thead>
 				<tbody></tbody>
+				<tbody></tbody>
 			</table>
 		</main>
-		<header>
-			<div>
-				<input type="button" value="&#xf067; Add" id="add" title="OID 추가">
-			</div>
-		</header>
-		<main class="list">
+		<main class="to">
 			<table>
 				<thead>
 					<tr>
@@ -236,35 +260,69 @@ $.request.query({
 })
 .then(data => {
 	const df = document.createDocumentFragment();
-
+/*
 	Object.keys(oidData)
 		.sort()
 		.forEach(name => (!(name in data)) && df.appendChild(createSyncItem(name, oidData[name])));
+*/	
 	
-	if (df.children.length > 0) {
-		document.body.querySelector(".sync thead input[type=checkbox]").onclick = onCheckAll;
-	}
-
-	document.body.querySelector(".sync tbody").appendChild(df);
 
 	Object.keys(data)
 		.sort()
 		.forEach(name => df.appendChild(createListItem(name, data[name])));
 	
-	document.body.querySelector(".list tbody").appendChild(df);
+	//document.body.querySelector(".list tbody").appendChild(df);
 })
 .then(() => {
 	Array
-		.from(document.body.querySelectorAll(".sync tbody input[type=checkbox]"))
+		.from(document.body.querySelectorAll("main.from input[type=checkbox]"))
 		.forEach(checkbox => checkbox.onclick = onCheckItem);
 
-	document.getElementById("sync").onclick = onSync;
 	document.getElementById("add").onclick = e=> top.showDialog("/dialog/oid.html", window);
+
+	const to = document.querySelector("main.to");
+
+	to.addEventListener("dragenter", function (e) {
+		e.preventDefault();
+
+		to.classList.add("drop");
+	});
+
+	
+	to.addEventListener("dragleave", function (e) {
+		e.preventDefault();
+
+		to.classList.remove("drop");
+	});
+
+	to.addEventListener("dragover", function (e) {
+		e.preventDefault();
+
+		e.dataTransfer.dropEffect = "copy";
+	});
+
+	to.addEventListener("drop", function (e) {
+		e.stopPropagation();
+
+		onSync();
+	});
 
 	document.body.classList.remove("loading");
 })
 .catch(showMessage);
+		</script>
+		<script type="module">
+import {mibData} from "../js/mib.js";
 
+const df = document.createDocumentFragment();
+
+for (let oid in mibData) {
+	df.appendChild(createItem(oid, mibData[oid]));
+}
+
+document.body.querySelector("main.from thead input[type=checkbox]").onclick = onCheckAll;
+
+document.body.querySelector("main.from tbody").appendChild(df);
 		</script>
 	
 	</body>

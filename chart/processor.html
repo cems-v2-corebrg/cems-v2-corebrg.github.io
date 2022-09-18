@@ -55,7 +55,7 @@ function toChartValue(value) {
 		<script>
 const search = new URLSearchParams(window.location.search);
 
-initialize(search.get("oid"));
+initialize(search.get("oid"), search.get("index") || undefined);
 		</script>
 	
 	</body>

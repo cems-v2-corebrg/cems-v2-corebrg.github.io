@@ -8,10 +8,12 @@ function Request() {
 {
     const
         signIn = JSON.stringify({
-            command: "signin"
+            command: "order",
+            target:"signin"
         }),
         echo =  JSON.stringify({
-            command: "echo"
+            command: "order",
+            target: "echo"
         }),
         listener = {
             command: "listen"
@@ -35,7 +37,7 @@ function Request() {
             if (!this.agent) {
                 return false;
             }
-
+            
             const xhr = new XMLHttpRequest();
 
             xhr.open("POST", `${this.agent}request`, true);
@@ -52,7 +54,7 @@ function Request() {
             return true;
         },
         // if session 200
-        // if !session 401
+        // if !session 400, 401
         // else fail
         connect: function (agent, callback) {
             const xhr = new XMLHttpRequest();
@@ -68,6 +70,7 @@ function Request() {
             xhr.onloadend = e => {
                 switch (xhr.status) {
                 case 200:
+                case 400:
                 case 401:
                     this.agent = agent;
 
@@ -110,7 +113,8 @@ function Request() {
             }
 
             xhr.send(JSON.stringify({
-                command: "signin",
+                command: "order",
+                target: "signin",
                 id: id,
                 password: password
             }));

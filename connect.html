@@ -119,30 +119,7 @@ body.ready {
 function initialize() {
     document.body.classList.remove("ready");
 
-    document.body.querySelector("[name=address").focus();
-}
-
-function onConnect() {
-    switch (this.status) {
-    case 200:
-        try {
-            return top.signIn(JSON.parse(this.responseText));
-        }
-        catch(e) {
-            alert("Error!\n\n서비스가 비정상 종료 되었습니다.\n"+
-            "모든 브라우저를 닫고 다시 시작하십시오.");
-        }
-
-        break;
-    case 401:
-        return window.location.replace("/signin.html");
-    default:
-        try {
-            console.log(JSON.parse(this.responseText).error);
-        } catch (e) {}
-    }
-
-    document.body.classList.remove("ready");
+    document.body.querySelector("[name=address]").focus();
 }
 
         </script>
@@ -155,7 +132,7 @@ function onConnect() {
                 <form id="connect">
                     <p>Agent Address</p>
                     <div class="input address">
-                        <input type="text" name="address" placeholder="protocol//ip:tcp" autocomplete="off" required>
+                        <input type="text" name="address" placeholder="protocol//ip:tcp" autocomplete="off" required value="http://127.0.0.1:2021">
                     </div>
                     <button type="submit">Connect</button>
                 </form>
@@ -207,6 +184,7 @@ const $ = {
                 }
 
                 break;
+            case 400:
             case 401:
                 return window.location.replace("/signin.html");
             default:
@@ -234,6 +212,7 @@ if (!$.request.try(function () {
         }
 
         break;
+    case 400:
     case 401:
         return window.location.replace("/signin.html");
     default:

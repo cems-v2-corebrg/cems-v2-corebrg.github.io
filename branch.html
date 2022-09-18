@@ -117,6 +117,7 @@ header input {
 }
 
 tr.hidden,
+body:not(.root) .root,
 body.keyword #list tr:not(.keyword),
 #list.normal tr:not([data-normal]),
 #list.critical tr:not([data-critical]),
@@ -212,10 +213,6 @@ function onReset(e) {
     document.getElementById("count").textContent = count();
 }
 
-function onAdd () {
-    top.showDialog("/dialog/branch.html", window);
-}
-
 function save(name) {
     const
         headers = document.body.querySelector("main thead tr").children,
@@ -290,7 +287,7 @@ function showMessage(xhr) {
 	<body class="loading">
         <header>
             <nav>
-                <input type="button" id="add" value="&#xf067; Add">
+                <input type="button" id="add" class="root" value="&#xf067; Add">
                 <input type="button" id="export" value="&#xf019; Export">
             </nav>
             <i id="count"></i>
@@ -333,61 +330,45 @@ const $ = {
         form: document.querySelector("form"),
     };
 
-document.getElementById("add").onclick = onAdd;
+    
+if (top.account.level === 0) {
+    document.getElementById("add").onclick = e=> top.showDialog("/dialog/branch.html", window);
+
+    document.body.classList.add("root");
+}
+
 document.getElementById("export").onclick = e => save("branch.csv");
 
 $.form.onsubmit = onSearch;
 $.form.onreset = onReset;
 
-function initialize(e) {
-    switch(this.status) {
-    case 200:        
-        break;
-    default:
-        throw showMessage(this);
+$.request.query({
+    "command": "get",
+    "target": "icon"
+}).then(data => {
+    for (let type in data) {
+        $.iconData[type] = data[type];
     }
 
-    const iconData = JSON.parse(this.responseText);
-
-    for (let type in iconData) {
-        $.iconData[type] = iconData[type];
-    }
-    
+    return $.request.query({
+        "command": "get",
+        "target": "branch"
+    });
+}).then(data => {
     const df = document.createDocumentFragment();
     
     var row;
 
-    for (let id in $.branchData) {
-        df.appendChild(createRow(id, $.branchData[id]));
+    for (let id in data) {
+        df.appendChild(createRow(id, data[id]));
     }
 	
-	list.appendChild(df);
-	
-	document.body.classList.remove("loading");
+	$.list.appendChild(df);
 
-	document.getElementById("count").textContent = count();
-}
+    document.getElementById("count").textContent = count();
 
-function initNode(e) {
-    switch(this.status) {
-    case 200:
-        break;
-    default:
-        throw showMessage(this);
-    }
-
-    $.branchData = JSON.parse(this.responseText);
-        
-    $.request.execute({
-        "command": "get",
-        "target": "icon"
-    }, initialize);
-}
-
-$.request.execute({
-    "command": "get",
-    "target": "branch"
-}, initNode);
+    document.body.classList.remove("loading");
+}).catch(showMessage);
 
         </script>
 	

@@ -55,10 +55,11 @@ section li {
 }
 
 .information li,
+.storage li,
 #response li,
 #processor li,
-#storage li,
-#memory li {
+#memory li,
+#enterprise li {
     height: 100px;
 }
 
@@ -117,16 +118,16 @@ section.dummy {
 
 /****/
 
-#processor,
-#storage {
+#processor .container,
+#storage .container{
     display: flex;
 }
 
-#storage {
+#storage .container{
     flex-wrap: wrap;
 }
 
-#processor li {
+section.processor li {
     width: 120px; 
 }
 
@@ -148,9 +149,8 @@ section.dummy {
     content: "최대";
 }
 
-#response li,
-#storage li,
-#memory li {
+section.storage li,
+#response li {
     width: 200px;
 }
 
@@ -176,10 +176,6 @@ section.dummy {
 
 #portmap li:hover label {
     display: initial;
-}
-
-section.enterprise {
-    flex: none; width: 160px;
 }
 
 section.type {
@@ -290,7 +286,7 @@ div {
 }
 /** Interface **/
 
-section.enterprise ul,
+#enterprise ul,
 section.type ul {
     background-size: contain;
     background-repeat: no-repeat;
@@ -502,16 +498,40 @@ div.error::after {
     content: attr(data-code);
 }
 
+#mib {
+    display: flex; justify-content: center; align-items: center;
+    width: 180px;
+}
+
+#mib::before {
+    font: 4em "Font Awesome 5 Free";
+    content: "\f013";
+}
+
+dialog {
+    width: 80%; height: 80%;
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.8);
+    border: 2px ridge #ffffff;
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+body:not(.root) .root,
 body:not(.error) .error,
 body:not(.response) section.response,
 body:not(.response) section.rtt,
-body:not(.processor) section.processor,
-body:not(.storage) section.storage,
-body:not(.memory) section.memory,
+body:not(.processor) #processor,
+body:not(.storage) #storage,
+body:not(.memory) #memory,
 body:not(.portmap) section.portmap,
 body:not(.interface) section.interface,
 body:not(.power) section.power,
 body:not(.temperature) section.temperature,
+body:not(.enterprise_load) section.enterprise.load,
+body:not(.enterprise_mem) section.enterprise.mem,
 body:not(.fan) section.fan,
 body.shutdown .status::after,
 #toggle:checked ~label.switch .off,
@@ -548,76 +568,6 @@ body.shutdown .status::after,
 		</style>
 		
 		<script>
-
-function Interface() {
-    //this.initialize(arguments);
-}
-
-{
-    const UNIT = ["bps", "Kbps", "Mbps", "Gbps", "Tbps"];
-
-    function toBPSString(value) {    
-        for(var i=0, _i=UNIT.length -1; i<_i; i++) {
-            if (value > 999) {
-                value /= 1000;
-            }
-            else {
-                break;
-            }
-        }
-        
-        return `${value.toFixed(2)}${UNIT[i]}`;
-    }
-
-    Interface.Port = function (container, config) {
-        this.container = container;
-        this.config = config;
-        this.status = container.appendChild(document.createElement("td"));
-        this.name = container.appendChild(document.createElement("td"));
-        this.descr = container.appendChild(document.createElement("td"));
-        this.bandwidth = container.appendChild(document.createElement("td"));
-        this.inUse = container.appendChild(document.createElement("td"));
-        this.inGauge = this.inUse.appendChild(document.createElement("div"));
-        this.inErr = container.appendChild(document.createElement("td"));
-        this.outUse = container.appendChild(document.createElement("td"));
-        this.outGauge = this.outUse.appendChild(document.createElement("div"));
-        this.outErr = container.appendChild(document.createElement("td"));
-
-        this.name.textContent = config.name;
-        this.descr.textContent = config.descr;
-        this.bandwidth.textContent = toBPSString(config.bandwidth);
-        
-        if (config.alias) {
-            container.title = config.alias;
-        }
-    };
-
-    Interface.Port.prototype = {
-        set: function (inBPS, outBPS, inErr, outErr) {
-            if (!isNaN(inBPS) && !isNaN(outBPS) && !isNaN(inErr) && !isNaN(outErr)) {
-                this.inUse.dataset.value = toBPSString(inBPS);
-                this.inGauge.style.left = this.inUse.title = `${(inBPS / this.config.bandwidth *100).toFixed(2)}%`;
-                this.inUse.appendChild(this.inGauge);
-
-                this.outUse.dataset.value = toBPSString(outBPS);
-                this.outGauge.style.left = this.outUse.title = `${(outBPS / this.config.bandwidth *100).toFixed(2)}%`;
-                this.outUse.appendChild(this.outGauge);
-
-                this.inErr.textContent = inErr;
-                this.outErr.textContent = outErr;
-            } else {
-                this.inUse.dataset.value = "";
-                this.inGauge.style.left = 0;
-
-                this.outUse.dataset.value = ""
-                this.outGauge.style.left = 0;
-
-                this.inErr.textContent = "";
-                this.outErr.textContent = "";
-            }
-        }
-    };
-}
 
 function PortMap() {
     this.initialize(arguments);
@@ -706,40 +656,42 @@ function PortMap() {
 
             return true;
         },
-        set: function (port, indexData) {
-            try {
-                const
-                    ifAdminStatus = Number(indexData[ITAhM.snmp.oid.ifAdminStatus]),
-                    ifOperStatus = Number(indexData[ITAhM.snmp.oid.ifOperStatus]),
-                    inOctets = indexData[ITAhM.snmp.oid[`${this.prefix}InOctets`]],
-                    outOctets = indexData[ITAhM.snmp.oid[`${this.prefix}OutOctets`]],
-                    inErrors = Number(indexData[ITAhM.snmp.oid.ifInErrors]),
-                    outErrors = Number(indexData[ITAhM.snmp.oid.ifOutErrors]);
+        update: function (resourceData, criticalData, matchData) {
+            const
+                oidIn = ITAhM.snmp.oid[`${this.prefix}InOctets`],
+                oidOut = ITAhM.snmp.oid[`${this.prefix}OutOctets`];
+            let indexData, ifAdminStatus, ifOperStatus, inOctets, outOctets, inErrors, outErrors;
+
+            for (let [index, port] of this.indexToPort) {
+                indexData = resourceData[index];
+
+                ifAdminStatus = Number(indexData[ITAhM.snmp.oid.ifAdminStatus]);
+                ifOperStatus = Number(indexData[ITAhM.snmp.oid.ifOperStatus]);
+                inOctets = indexData[oidIn];
+                outOctets = indexData[oidOut];
+                inErrors = Number(indexData[ITAhM.snmp.oid.ifInErrors]);
+                outErrors = Number(indexData[ITAhM.snmp.oid.ifOutErrors]);
 
                 if (ifAdminStatus !== 1) {
                     port.status(Ethernet.STATUS_DISABLED);
                     port.set();
-                } else if (ifOperStatus !==1) {
-                    port.status(Ethernet.STATUS_SHUTDOWN);
+                } else if (ifOperStatus !== 1) {
+                    if (matchData[index]?.[ITAhM.snmp.oid.ifOperStatus] === false) {
+                        port.status(Ethernet.STATUS_MAJOR);
+                    } else {
+                        port.status(Ethernet.STATUS_SHUTDOWN);
+                    }
+
                     port.set();
                 } else {
+                    if (criticalData[index]?.[oidIn] === false || criticalData[index]?.[oidOut] === false) {
+                        port.status(Ethernet.STATUS_CRITICAL);
+                    } else {
+                        port.status(Ethernet.STATUS_NORMAL);
+                    }
+                    
                     port.set(Number(inOctets) * 8, Number(outOctets) * 8);
                 }
-                
-                port.container.classList[inErrors > 0 || outErrors > 0? "add": "remove"]("error");
-            } catch (e) {
-                console.error(e);
-            }
-        },
-        update: function (resourceData, criticalData) {
-            for (let [index, port] of this.indexToPort) {
-                if (criticalData[index]?.[ITAhM.snmp.oid[`${this.prefix}InOctets`]] === false || criticalData[index]?.[ITAhM.snmp.oid[`${this.prefix}OutOctets`]] === false) {
-                    port.status(Ethernet.STATUS_CRITICAL);
-                } else {
-                    port.status(Ethernet.STATUS_NORMAL);
-                }
-
-                this.set(port, resourceData[index]);
             }
         }
     };
@@ -749,7 +701,7 @@ function Fan() {
     this.initialize(arguments);
 }
 
-{let i = 0;
+{
     Fan.prototype = {
         initialize: function (args) {
             this.container = args[0];
@@ -785,7 +737,7 @@ function Fan() {
 
             return status;
         },
-        update: function (resourceData, criticalData) {
+        update: function (resourceData, criticalData, matchData) {
             var status = 0;
 
             for (let [index, container] of this.indexToContainer) {
@@ -932,6 +884,199 @@ function Temperature() {
             }
         }
     };
+}
+
+class EnterpriseMem {
+    static COLOR_GREEN = "#00897b";
+    static COLOR_ORANGE = "#f6bf26";
+    static COLOR_RED = "#8e24aa";
+    static #config = {
+        type: 'bar',
+        data: {
+            labels: [""],
+            datasets: [{
+                data: [0],
+                backgroundColor: EnterpriseMem.COLOR_GREEN
+            }, {
+                data: [0],
+                backgroundColor: EnterpriseMem.COLOR_ORANGE
+            }, {
+                data: [0],
+                backgroundColor: EnterpriseMem.COLOR_RED
+            }]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        display: false
+                    },
+                    ticks: {
+                        fontColor: "#ffffff",
+                        callback: value => value.substr(0, 30)
+                    }
+                }],
+                yAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        display: false
+                    },
+                    ticks: {
+                        display: false,
+                        max: 100,
+                        min: 0
+                    }
+                }]
+            },
+            layout: {
+                padding: {
+                    right: 20,
+                    left: 20
+                }
+            }
+        }
+    };
+
+    #container;
+    #indexToChart = new Map();
+    
+    constructor (container) {
+        this.#container = container;
+    }
+
+    add (oid, index, onclick) {
+        const container = document.createElement("li");
+
+        if (onclick) {
+            container.onclick = e => onclick({
+                chart: "/chart/memory.html",
+                oid: oid,
+                index: index,
+                unit: 1
+            });
+
+            container.classList.add("selectable");
+        }
+
+        container.classList.add("status");
+
+        this.#indexToChart.set(index, new Map()
+            .set("container", container)
+            .set("chart", new Chart(container.appendChild(document.createElement("canvas")), EnterpriseMem.#config))
+            .set("oid", oid));
+
+        this.#container.appendChild(container);
+    }
+
+    update (resourceData, criticalData) {
+        let chart, value, oid, datasets;
+
+        for (let [index, map] of this.#indexToChart) {
+            oid = map.get("oid");
+            value = Number(resourceData[index][oid]);
+            chart = map.get("chart");
+
+            datasets = chart.config.data.datasets;
+
+            if (value > 90) {
+                datasets[0].data[0] = 70;
+                datasets[1].data[0] = 20;
+                datasets[2].data[0] = value -90;
+            } else if (value > 70) {
+                datasets[0].data[0] = 70;
+                datasets[1].data[0] = value -70;
+                datasets[2].data[0] = 0;
+                
+            } else {
+                datasets[0].data[0] = value;
+                datasets[1].data[0] = 0;
+                datasets[2].data[0] = 0;
+            }
+            
+            chart.config.label = `${value.toFixed(2)}%`;
+            
+            chart.update();
+
+            map.get("container").classList[criticalData[index]?.[oid] === false? "add": "remove"]("critical");
+        }
+    }
+}
+
+class EnterpriseLoad {
+    static COLOR_NORMAL = "#00897b";
+    static COLOR_CRITICAL = "#fe6a50";
+    static COLOR_MAJOR = "#f6bf26";
+    static COLOR_SHUTDOWN = "#8e24aa";
+    static COLOR_NULL = "transparent";
+    static COLOR_GAUGE = "#dddddd";
+
+    static #config = {
+        type: "doughnut",
+        data: {
+            datasets: [{
+                data: [70, 20, 10],
+                backgroundColor: [EnterpriseLoad.COLOR_NORMAL, EnterpriseLoad.COLOR_CRITICAL, EnterpriseLoad.COLOR_SHUTDOWN]
+            }]
+        },
+        options: {
+            cutoutPercentage: 70,
+            circumference: Math.PI,
+            rotation: Math.PI *-1
+        }
+    };
+
+    #container;
+    #indexToChart = new Map();
+    
+    constructor (container) {
+        this.#container = container;
+    }
+
+    add (oid, index, onclick) {
+        const container = document.createElement("li");
+
+        if (onclick) {
+            container.onclick = e => onclick({
+                chart: "/chart/processor.html",
+                oid: oid,
+                index: index,
+                unit: 1
+            });
+
+            container.classList.add("selectable");
+        }
+
+        container.classList.add("status");
+
+        this.#indexToChart.set(index, new Map()
+            .set("container", container)
+            .set("chart", new Chart(container.appendChild(document.createElement("canvas")), EnterpriseLoad.#config))
+            .set("oid", oid));
+
+        this.#container.appendChild(container);
+    }
+
+    update (resourceData, criticalData) {
+        let chart, value, oid;
+
+        for (let [index, map] of this.#indexToChart) {
+            oid = map.get("oid");
+            value = Number(resourceData[index][oid]);
+            chart = map.get("chart");
+
+            chart.config.data.datasets[1] = {
+                data: [value, 100 - value],
+                backgroundColor: [EnterpriseLoad.COLOR_GAUGE, EnterpriseLoad.COLOR_NULL]
+            };
+            
+            chart.config.label = `${value.toFixed(2)}%`;
+
+            chart.update();
+
+            map.get("container").classList[criticalData[index]?.[oid] === false? "add": "remove"]("critical");
+        }
+    }
 }
 
 function Processor() {
@@ -1222,7 +1367,7 @@ function initialize(node) {
     node.name && (document.body.querySelector(".information .node.name").textContent = node.name);
 
     document.body.classList.add("response");
-
+    
     if (node.snmp && node.snmp !== 0) {
         document.body.classList.add("error");
         document.body.querySelector("div.error").dataset.code = node.snmp;
@@ -1260,6 +1405,8 @@ function initialize(node) {
         container.title = icon.type;
     }
 
+    node.resource["1"][ITAhM.snmp.oid.fortinet.fgSysMemUsage] = Math.round(Math.random()*100);
+
     for (let index in node.resource) {
         indexData = node.resource[index];
 
@@ -1283,10 +1430,12 @@ function initialize(node) {
                 const enterprise = ITAhM.util.enterpriseFromOID(sysObjectID);
 
                 if (enterprise && enterprise.logo) {
-                    document.body.querySelector("section.enterprise ul").style.backgroundImage = `url(${enterprise.logo})`;
+                    document.body.querySelector("#enterprise ul").style.backgroundImage = `url(${enterprise.logo})`;
                 } else {
-                    document.body.querySelector("section.enterprise ul").title = sysObjectID;
+                    document.body.querySelector("#enterprise ul").title = sysObjectID;
                 }
+
+                $.pen = sysObjectID.split("1.3.6.1.4.1.")[1].split(".")[0];
             }
         })(indexData[ITAhM.snmp.oid.sysObjectID]);
 
@@ -1347,8 +1496,6 @@ function initialize(node) {
         //Processor
         [
             ITAhM.snmp.oid.hrProcessorLoad,
-            ITAhM.snmp.oid.cisco.cpmCPUTotal5secRev,
-            ITAhM.snmp.oid.axgate.hrProcessorLoad
         ].forEach(oid => {
             if (oid in indexData) {
                 $.processor.add(oid, index);
@@ -1380,6 +1527,30 @@ function initialize(node) {
                 document.body.classList.add("temperature");
             }
         });
+
+        // Enterprise processor
+        [
+            ITAhM.snmp.oid.axgate.hrProcessorLoad,
+            ITAhM.snmp.oid.cisco.cpmCPUTotal5secRev,
+            ITAhM.snmp.oid.fortinet.fgProcessorUsage5sec
+        ].forEach(oid => {
+            if (oid in indexData) {
+                $.enterpriseLoad.add(oid, index, onSelectResource);
+
+                document.body.classList.add("enterprise_load");
+            }
+        });
+
+        // Enterprise Memory
+        [
+            ITAhM.snmp.oid.fortinet.fgSysMemUsage
+        ].forEach(oid => {
+            if (oid in indexData) {
+                $.enterpriseMem.add(oid, index, onSelectResource);
+
+                document.body.classList.add("enterprise_mem");
+            }
+        });
     }
     
     $.response.update(node.resource, node.critical, node.match);
@@ -1390,6 +1561,8 @@ function initialize(node) {
     $.fan.update(node.resource, node.critical, node.match);
     $.power.update(node.resource, node.match, node.match);
     $.temperature.update(node.resource, node.critical, node.match);
+    $.enterpriseLoad.update(node.resource, node.critical);
+    $.enterpriseMem.update(node.resource, node.critical);
 
     [].forEach.call(document.body.querySelectorAll("section"), section => {
 		section.draggable = true;
@@ -1451,8 +1624,8 @@ function update(node) {
     if (!("resource" in node)) {
         return;
     }
-
-    ["response", "processor", "storage", "memory", "portMap", "fan", "power", "temperature"]
+    node.resource["1"][ITAhM.snmp.oid.fortinet.fgSysMemUsage] = Math.round(Math.random()*100);
+    ["response", "processor", "storage", "memory", "portMap", "fan", "power", "temperature", "enterpriseLoad", "enterpriseMem"]
         .forEach(resource => $[resource].update(node.resource, node.critical, node.match));
 
     refresh();
@@ -1535,7 +1708,7 @@ function showMessage(xhr) {
 
 	<body class="loading">
 		<article>
-            <section class="enterprise">
+            <section id="enterprise">
                 <h2>정보 공급자</h2>
                 <ul></ul>
             </section>
@@ -1587,27 +1760,43 @@ function showMessage(xhr) {
                 </ul>
             </section>
 
-			<section class="processor status">
-				<h2>프로세서 로드</h2>
-				<ul id="processor" class="container selectable"></ul>
+			<section id="processor" class="processor status">
+				<h2>코어 프로세서</h2>
+				<ul class="container processor selectable"></ul>
             </section>
             
-            <section class="memory">
+            <section id="memory" class="storage">
                 <h2>물리 메모리</h2>
-                <ul id="memory" class="container"></ul>
+                <ul class="container"></ul>
             </section>
 
-            <section class="storage">
+            <section id="storage" class="storage">
                 <h2>스토리지</h2>
-                <ul id="storage" class="container"></ul>
+                <ul class="container"></ul>
             </section>
 			
+            <section class="processor enterprise load">
+				<h2>프로세서</h2>
+				<ul class="container"></ul>
+            </section>
+
+            <section class="storage enterprise mem">
+				<h2>메모리</h2>
+				<ul class="container"></ul>
+            </section>
+
             <section class="rtt status">
                 <h2>응답 시간</h2>
                 <ul id="rtt" class="container selectable">
                     <li class="rotate"></li>
                     <li class="background" data-elapse="">&#xf2f2;</li>
                     <li class="content"></li>
+                </ul>
+            </section>
+
+            <section class="root">
+                <ul class="container selectable">
+                    <li id="mib"></li>
                 </ul>
             </section>
 
@@ -1665,6 +1854,10 @@ function showMessage(xhr) {
         <div class="error">
             SNMP 오류코드 : 
         </div>
+
+        <dialog>
+            <iframe></iframe>
+        </dialog>
 
 		<div class="loading mask"></div>
 	
@@ -1750,21 +1943,41 @@ const
         memoryIndexArray: [],
         storageIndexObj: {},
         response: new Response(document.getElementById("rtt")),
-        processor: new Processor(document.getElementById("processor")),
-        storage: new Storage(document.getElementById("storage")),
-        memory: new Storage(document.getElementById("memory")),
+        processor: new Processor(document.body.querySelector("#processor .container")),
+        storage: new Storage(document.body.querySelector("#storage .container")),
+        memory: new Storage(document.body.querySelector("#memory .container")),
         portMap: new PortMap(document.getElementById("portmap")),
         fan: new Fan(document.getElementById("fan")),
         power: new Power(document.getElementById("power")),
         temperature: new Temperature(document.getElementById("temperature")),
+        enterpriseLoad: new EnterpriseLoad(document.body.querySelector("section.enterprise.load .container")),
+        enterpriseMem: new EnterpriseMem(document.body.querySelector("section.enterprise.mem .container")),
         ethernet: new Image(),
         loader: new ImageLoader(onImageLoad)
     };
+
+if (top.account.level === 0) {
+    document.getElementById("mib").onclick = e => {
+        const dialog = document.body.querySelector("dialog");
+
+            dialog.querySelector("iframe").src = `/mib.html?node=${$.id}&pen=${$.pen}`;
+
+        dialog.showModal();
+    };
+    
+    document.body.classList.add("root");
+}
 
 document.getElementById("rtt").onclick = e => onSelectResource({
     chart: "/chart/responseTime.html",
     index: "0"
 });
+
+document.body.querySelector("dialog").onclick = function (e) {
+    this.querySelector("iframe").contentWindow.document.body.classList.remove("dialog");
+
+    this.close();
+};
 
 function onImageLoad() {
     $.request.query({

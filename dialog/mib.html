@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>CeMS oid</title>
+        <style>
+@import "/css/style.css";
+@import "/css/dialog.css";
+@import "/css/fa.css";
+
+body:not(.match) tr.match,
+body:not(.trace) tr.trace {
+    display: none;
+}
+        </style>
+        <script>
+
+function onSubmit (e) {
+    document.body.classList.add("loading");
+
+    e.preventDefault();
+
+    parent.setMIB($.oid, document.body.querySelector("form").elements["index"].value);
+
+    document.body.classList.remove("loading");
+};
+
+function showMessage (xhr) {
+    if (xhr instanceof XMLHttpRequest) {
+        switch (xhr.status) {
+        case 401:
+            alert(NOTICE_SESS_EXPIRE["kr"]);
+
+            break;
+        default:
+            alert(ERROR_RES_CODE(xhr.status)["kr"]);
+        }
+
+        try {
+            console.log(JSON.parse(xhr.responseText).error);
+        } catch (e) {}
+    } else if (xhr instanceof Error) {
+        console.error(xhr);
+    } else {
+        console.trace();
+    }
+}
+
+		</script>
+    </head>
+    <body class="loading">
+        <main>
+            <h2>
+                <span id="close" title="대화창 닫기">&#xf00d;</span>
+                MIB
+            </h2>
+            <form>
+                <table>
+                    <tbody>
+                        <tr>
+                            <th title="OID">OID</th>
+                            <td>
+                                <input type="text" name="oid" required disabled>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th title="Sub index">Index</th>
+                            <td>
+                                <input type="text" name="index" autocomplete="off">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th title="모니터 방식">Type</th>
+                            <td>
+                                <select name="type" required  disabled>
+                                    <option value="match">Match</option>
+                                    <option value="trace">Trace</option>
+                                    <option value="" selected>None</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr class="match">
+                            <th title="정상 값">Value</th>
+                            <td>
+                                <input type="text" name="value" required  disabled>
+                            </td>
+                        </tr>
+                        <tr class="trace">
+                            <th title="단위 값">Unit</th>
+                            <td>
+                                <input type="text" name="unit" required  disabled>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <footer>
+                    <input type="reset" value="&#xf1f8; Remove">
+                    <input type="submit" value="&#xf00c; Apply">
+                </footer>
+
+                <div class="loading mask"></div>
+            </form>
+        </main>
+
+        <script src="/js/request.js"></script>
+        <script src="/js/constants.js"></script>
+        <script src="/js/dialog.js"></script>
+        <script>
+const
+    search = new URLSearchParams(window.location.search),
+    $ = {
+        request: new Request(),
+        oid: search.get("oid")
+    };
+
+if (top.account.level === 0) {
+    const form = document.body.querySelector("form");
+
+    form.onsubmit = onSubmit;
+    
+    document.body.classList.add("root");
+}
+
+        </script>
+        <script type="module">
+import {mibData} from "../js/mib.js";
+
+const
+    mib = mibData[$.oid],
+    form = document.body.querySelector("form");
+
+form.elements["oid"].value = $.oid;
+
+if ("match" in mib) {
+    document.body.classList.add("match");
+
+    form.elements["type"].value = "match";
+    form.elements["value"].value = mib.match;
+} else if ("trace" in mib) {
+    document.body.classList.add("trace");
+
+    form.elements["type"].value = "trace";
+    form.elements["unit"].value = mib.trace;
+}
+
+document.getElementById("close").onclick = e => parent.closeDialog();
+
+document.body.classList.remove("loading");
+        </script>
+    </body>
+
+</html>

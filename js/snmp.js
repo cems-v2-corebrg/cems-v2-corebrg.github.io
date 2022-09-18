@@ -39,6 +39,10 @@ ITAhM.snmp = {
             hFANStatus:"1.3.6.1.4.1.10188.5.6.1.3.1.3",
             hPowerStatus: "1.3.6.1.4.1.10188.5.6.1.2.1.3"
         },
+        fortinet: {
+            fgProcessorUsage5sec: "1.3.6.1.4.1.12356.101.4.4.2.1.3",
+            fgSysMemUsage: "1.3.6.1.4.1.12356.101.4.1.4"
+        },
         hrSystemUptime: "1.3.6.1.2.1.25.1.1",
         hrStorageType: "1.3.6.1.2.1.25.2.3.1.2",
         hrStorageDescr: "1.3.6.1.2.1.25.2.3.1.3",

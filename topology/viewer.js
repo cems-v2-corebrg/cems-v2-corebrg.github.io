@@ -480,6 +480,8 @@
                     }
                     else if ("critical" in node && !node.critical) {
                         args.path = "critical";
+                    } else if ("match" in node && !node.match) {
+                        args.path = "critical";
                     } else {
                         args.path = "src";
                     }
@@ -492,8 +494,9 @@
                 if ("protocol" in node) {
                     if ("status" in node && !node.status) {
                         shutdown.push(branch);
-                    }
-                    else if ("critical" in node && !node.critical) {
+                    } else if ("critical" in node && !node.critical) {
+                        critical.push(branch);
+                    } else if ("match" in node && !node.match) {
                         critical.push(branch);
                     }
                 }

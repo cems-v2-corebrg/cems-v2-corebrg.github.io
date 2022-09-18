@@ -179,7 +179,7 @@ function setAuth() {
     $.request.execute({
         target: "user",
         command: "set",
-        auth: $.auth
+        user: $.auth
     }, function () {
         switch (this.status) {
         case 200:

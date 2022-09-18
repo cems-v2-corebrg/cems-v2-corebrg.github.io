@@ -199,6 +199,21 @@ body:not(.root) .root {
 		</style>
 		<script>
 
+function toBytesString(value) {
+    var suffix = ["Bytes", "KBytes", "MBytes", "GBytes", "TBytes"];
+    
+    for(var i=0, _i=suffix.length -1; i<_i; i++) {
+        if (value > 999) {
+            value /= 1024;
+        }
+        else {
+            break;
+        }
+    }
+    
+    return value.toFixed(2) + suffix[i];
+}
+
 function showMessage(xhr) {
     if (xhr instanceof XMLHttpRequest) {
         switch (xhr.status) {
@@ -253,7 +268,7 @@ function showMessage(xhr) {
                         <td id="space"></td>
                     </tr>
                     <tr>
-                        <th>전일 디스크 사용량</th>
+                        <th>메모리 사용량</th>
                         <td id="usage"></td>
                     </tr>
                 </tbody>
@@ -484,13 +499,19 @@ function showMessage(xhr) {
                     <tr>
                         <th>계정</th>
                         <td>
-                            <input type="text" name="username" placeholder="홍길동@example.com" required>
+                            <input type="text" name="username" placeholder="계정" required>
                         </td>
                     </tr>
                     <tr>
                         <th>비밀번호</th>
                         <td>
                             <input type="password" name="password" placeholder="계정 비밀번호" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>보내는 메일주소</th>
+                        <td>
+                            <input type="email" name="from" placeholder="홍길동@example.com" required>
                         </td>
                     </tr>
                     <tr>
@@ -567,8 +588,12 @@ $.request.query({
 .then(data => { // 기본정보
     document.getElementById("java").textContent = data.java;
     document.getElementById("version").textContent = data.version;
-    document.getElementById("usage").textContent
-        = data.usage && ITAhM.util.toBytesString(data.usage) || "제공하지 않음.";
+    if ("memory" in data) {
+        const memory = data.memory;
+
+        document.getElementById("usage").textContent
+            = `Max: ${toBytesString(memory.max)} Total: ${toBytesString(memory.total)} Free: ${toBytesString(memory.free)}`;
+    }
     document.getElementById("space").textContent = ITAhM.util.toBytesString(data.space);
     document.getElementById("path").textContent = data.path;
 
@@ -579,7 +604,8 @@ $.request.query({
 
         restore.onclick = function (e) {
             $.request.download({
-                command: "restore",
+                command: "order",
+                target: "restore",
                 name: "backup.zip"
             })
             .catch(showMessage);
@@ -905,6 +931,7 @@ $.request.query({
         form.elements["server"].value = smtpData.server || "";
         form.elements["username"].value = smtpData.user || "",
         form.elements["password"].value = smtpData.password || "";
+        form.elements["from"].value = smtpData.from || "";
         form.elements["protocol"].value = smtpData.protocol || "";
 
         setStatus(smtpData);
@@ -920,12 +947,14 @@ $.request.query({
         form.classList.add("loading");
 
         $.request.query({
-            command: "smtp",
+            command: "set",
+            target: "smtp",
             smtp: {
                 server: form.elements["server"].value,
                 protocol: form.elements["protocol"].value,
                 user: form.elements["username"].value,
                 password: form.elements["password"].value,
+                from: form.elements["from"].value,
                 enable: true
             }
         })
@@ -953,12 +982,14 @@ $.request.query({
         form.classList.add("loading");
 
         $.request.query({
-            command: "smtp",
+            command: "set",
+            target: "smtp",
             smtp: {
                 server: form.elements["server"].value,
                 protocol: form.elements["protocol"].value,
                 user: form.elements["username"].value,
                 password: form.elements["password"].value,
+                from: form.elements["from"].value,
                 enable: false
             }
         })
@@ -990,7 +1021,8 @@ $.request.query({
         document.body.classList.add("loading");
 
         $.request.query({
-            command: "stop",
+            command: "order",
+            target: "stop",
             service: "nms"
         })
         .then(() => top.location.reload())
@@ -1013,7 +1045,8 @@ $.request.query({
         document.body.classList.add("loading");
 
         $.request.query({
-            command: "backup",
+            command: "order",
+            target: "backup",
             service: "nms"
         })
         .then(() => window.location.reload())

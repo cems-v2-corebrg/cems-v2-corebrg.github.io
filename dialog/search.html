@@ -22,7 +22,8 @@ function onSubmit (e) {
     document.body.classList.add("loading");
     
     $.request.execute({
-        command: "search",
+        command: "order",
+        target: "search",
         network: $.form.elements["network"].value,
         mask: parseInt($.form.elements["mask"].options[$.form.elements["mask"].selectedIndex].text),
         profile: $.form.elements["profile"].value || undefined
