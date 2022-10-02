@@ -162,7 +162,7 @@ function Ethernet() {
             this.context.drawImage(this.gauge.canvas, 0, 0);
         },
         set: function (input, output) {
-            if (arguments.length === 2) {
+            if (arguments.length === 2 && this.config.bandwidth > 0) {
                 this.input = input;
                 this.output = output;
 

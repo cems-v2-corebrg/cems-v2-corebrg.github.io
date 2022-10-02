@@ -40,27 +40,12 @@ section {
     position: relative;
 	padding: 5px;
 	background-color: #424242;
-    display: flex; flex-direction: column;
     box-sizing: border-box;
     margin: 3px 0;
-    height: 180px;
-}
-
-section ul {
-    flex: 1;
 }
 
 section li {
     position: relative;
-}
-
-.information ul,
-.storage ul,
-#response ul,
-#processor ul,
-#memory ul,
-#enterprise ul {
-    height: 100px;
 }
 
 #response li::after {
@@ -71,9 +56,6 @@ section li {
 }
 
 /** rtt **/
-section.rtt {
-    width: 200px;
-}
 
 section.rtt ul {
     position: relative;
@@ -116,19 +98,29 @@ section.dummy {
     flex: 1;
 }
 
-/****/
+.container {
+    height: 120px;
+    box-sizing: border-box;
+    width: var(--var-width, unset);
+}
 
-#processor .container,
-#storage .container{
+.container.multi,
+.container.center {
     display: flex;
 }
 
-#storage .container{
-    flex-wrap: wrap;
+.container.center {
+    justify-content: center;
+    align-items: center;
 }
 
-section.processor li {
-    width: 120px; 
+.container.chart.bar li {
+    width: 240px;
+}
+
+
+.container.chart.pie li {
+    width: 160px;
 }
 
 #processor li::after {
@@ -149,136 +141,43 @@ section.processor li {
     content: "최대";
 }
 
-section.storage li,
-#response li {
-    width: 200px;
+section.interface {
+    width: 100%;
+    position: relative;
 }
 
-#portmap li {
+section.interface .container {
+    overflow-x: auto;
+    align-items: center;
+}
+
+section.interface #toggle:checked ~.container {
+    flex-wrap: wrap;
+    height: auto;
+}
+
+section.interface .container li {
     flex: none; width: 80px;
 }
 
-#portmap li label {
+section.interface .container li label {
     position: absolute; top: 0; right: 0;
     display: none;
     cursor: pointer;
 }
 
-#portmap li label::before {
+section.interface .container li label::before {
     font: 2em "Font Awesome 5 Free";
     content: "\f071";
 }
 
-#portmap li.error label {
+section.interface .container li.error label {
     color: #ff0000;
     display: initial;
 }
 
-#portmap li:hover label {
+section.interface .container li:hover label {
     display: initial;
-}
-
-section.type {
-    flex: none; width: 120px;
-}
-
-/** Interface **/
-section.interface {
-    width: 100%;
-}
-
-section.interface table {
-    border-collapse: collapse;
-	width: 100%;
-	table-layout: fixed;
-}
-
-section.interface thead {
-    background-color: #34495e;
-}
-
-section.interface tbody tr {
-    border: 1px solid transparent;
-    border-bottom-color: #663399;
-}
-
-section.interface th {
-    padding: 1em 0;
-}
-
-section.interface td {
-    line-height: 3em;
-    position: relative;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    padding: 0 1em;
-}
-
-section.interface td:nth-child(1) {
-    text-align: center;
-    font-family: "Font Awesome 5 Free";
-}
-
-section.interface td:nth-child(1)::before {
-    content: "\f796";
-    transform: rotate(180deg);
-    position: absolute; inset: 0 0 0 0;
-    font-size: 2em;
-    color: var(--var-color-normal);
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-section.interface tr[data-status=shutdown] td:nth-child(1)::before {
-    color: var(--var-color-shutdown);
-}
-
-section.interface tr[data-status=critical] td:nth-child(1)::before {
-    color: var(--var-color-critical);
-}
-
-section.interface tr[data-status=disabled] td:nth-child(1)::before {
-    color: var(--var-color-disabled);
-}
-
-section.interface td:nth-child(4),
-section.interface td:nth-child(6),
-section.interface td:nth-child(8) {
-    text-align: center;
-}
-
-section.interface td:nth-child(5),
-section.interface td:nth-child(7) {
-    background: linear-gradient(to right,
-        var(--var-color-normal) 70%,
-        var(--var-color-critical) 70%,
-        var(--var-color-critical) 90%,
-        var(--var-color-shutdown) 90%)
-}
-
-section.interface
-:is(tr[data-status=shutdown], tr[data-status=disabled])
-:is(td:nth-child(5), td:nth-child(7)) {
-    background: none;
-}
-
-section.interface
-:is(tr[data-status=shutdown], tr[data-status=disabled])
-:is(td:nth-child(5), td:nth-child(7))
-div {
-    display: none;
-}
-
-section.interface
-:is(td:nth-child(5), td:nth-child(7))::after {
-    content: attr(data-value);
-    position: relative;
-}
-
-section.interface
-:is(td:nth-child(5),td:nth-child(7))
-div {
-    position: absolute; inset: 0 0 0 0;
-    background-color:#303030;
-    animation: gauge 1s;
 }
 
 @keyframes gauge {
@@ -286,27 +185,22 @@ div {
 }
 /** Interface **/
 
-#enterprise ul,
-section.type ul {
+.container.background {
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin: 1em;
 }
 
 section.information {
     flex: 1 0;
 }
 
-section.portmap {
-    width: 100%;
-    position: relative;
-}
-
 .selectable {
     border: 1px solid transparent;
+    box-sizing: border-box;
     cursor: pointer;
 }
+
 .selectable:hover {
     border: 1px dotted #ddd;
 }
@@ -326,10 +220,6 @@ section.portmap {
 
 .status.shutdown::after {
 	background-color: #ff0000;
-}
-
-.container {
-    display: flex;
 }
 
 ul {
@@ -354,70 +244,61 @@ label.switch .off {
     display: none;
 }
 
-#portmap {    
-    display: flex;
-    overflow-x: auto;
-}
-
-#toggle:checked ~#portmap {
-    flex-wrap: wrap;
-}
-
-#fan li {
-    width: 120px;
+section.enterprise.fan .container li {
+    width: 100px;
     display: inline-flex; justify-content: center; align-items: center;
     background: url(/img/fan.png) no-repeat center;
     background-size: contain;
 }
 
-#fan li::before {
+section.enterprise.fan .container li::before {
     font: 80px "Font Awesome 5 Free";
     content: "\f863";
     color: #8e24aa;
     animation: critical 1s infinite;
 }
 
-#fan li.normal::before {
+section.enterprise.fan .container li.normal::before {
     color: #00897b;
     animation: rotate 2s linear infinite;
 }
 
-#power li {
+section.enterprise.power .container li {
     width: 120px;
     display: inline-flex; justify-content: center; align-items: center;
     overflow: hidden;
 }
 
-#power li::before {
+section.enterprise.power .container li::before {
     font: 80px "Font Awesome 5 Free";
     content: "\f1e6";
     -webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 }
 
-#power li.normal::before {
+section.enterprise.power .container li.normal::before {
 	background-image: linear-gradient(#c0c0c0, #c0c0c0 30%, #00897b 30%, #00897b 65%, #303030 75%);
     animation: power 1s;
 }
 
-#power li:not(.normal)::before {
+section.enterprise.power .container li:not(.normal)::before {
     background-image: linear-gradient(#c0c0c0, #c0c0c0 30%, #8e24aa 30%, #8e24aa 65%, #303030 75%);
     animation: critical 1s infinite;
 }
 
-#temperature li {
+section.enterprise.temperature .container li {
     width: 120px;
     display: inline-flex; justify-content: center;
 }
 
-#temperature li label {
+section.enterprise.temperature .container li label {
     font-size: 16px;
     font-weight: bold;
     position: absolute;
     inset: auto auto 5px 5px;
 }
 
-#temperature li::before {
+section.enterprise.temperature .container li::before {
     font: 80px "Font Awesome 5 Free";
     content: "\f2c7";
     align-self: center;
@@ -498,11 +379,6 @@ div.error::after {
     content: attr(data-code);
 }
 
-#mib {
-    display: flex; justify-content: center; align-items: center;
-    width: 180px;
-}
-
 #mib::before {
     font: 4em "Font Awesome 5 Free";
     content: "\f013";
@@ -526,13 +402,12 @@ body:not(.response) section.rtt,
 body:not(.processor) #processor,
 body:not(.storage) #storage,
 body:not(.memory) #memory,
-body:not(.portmap) section.portmap,
 body:not(.interface) section.interface,
-body:not(.power) section.power,
-body:not(.temperature) section.temperature,
+body:not(.enterprise_power) section.enterprise.power,
+body:not(.enterprise_temperature) section.enterprise.temperature,
 body:not(.enterprise_load) section.enterprise.load,
-body:not(.enterprise_mem) section.enterprise.mem,
-body:not(.fan) section.fan,
+body:not(.enterprise_memory) section.enterprise.memory,
+body:not(.enterprise_fan) section.enterprise.fan,
 body.shutdown .status::after,
 #toggle:checked ~label.switch .off,
 #toggle:not(:checked) ~label.switch .on {
@@ -566,518 +441,10 @@ body.shutdown .status::after,
     }
 }
 		</style>
-		
+        <script src="/util/gauge.js"></script>
+        <script src="/util/ethernet.js"></script>
+        <script src="/js/import/chart.js"></script>
 		<script>
-
-function PortMap() {
-    this.initialize(arguments);
-}
-
-{
-    PortMap.prototype = {
-        initialize: function(args) {
-            this.container = args[0];
-            this.indexToPort = new Map();
-        },
-        add: function (index, indexData) {
-            const container = document.createElement("li");
-            let bandwidth = 0, label = "", names = [];
-
-            if (ITAhM.snmp.oid.ifSpeed in indexData) {
-                bandwidth = Number(indexData[ITAhM.snmp.oid.ifSpeed]);
-
-                if (ITAhM.snmp.oid.ifHighSpeed in indexData) {
-                    const speed = indexData[ITAhM.snmp.oid.ifHighSpeed] *1000000;
-
-                    if (speed > bandwidth) {
-                        bandwidth = speed;
-                    }
-                }
-            } else if (ITAhM.snmp.oid.ifHighSpeed in indexData) {
-                bandwidth = Number(indexData[ITAhM.snmp.oid.ifHighSpeed]) *1000000;
-            }
-
-            if (bandwidth <= 0) {
-                return;
-            }
-
-            if (!(ITAhM.snmp.oid.ifAdminStatus in indexData)) {
-                return;
-            }
-
-            if (!(ITAhM.snmp.oid.ifOperStatus in indexData)) {
-                return;
-            }
-
-            if (ITAhM.snmp.oid.ifHCInOctets in indexData && ITAhM.snmp.oid.ifHCOutOctets in indexData) {
-                this.prefix = "ifHC"
-            } else if (ITAhM.snmp.oid.ifInOctets in indexData && ITAhM.snmp.oid.ifOutOctets in indexData) {
-                this.prefix = "if"
-            } else {
-                return;
-            }
-
-            [ITAhM.snmp.oid.ifName, ITAhM.snmp.oid.ifDescr, ITAhM.snmp.oid.ifAlias].forEach(name => indexData[name] && names.push(indexData[name]));
-
-            if (names.length === 0) {
-                return;
-            }
-
-            names.sort((n1, n2) => n1.length - n2.length);
-
-            container.appendChild(document.createElement("label")).onclick = e => {
-                e.stopPropagation();
-                
-                onSelectResource({
-                    chart: "/chart/error.html",
-                    index: index,
-                    title: names[0]
-                });
-            };
-
-            container.classList.add("selectable");
-
-            container.onclick = e => onSelectResource({
-                chart: "/chart/throughput.html",
-                index: index,
-                oid: this.prefix,
-                max: bandwidth,
-                unit: 8,
-                title: names[0]
-            });
-
-            this.indexToPort.set(index, new Ethernet(this.container.appendChild(container), {
-                image: $.loader.map["/img/ethernet.png"],
-                bandwidth: bandwidth,
-                label: names[0]
-            }));
-
-            container.title = names.pop();
-
-            return true;
-        },
-        update: function (resourceData, criticalData, matchData) {
-            const
-                oidIn = ITAhM.snmp.oid[`${this.prefix}InOctets`],
-                oidOut = ITAhM.snmp.oid[`${this.prefix}OutOctets`];
-            let indexData, ifAdminStatus, ifOperStatus, inOctets, outOctets, inErrors, outErrors;
-
-            for (let [index, port] of this.indexToPort) {
-                indexData = resourceData[index];
-
-                ifAdminStatus = Number(indexData[ITAhM.snmp.oid.ifAdminStatus]);
-                ifOperStatus = Number(indexData[ITAhM.snmp.oid.ifOperStatus]);
-                inOctets = indexData[oidIn];
-                outOctets = indexData[oidOut];
-                inErrors = Number(indexData[ITAhM.snmp.oid.ifInErrors]);
-                outErrors = Number(indexData[ITAhM.snmp.oid.ifOutErrors]);
-
-                if (ifAdminStatus !== 1) {
-                    port.status(Ethernet.STATUS_DISABLED);
-                    port.set();
-                } else if (ifOperStatus !== 1) {
-                    if (matchData[index]?.[ITAhM.snmp.oid.ifOperStatus] === false) {
-                        port.status(Ethernet.STATUS_MAJOR);
-                    } else {
-                        port.status(Ethernet.STATUS_SHUTDOWN);
-                    }
-
-                    port.set();
-                } else {
-                    if (criticalData[index]?.[oidIn] === false || criticalData[index]?.[oidOut] === false) {
-                        port.status(Ethernet.STATUS_CRITICAL);
-                    } else {
-                        port.status(Ethernet.STATUS_NORMAL);
-                    }
-                    
-                    port.set(Number(inOctets) * 8, Number(outOctets) * 8);
-                }
-            }
-        }
-    };
-}
-
-function Fan() {
-    this.initialize(arguments);
-}
-
-{
-    Fan.prototype = {
-        initialize: function (args) {
-            this.container = args[0];
-            this.indexToContainer = new Map();
-        },
-        add: function (oid, index) {
-            const container = document.createElement("li");
-            
-            this.indexToContainer.set(index, container);
-            
-            container.dataset.oid = oid;
-
-            this.container.appendChild(container);
-        },
-        set: function (container, indexData) {
-            const oid = container.dataset.oid;
-            var status = false;
-
-            switch (oid) {
-            case ITAhM.snmp.oid.axgate.fanStatus:
-            case ITAhM.snmp.oid.cisco.ciscoEnvMonFanState:
-                status = Number(indexData[oid]) === 1;
-
-                break;
-            case ITAhM.snmp.oid.piolink.hFANStatus:
-            case ITAhM.snmp.oid.juniper.jnxOperatingStateFan:
-                status = Number(indexData[oid]) === 2;
-
-                break;
-            }
-
-            container.classList[status? "add": "remove"]("normal");
-
-            return status;
-        },
-        update: function (resourceData, criticalData, matchData) {
-            var status = 0;
-
-            for (let [index, container] of this.indexToContainer) {
-                if (this.set(container, resourceData[index])) {
-                    status++;
-                }
-            }
-            
-            if (this.indexToContainer.size === status) {
-                const classList = document.body.querySelector(".fan.status").classList;
-
-                ["critical", "shutdown"].forEach(status => classList.remove(status));
-            } else if (this.indexToContainer.size === 0) {
-                const classList = document.body.querySelector(".fan.status").classList;
-
-                classList.remove("critical");
-                classList.add("shutdown");
-            } else {
-                const classList = document.body.querySelector(".fan.status").classList;
-
-                classList.remove("shutdown");
-                classList.add("critical");
-            }
-        }
-    };
-}
-
-function Power() {
-    this.initialize(arguments);
-}
-
-{
-    Power.prototype = {
-        initialize: function (args) {
-            this.container = args[0];
-            this.indexToContainer = new Map();
-        },
-        add: function (oid, index) {
-            const container = document.createElement("li");
-            
-            this.indexToContainer.set(index, container);
-            
-            container.dataset.oid = oid;
-
-            this.container.appendChild(container);
-        },
-        set: function (container, status) {
-            const oid = container.dataset.oid;
-
-            container.classList.remove("normal");
-
-            status && container.classList.add("normal");
-        },
-        update: function (resourceData, criticalData, matchData) {
-            const classList = document.body.querySelector(".power.status").classList;
-            var size = 0, status;
-
-            for (let [index, container] of this.indexToContainer) {
-                status = matchData[index]?.[container.dataset.oid] !== false;
-
-                this.set(container, status);
-
-                status && size++;
-            }
-            
-            if (this.indexToContainer.size === size) {
-                classList.remove("critical", "shutdown");
-            } else if (size === 0) {
-                classList.remove("critical");
-                classList.add("shutdown");
-            } else {
-                classList.remove("shutdown");
-                classList.add("critical");
-            }
-        }
-    };
-}
-
-function Temperature() {
-    this.initialize(arguments);
-}
-
-{
-    Temperature.prototype = {
-        initialize: function (args) {
-            this.container = args[0];
-            this.indexToContainer = new Map();
-        },
-        add: function (oid, index) {
-            const container = document.createElement("li");
-            
-            container.appendChild(document.createElement("label"));
-
-            this.indexToContainer.set(index, container);
-            
-            container.classList.add("status", "selectable");
-
-            container.dataset.oid = oid;
-
-            container.onclick = e => onSelectResource({
-                chart: "/chart/temperature.html",
-                oid: oid,
-                index: index,
-                unit: (oid => {
-                    switch (oid) {
-                    case ITAhM.snmp.oid.axgate.temperature:
-                        return 0.1;
-                    default:
-                        return 1;
-                    }
-                })(oid)
-            });
-
-            container.dataset.oid = oid;
-
-            this.container.appendChild(container);
-        },
-        set: function (container, indexData) {
-            const oid = container.dataset.oid;
-            let value;
-
-            switch (oid) {
-            case ITAhM.snmp.oid.axgate.temperature:
-                value = Number(indexData[oid]) /10;
-
-                break;
-            default:
-                value = Number(indexData[oid]);
-
-                break;
-            }
-
-            if (value) {
-                container.querySelector("label").textContent = `${value.toFixed(1)} ${String.fromCodePoint("0x2103")}`;
-            }
-        },
-        update: function (resourceData, criticalData) {
-            var status = 0;
-
-            for (let [index, container] of this.indexToContainer) {
-                container.classList[criticalData[index]?.[container.dataset.oid] === false? "add": "remove"]("critical");
-
-                this.set(container, resourceData[index]);
-            }
-        }
-    };
-}
-
-class EnterpriseMem {
-    static COLOR_GREEN = "#00897b";
-    static COLOR_ORANGE = "#f6bf26";
-    static COLOR_RED = "#8e24aa";
-    static #config = {
-        type: 'bar',
-        data: {
-            labels: [""],
-            datasets: [{
-                data: [0],
-                backgroundColor: EnterpriseMem.COLOR_GREEN
-            }, {
-                data: [0],
-                backgroundColor: EnterpriseMem.COLOR_ORANGE
-            }, {
-                data: [0],
-                backgroundColor: EnterpriseMem.COLOR_RED
-            }]
-        },
-        options: {
-            scales: {
-                xAxes: [{
-                    stacked: true,
-                    gridLines: {
-                        display: false
-                    },
-                    ticks: {
-                        fontColor: "#ffffff",
-                        callback: value => value.substr(0, 30)
-                    }
-                }],
-                yAxes: [{
-                    stacked: true,
-                    gridLines: {
-                        display: false
-                    },
-                    ticks: {
-                        display: false,
-                        max: 100,
-                        min: 0
-                    }
-                }]
-            },
-            layout: {
-                padding: {
-                    right: 20,
-                    left: 20
-                }
-            }
-        }
-    };
-
-    #container;
-    #indexToChart = new Map();
-    
-    constructor (container) {
-        this.#container = container;
-    }
-
-    add (oid, index, onclick) {
-        const container = document.createElement("li");
-
-        if (onclick) {
-            container.onclick = e => onclick({
-                chart: "/chart/memory.html",
-                oid: oid,
-                index: index,
-                unit: 1
-            });
-
-            container.classList.add("selectable");
-        }
-
-        container.classList.add("status");
-
-        this.#indexToChart.set(index, new Map()
-            .set("container", container)
-            .set("chart", new Chart(container.appendChild(document.createElement("canvas")), EnterpriseMem.#config))
-            .set("oid", oid));
-
-        this.#container.appendChild(container);
-    }
-
-    update (resourceData, criticalData) {
-        let chart, value, oid, datasets;
-
-        for (let [index, map] of this.#indexToChart) {
-            oid = map.get("oid");
-            value = Number(resourceData[index][oid]);
-            chart = map.get("chart");
-
-            datasets = chart.config.data.datasets;
-
-            if (value > 90) {
-                datasets[0].data[0] = 70;
-                datasets[1].data[0] = 20;
-                datasets[2].data[0] = value -90;
-            } else if (value > 70) {
-                datasets[0].data[0] = 70;
-                datasets[1].data[0] = value -70;
-                datasets[2].data[0] = 0;
-                
-            } else {
-                datasets[0].data[0] = value;
-                datasets[1].data[0] = 0;
-                datasets[2].data[0] = 0;
-            }
-            
-            chart.config.label = `${value.toFixed(2)}%`;
-            
-            chart.update();
-
-            map.get("container").classList[criticalData[index]?.[oid] === false? "add": "remove"]("critical");
-        }
-    }
-}
-
-class EnterpriseLoad {
-    static COLOR_NORMAL = "#00897b";
-    static COLOR_CRITICAL = "#fe6a50";
-    static COLOR_MAJOR = "#f6bf26";
-    static COLOR_SHUTDOWN = "#8e24aa";
-    static COLOR_NULL = "transparent";
-    static COLOR_GAUGE = "#dddddd";
-
-    static #config = {
-        type: "doughnut",
-        data: {
-            datasets: [{
-                data: [70, 20, 10],
-                backgroundColor: [EnterpriseLoad.COLOR_NORMAL, EnterpriseLoad.COLOR_CRITICAL, EnterpriseLoad.COLOR_SHUTDOWN]
-            }]
-        },
-        options: {
-            cutoutPercentage: 70,
-            circumference: Math.PI,
-            rotation: Math.PI *-1
-        }
-    };
-
-    #container;
-    #indexToChart = new Map();
-    
-    constructor (container) {
-        this.#container = container;
-    }
-
-    add (oid, index, onclick) {
-        const container = document.createElement("li");
-
-        if (onclick) {
-            container.onclick = e => onclick({
-                chart: "/chart/processor.html",
-                oid: oid,
-                index: index,
-                unit: 1
-            });
-
-            container.classList.add("selectable");
-        }
-
-        container.classList.add("status");
-
-        this.#indexToChart.set(index, new Map()
-            .set("container", container)
-            .set("chart", new Chart(container.appendChild(document.createElement("canvas")), EnterpriseLoad.#config))
-            .set("oid", oid));
-
-        this.#container.appendChild(container);
-    }
-
-    update (resourceData, criticalData) {
-        let chart, value, oid;
-
-        for (let [index, map] of this.#indexToChart) {
-            oid = map.get("oid");
-            value = Number(resourceData[index][oid]);
-            chart = map.get("chart");
-
-            chart.config.data.datasets[1] = {
-                data: [value, 100 - value],
-                backgroundColor: [EnterpriseLoad.COLOR_GAUGE, EnterpriseLoad.COLOR_NULL]
-            };
-            
-            chart.config.label = `${value.toFixed(2)}%`;
-
-            chart.update();
-
-            map.get("container").classList[criticalData[index]?.[oid] === false? "add": "remove"]("critical");
-        }
-    }
-}
 
 function Processor() {
     this.initialize(arguments);
@@ -1167,7 +534,7 @@ function Processor() {
 
             chart.update();
         },
-        update: function (resourceData, criticalData) {
+        update: function ({resourceData, criticalData}) {
             if (this.indexToOID.size === 0) {
                 return;
             }
@@ -1208,7 +575,7 @@ function Response() {
 
             container.querySelector("li.content").textContent = `${rtt}ms`;
         },
-        update: function (resourceData, criticalData) {
+        update: function ({resourceData, criticalData}) {
             const classList = document.body.querySelector(".rtt.status").classList;
 
             classList.remove("shutdown", "critical");
@@ -1348,7 +715,7 @@ function Storage() {
 
             chart.update();
         },
-        update: function (resourceData, criticalData) {
+        update: function ({resourceData, criticalData}) {
             for (let [index, container] of this.indexToContainer) {
                 container.status.classList[criticalData[index]?.[ITAhM.snmp.oid.hrStorageUsed] === false? "add": "remove"]("critical");
 
@@ -1358,7 +725,7 @@ function Storage() {
     };
 }
 
-function initialize(node) {
+function initialize(node, iconData) {
     let indexData;
 
     document.title = node.name || node.ip || "Summary";
@@ -1390,15 +757,11 @@ function initialize(node) {
     }
 
     {
-        const container = document.body.querySelector("section.type ul");
-        let icon = ITAhM.iconData["unknown"];
+        const container = document.body.querySelector("#type ul");
+        let icon = iconData["unknown"];
         
-        if (node.type) {
-            if (node.type in $.iconData) {
-                icon = $.iconData[node.type];
-            } else if (node.type in ITAhM.iconData) {
-                icon = ITAhM.iconData[node.type];
-            }
+        if (node.type && node.type in iconData) {
+            icon = iconData[node.type];
         }
     
         container.style.backgroundImage = `url(${icon.src})`;
@@ -1433,13 +796,13 @@ function initialize(node) {
                     document.body.querySelector("#enterprise ul").title = sysObjectID;
                 }
 
-                $.pen = sysObjectID.split("1.3.6.1.4.1.")[1].split(".")[0];
+                $.set("pen", sysObjectID.split("1.3.6.1.4.1.")[1].split(".")[0]);
             }
         })(indexData[ITAhM.snmp.oid.sysObjectID]);
 
         //responseTime
         if (ITAhM.snmp.oid.corebrg.responseTime in indexData) {
-            $.response.add(index, indexData);
+            $.get("response").add(index, indexData);
         }
         
         //스토리지, 물리 메모리
@@ -1448,162 +811,68 @@ function initialize(node) {
             case ITAhM.snmp.oid.hrStorageRam:
                 document.body.classList.add("memory");
 
-                $.memory.add(index, indexData);
+                $.get("memory").add(index, indexData);
 
                 break;
             case ITAhM.snmp.oid.hrStorageFixedDisk:
                 document.body.classList.add("storage");
 
-                $.storage.add(index, indexData);
+                $.get("storage").add(index, indexData);
 
                 break;
             }
         }
         
-        // 인터페이스
-        (function(descr, type, bandwidth, aStatus, oStatus, inOcts, outOcts, name, alias) {
-            if (type && inOcts && outOcts && bandwidth && aStatus && oStatus) {
-                document.body.classList.add("portmap");
-                if (Number(type) === 6) {
-                    $.portMap.add(index, indexData);
-                }
-            }
-        })(indexData[ITAhM.snmp.oid.ifDescr]
-            , indexData[ITAhM.snmp.oid.ifType]
-            , indexData[ITAhM.snmp.oid.ifHighSpeed] || indexData[ITAhM.snmp.oid.ifSpeed]
-            , indexData[ITAhM.snmp.oid.ifAdminStatus]
-            , indexData[ITAhM.snmp.oid.ifOperStatus]
-            , indexData[ITAhM.snmp.oid.ifHCInOctets] || indexData[ITAhM.snmp.oid.ifInOctets]
-            , indexData[ITAhM.snmp.oid.ifHCOutOctets] || indexData[ITAhM.snmp.oid.ifOutOctets]
-            , indexData[ITAhM.snmp.oid.ifName]
-            , indexData[ITAhM.snmp.oid.ifAlias]);
-            
-        //Fan
-        [
-            ITAhM.snmp.oid.cisco.ciscoEnvMonFanState,
-            ITAhM.snmp.oid.piolink.hFANStatus,
-            ITAhM.snmp.oid.axgate.fanStatus,
-            ITAhM.snmp.oid.juniper.jnxOperatingStateFan
-        ].forEach(oid => {
-            if (oid in indexData) {
-                $.fan.add(oid, index);
-
-                document.body.classList.add("fan");
-            }
-        });
         //Processor
         [
             ITAhM.snmp.oid.hrProcessorLoad,
         ].forEach(oid => {
             if (oid in indexData) {
-                $.processor.add(oid, index);
+                $.get("processor").add(oid, index);
 
                 document.body.classList.add("processor");
             }
         });
 
-        //Power
-        [
-            ITAhM.snmp.oid.axgate.powerStatus,
-            ITAhM.snmp.oid.cisco.ciscoEnvmonSupplyState
-        ].forEach(oid => {
-            if (oid in indexData) {
-                $.power.add(oid, index);
-
-                document.body.classList.add("power");
-            }
-        });
-        
-        //Temperature
-        [
-            ITAhM.snmp.oid.axgate.temperature,
-            ITAhM.snmp.oid.cisco.ciscoEnvmonTemperatureStatusValue
-        ].forEach(oid => {
-            if (oid in indexData) {
-                $.temperature.add(oid, index)
-
-                document.body.classList.add("temperature");
-            }
-        });
-
-        // Enterprise processor
-        [
-            ITAhM.snmp.oid.axgate.hrProcessorLoad,
-            ITAhM.snmp.oid.cisco.cpmCPUTotal5secRev,
-            ITAhM.snmp.oid.fortinet.fgProcessorUsage5sec
-        ].forEach(oid => {
-            if (oid in indexData) {
-                $.enterpriseLoad.add(oid, index, onSelectResource);
-
-                document.body.classList.add("enterprise_load");
-            }
-        });
+        $.get("interface").parse(index, indexData, onSelectInterface, onSelectError);
+        $.get("enterprise_load").parse(index, indexData, onSelectLoad);
+        $.get("enterprise_temperature").parse(index, indexData, onSelectTemperature);
+        $.get("enterprise_power").parse(index, indexData);
+        $.get("enterprise_fan").parse(index, indexData);
 
         // Enterprise Memory
         [
             ITAhM.snmp.oid.fortinet.fgSysMemUsage
         ].forEach(oid => {
             if (oid in indexData) {
-                $.enterpriseMem.add(oid, index, onSelectResource);
+                $.get("enterprise_memory").add(oid, index, onSelectResource);
 
-                document.body.classList.add("enterprise_mem");
+                document.body.classList.add("enterprise_memory");
             }
         });
     }
     
-    $.response.update(node.resource, node.critical, node.match);
-    $.processor.update(node.resource, node.critical, node.match);
-    $.memory.update(node.resource, node.critical, node.match);
-    $.storage.update(node.resource, node.critical, node.match);
-    $.portMap.update(node.resource, node.critical, node.match);
-    $.fan.update(node.resource, node.critical, node.match);
-    $.power.update(node.resource, node.match, node.match);
-    $.temperature.update(node.resource, node.critical, node.match);
-    $.enterpriseLoad.update(node.resource, node.critical);
-    $.enterpriseMem.update(node.resource, node.critical);
+    ["enterprise_load", "enterprise_temperature", "enterprise_power", "enterprise_fan"].forEach(resource => {
+        if ($.get(resource).size > 0) {
+            document.body.classList.add(resource);
+        }
+    });
 
-    [].forEach.call(document.body.querySelectorAll("section"), section => {
-		section.draggable = true;
-		
-		section.addEventListener("dragstart", function (e) {
-			e.stopPropagation();
-			
-			$.draggable = this;
-		});
-		
-		section.addEventListener("dragover", function (e) {
-			e.preventDefault();
-			
-			if ($.draggable === this) {
-				return;
-			}
-			
-			switch ($.draggable) {
-			case this.previousElementSibling:
-				this.parentNode.insertBefore(this, $.draggable);
-				
-				break;
-			default:
-				this.parentNode.insertBefore($.draggable, this);
-			}
-		});
-	});
-    
-	if (!("status" in node) || !node.status) {
-        document.body.classList.add("shutdown");
-    } else {
-        refresh();
+    if ($.get("interface").size === 0) {
+        document.body.classList.remove("interface");
     }
+
+    update(node);
 
     document.body.classList.remove("loading");
 }
 
 function refresh() {
     setTimeout(function () {
-        $.request.execute({
+        $.get("request").execute({
             command: "get",
             target: "node",
-            id: $.id,
+            id: $.get("id"),
             resource: true
         }, function (e) {
             switch (this.status) {
@@ -1615,16 +884,22 @@ function refresh() {
 
             window.requestAnimationFrame(t => update(JSON.parse(this.responseText)));
         })
-    }, INTERVAL);
+    }, 10000);
 }
 
 function update(node) {
-    if (!("resource" in node)) {
-        return;
+    ["response", "processor", "storage", "memory", "interface", "enterprise_fan", "enterprise_power", "enterprise_temperature", "enterprise_load", "enterprise_memory"]
+        .forEach(resource => $.get(resource).update({
+            resourceData: node.resource,
+            criticalData: node.critical,
+            matchData: node.match
+        }));
+
+    if (!("status" in node) || !node.status) {
+        document.body.classList.add("shutdown");
+    } else {
+        document.body.classList.add("remove");
     }
-    
-    ["response", "processor", "storage", "memory", "portMap", "fan", "power", "temperature", "enterpriseLoad", "enterpriseMem"]
-        .forEach(resource => $[resource].update(node.resource, node.critical, node.match));
 
     refresh();
 }
@@ -1659,6 +934,38 @@ function toElapseString(millis) {
     }
 }
 
+function onShowMIBDialog (e) {
+    const dialog = document.body.querySelector("dialog");
+
+    dialog.querySelector("iframe").src = `/mib.html?node=${$.get("id")}&pen=${$.get("pen")}`;
+
+    dialog.showModal();
+}
+
+function onSelectInterface (args) {
+    args.chart = "/chart/throughput.html";
+    
+    onSelectResource(args);
+}
+
+function onSelectError (args) {
+    args.chart = "/chart/error.html";
+    
+    onSelectResource(args);
+}
+
+function onSelectTemperature (args) {
+    args.chart = "/chart/temperature.html";
+
+    onSelectResource(args);
+}
+
+function onSelectLoad (args) {
+    args.chart = "/chart/processor.html";
+
+    onSelectResource(args);
+}
+
 //private
 function onSelectResource(args) {
     const {
@@ -1667,7 +974,7 @@ function onSelectResource(args) {
         date = new Date(),
         search = new URLSearchParams();
     
-    search.set("id", $.id);
+    search.set("id", $.get("id"));
     search.set("name", chart);
     oid && search.set("oid", oid);
     index && search.set("index", index);
@@ -1678,6 +985,12 @@ function onSelectResource(args) {
     search.set("to", date.setDate(date.getDate() +1));
 
     window.location.replace(`/chart/chart.html?${search.toString()}`);
+}
+
+function onCloseDialog (e) {
+    this.querySelector("iframe").contentWindow.document.body.classList.remove("dialog");
+
+    this.close();
 }
 
 function showMessage(xhr) {
@@ -1704,16 +1017,16 @@ function showMessage(xhr) {
 		</script>
 	</head>
 
-	<body class="loading">
+	<body class="loading interface">
 		<article>
             <section id="enterprise">
                 <h2>정보 공급자</h2>
-                <ul></ul>
+                <ul class="container background" style="--var-width: 160px"></ul>
             </section>
             
 			<section class="information">
                 <h2 id="node">기본 정보</h2>
-                <ul>
+                <ul class="container">
                     <li>
                         <table>
                             <tr>
@@ -1737,55 +1050,55 @@ function showMessage(xhr) {
                 </ul>
 			</section>
 
-            <section class="type">
+            <section id="type">
                 <h2>종류</h2>
-                <ul></ul>
+                <ul class="container background" style="--var-width: 100px"></ul>
             </section>
 
-            <section class="fan status">
+            <section class="enterprise fan status">
                 <h2>팬</h2>
-                <ul id="fan" class="container"></ul>
+                <ul class="container multi"></ul>
             </section>
 
-            <section class="power status">
+            <section class="enterprise power status">
                 <h2>전원</h2>
-                <ul id="power" class="container"></ul>
+                <ul class="container multi"></ul>
             </section>
 
-            <section class="temperature">
+            <section class="enterprise temperature">
                 <h2>온도</h2>
-                <ul id="temperature" class="container">
+                <ul class="container multi">
                 </ul>
             </section>
 
 			<section id="processor" class="processor status">
 				<h2>코어 프로세서</h2>
-				<ul class="container processor selectable"></ul>
+				<ul class="container multi processor selectable chart pie"></ul>
             </section>
             
             <section id="memory" class="storage">
                 <h2>물리 메모리</h2>
-                <ul class="container"></ul>
+                <ul class="container chart bar"></ul>
             </section>
 
             <section id="storage" class="storage">
                 <h2>스토리지</h2>
-                <ul class="container"></ul>
+                <ul class="container multi chart bar"></ul>
             </section>
 			
             <section class="processor enterprise load">
 				<h2>프로세서</h2>
-				<ul class="container"></ul>
+				<ul class="container multi chart pie"></ul>
             </section>
 
-            <section class="storage enterprise mem">
+            <section class="storage enterprise memory">
 				<h2>메모리</h2>
-				<ul class="container"></ul>
+				<ul class="container multi chart bar"></ul>
             </section>
 
             <section class="rtt status">
                 <h2>응답 시간</h2>
-                <ul id="rtt" class="container selectable">
+                <ul id="rtt" class="container center selectable chart" style="--var-width: 160px">
                     <li class="rotate"></li>
                     <li class="background" data-elapse="">&#xf2f2;</li>
                     <li class="content"></li>
@@ -1793,7 +1106,8 @@ function showMessage(xhr) {
             </section>
 
             <section class="root">
-                <ul class="container selectable">
+                <h2>설정</h2>
+                <ul class="container selectable center" style="--var-width: 160px">
                     <li id="mib"></li>
                 </ul>
             </section>
@@ -1801,7 +1115,7 @@ function showMessage(xhr) {
             <section class="dummy">
             </section>
 
-            <section class="portmap">
+            <section class="interface">
 				<h2>
                     인터페이스
                 </h2>
@@ -1815,38 +1129,10 @@ function showMessage(xhr) {
                             &#xf205;
                         </span>
                     </label>
-                    <ul id="portmap"></ul>
+                    <ul class="container multi"></ul>
                 </div>
 			</section>
 
-            <section class="interface">
-                <table>
-                    <colgroup>
-                        <col width="60">
-                        <col>
-                        <col>
-                        <col width="180">
-                        <col>
-                        <col width="160">
-                        <col>
-                        <col width="160">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>상태</th>
-                            <th>이름</th>
-                            <th>설명</th>
-                            <th>대역폭</th>
-                            <th>수신량</th>
-                            <th>수신 오류</th>
-                            <th>송신량</th>
-                            <th>송신 오류</th>
-                        </tr>
-                    </thead>
-                    <tbody id="interface">
-                    </tbody>
-                </table>
-            </section>
 		</article>
 
         <div class="error">
@@ -1862,9 +1148,6 @@ function showMessage(xhr) {
 		<script src="/js/ITAhM.js"></script>
         <script src="/js/icon.js"></script>
         <script src="/js/snmp.js"></script>
-        <script src="/util/gauge.js"></script>
-        <script src="/util/ethernet.js"></script>
-        <script src="/js/import/chart.js"></script>
         <script>
 Chart.defaults.global.defaultFontFamily = "'맑은 고딕', 'Arial', 'Tahoma'";
 //Chart.defaults.global.defaultFontSize = 20;
@@ -1929,39 +1212,27 @@ Chart.Chart.pluginService.register({
         <script src="/js/constants.js"></script>
         <script src="/js/snmp.js"></script>
         <script src="/util/loader.js"></script>
-		<script>
+		<script type="module">
+import {mibData} from "../js/enterprise.js";
+import Interface from "./module/standard/interface.js";
+import * as Enterprise from "./module/enterprise/class.js";
 
 const
-    INTERVAL = 10000,
     search = new URLSearchParams(window.location.search),
-    $ = {
-        request: new Request(),
-        id: Number(search.get("id")),
-        processorIndexArray: [],
-        memoryIndexArray: [],
-        storageIndexObj: {},
-        response: new Response(document.getElementById("rtt")),
-        processor: new Processor(document.body.querySelector("#processor .container")),
-        storage: new Storage(document.body.querySelector("#storage .container")),
-        memory: new Storage(document.body.querySelector("#memory .container")),
-        portMap: new PortMap(document.getElementById("portmap")),
-        fan: new Fan(document.getElementById("fan")),
-        power: new Power(document.getElementById("power")),
-        temperature: new Temperature(document.getElementById("temperature")),
-        enterpriseLoad: new EnterpriseLoad(document.body.querySelector("section.enterprise.load .container")),
-        enterpriseMem: new EnterpriseMem(document.body.querySelector("section.enterprise.mem .container")),
-        ethernet: new Image(),
-        loader: new ImageLoader(onImageLoad)
-    };
+    id = Number(search.get("id"));
+
+if (!id) {
+    throw alert(ERROR_WRONG_ACCESS["kr"]);
+}
+
+window.$ = new Map();
+
+$.set("id", id);
+$.set("request", new Request());
+$.set("loader", new ImageLoader(onImageLoad));
 
 if (top.account.level === 0) {
-    document.getElementById("mib").onclick = e => {
-        const dialog = document.body.querySelector("dialog");
-
-            dialog.querySelector("iframe").src = `/mib.html?node=${$.id}&pen=${$.pen}`;
-
-        dialog.showModal();
-    };
+    document.getElementById("mib").onclick = onShowMIBDialog;
     
     document.body.classList.add("root");
 }
@@ -1971,35 +1242,83 @@ document.getElementById("rtt").onclick = e => onSelectResource({
     index: "0"
 });
 
-document.body.querySelector("dialog").onclick = function (e) {
-    this.querySelector("iframe").contentWindow.document.body.classList.remove("dialog");
+document.body.querySelector("dialog").onclick = onCloseDialog;
 
-    this.close();
-};
+{
+    let draggable;
+
+    Array.from(document.body.querySelectorAll("section")).forEach(section => {
+        section.draggable = true;
+        
+        section.addEventListener("dragstart", function (e) {
+            e.stopPropagation();
+            
+            draggable = this;
+        });
+        
+        section.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            
+            if (draggable === this) {
+                return;
+            }
+            
+            switch (draggable) {
+            case this.previousElementSibling:
+                this.parentNode.insertBefore(this, draggable);
+                
+                break;
+            default:
+                this.parentNode.insertBefore(draggable, this);
+            }
+        });
+    });
+}
 
 function onImageLoad() {
-    $.request.query({
+    let iconData = ITAhM.iconData;
+
+    $.get("request").query({
         command: "get",
         target: "icon"
-    }).then(iconData => {
-        $.iconData = iconData || {};
+    }).then(data => {
+        for (let key in data) {
+            iconData[key] = data[key];
+        }        
 
-        return $.request.query({
+        return $.get("request").query({
+            command: "get",
+            target: "mib"
+        });
+    }).then(data => {
+        for (let key in data) {
+            mibData[key] = data[key];
+        }
+
+        return $.get("request").query({
             command: "get",
             target: "node",
-            id: $.id,
+            id: id,
             resource: true
         });
     }).then(node => {
-        initialize(node);
+        $.set("response", new Response(document.getElementById("rtt")));
+        $.set("processor", new Processor(document.body.querySelector("#processor .container")));
+        $.set("storage", new Storage(document.body.querySelector("#storage .container")));
+        $.set("memory", new Storage(document.body.querySelector("#memory .container")));
+        $.set("interface", new Interface(document.body.querySelector("section.interface .container"), this.map["/img/ethernet.png"]));
+        $.set("enterprise_fan", new Enterprise.Fan(document.body.querySelector("section.enterprise.fan .container"), mibData));
+        $.set("enterprise_power", new Enterprise.Power(document.body.querySelector("section.enterprise.power .container"), mibData));
+        $.set("enterprise_temperature", new Enterprise.Temperature(document.body.querySelector("section.enterprise.temperature .container"), mibData));
+        $.set("enterprise_load", new Enterprise.Load(document.body.querySelector("section.enterprise.load .container"), mibData));
+        $.set("enterprise_memory", new Enterprise.Memory(document.body.querySelector("section.enterprise.memory .container")));
+
+        initialize(node, iconData);
     })
     .catch(showMessage);
 }
 
-if ($.id) {
-    $.loader.load(["/img/ethernet.png"]);
-}
-
+new ImageLoader(onImageLoad).load(["/img/ethernet.png"]);
 
 		</script>
 	

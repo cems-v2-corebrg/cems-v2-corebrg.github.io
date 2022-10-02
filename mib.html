@@ -10,9 +10,30 @@
 @import "/css/var.css";
 @import "/css/fa.css";
 
+body {
+	flex-direction: row;
+}
+
+body >div {
+	display: flex; flex-direction: column;
+}
+
+body >div:nth-of-type(1) {
+	flex: 4;
+}
+
+body >div:nth-of-type(2) {
+	flex: 3;
+	border-left: 1px solid #fefefe;
+}
+
 header {
     color: #ffffff;
     user-select: none;
+}
+
+main {
+	flex: 1;
 }
 
 main.from td:is(:nth-child(2), :nth-child(3)) {
@@ -24,7 +45,7 @@ main.to td:is(:nth-child(4), :nth-child(5)) {
 }
 
 main.to.drop {
-	outline: 5px dotted #0f0f0f;
+	outline: 5px dotted #f0f0f0;
 }
 
 header {
@@ -40,19 +61,66 @@ tbody {
 	user-select: none;
 }
 
-main.to td:first-child {
-    color: #efefef;
+main.from tbody th::before {
+	font-family: "Font Awesome 5 Free";
+	content: "\f044";
+	color: #7f7f7f;
+}
+
+main.from tr.selectable th::before {
+	color: var(--var-color-normal);
+}
+
+main.from tr:not(.selectable):hover {
+	background-color: rgba(255, 255, 255, 0.8);
+}
+
+main.from tr:not(.selectable):nth-child(odd):hover {
+	background-color: rgba(235, 235, 235, 0.8);
+}
+
+
+td {
     position: relative;
 }
 
+span.template,
 main.to td:first-child span {
     position: absolute; inset: 0.5em;
     border-radius: 1em 1em 1em 1em;
     display: inline-flex; justify-content: center; align-items: center;
-    background-color: var(--var-color-normal);
+}
+
+span.template {
+    background-color: #ffffff;
+}
+
+span.template::before {
+	font-family: "Font Awesome 5 Free";
+	position: absolute; inset: auto auto auto 1em;
+	width: 2em;
+	text-align: center;
+}
+
+span.template.power::before {
+	content: "\f1e6";
+}
+
+span.template.fan::before {
+	content: "\f863";
+}
+
+span.template.temperature::before {
+	content: "\f2c7";
+}
+
+span.template.load::before {
+	content: "\f110";
+	content: "\f3fd";
 }
 
 main.to td:first-child >span {
+	color: #efefef;
     background-color: var(--var-color-normal);
 }
 
@@ -91,6 +159,10 @@ button.icon::before {
 	content: "\f2f1";
 }
 
+#add::before {
+	content: "\f067";
+}
+
 body:not(.dialog) #dialog {
 	display: none;
 }
@@ -118,27 +190,49 @@ function closeDialog(reset) {
     dialog.onload = undefined;
     
     dialog.src = "about:blank";
+
+	if (reset) {
+		window.location.reload();
+	}
 }
 
-function createItem(oid, mib) {
-	const tr = document.createElement("tr");
+function createMIBItem(oid, mib) {
+	const
+		tr = document.createElement("tr"),
+		template = document.createElement("span");
 
+	tr.appendChild(document.createElement("th"));
 	tr.appendChild(document.createElement("td")).textContent = oid;
-	tr.appendChild(document.createElement("td")).textContent = mib.match? "Match": mib.trace? "Trace": "None";
-	tr.appendChild(document.createElement("td")).textContent = mib.match || mib.trace || "";
+	tr.appendChild(document.createElement("td")).appendChild(template).textContent = mib.template;
+	tr.appendChild(document.createElement("td")).textContent = mib.type || "None";
+	tr.appendChild(document.createElement("td")).textContent = mib.value || "";
+
+	template.classList.add("template", mib.template);
 
 	tr.dataset.oid = oid;
 
-	tr.onclick = onSelectItem;
+	if (mib.selectable) {
+		tr.classList.add("selectable");
+
+		tr.onclick = onSelectMIBItem;
+	}
+
+	tr.draggable = true;
+
+	tr.ondragstart = onDragStart;
 
 	return tr;
 }
 
-function onSelectItem () {
-	showDialog(`/dialog/mib.html?oid=${this.dataset.oid}`);
+function onSelectMIBItem () {
+	const
+		oid = this.dataset.oid,
+		mib = getMIB(oid);
+
+	showDialog(`/dialog/mib.html?oid=${oid}&type=${mib.type || ""}&value=${mib.value || ""}&template=${mib.template}`);
 }
 
-function createListItem (oid, mib) {
+function createEnterpriseItem (oid, enterprise) {
 	const
 		tr = document.createElement("tr"),
 		status = tr.appendChild(document.createElement("td")).appendChild(document.createElement("span"));
@@ -147,16 +241,16 @@ function createListItem (oid, mib) {
 
 	tr.onclick = onSetMIB;
 
-	if (mib.index) {
-		oid = oid.substring(0, oid.lastIndexOf(mib.index) -1);
+	if (enterprise.index) {
+		oid = oid.substring(0, oid.lastIndexOf(enterprise.index) -1);
 
-		tr.dataset.index = mib.index
+		tr.dataset.index = enterprise.index
 	}
 
-	if (mib.status) {
+	if (enterprise.status) {
 		$.sync = true;
 
-		switch (mib.status) {
+		switch (enterprise.status) {
 		case "add":
 			status.textContent = "Add";
 
@@ -167,8 +261,8 @@ function createListItem (oid, mib) {
 			break;
 		}
 
-		tr.classList.add(mib.status);
-	} else if (mib.count === 0) {
+		tr.classList.add(enterprise.status);
+	} else if (enterprise.count === 0) {
 		status.textContent = "No response";
 
 		tr.classList.add("noresponse");
@@ -177,17 +271,23 @@ function createListItem (oid, mib) {
 	}
 	
 	tr.appendChild(document.createElement("td")).textContent = oid;
-	tr.appendChild(document.createElement("td")).textContent = mib.index;
-	tr.appendChild(document.createElement("td")).textContent = mib.match? "Match": mib.trace? "Trace": "None";
-	tr.appendChild(document.createElement("td")).textContent = mib.match || mib.trace || "";
+	tr.appendChild(document.createElement("td")).textContent = enterprise.index;
 
 	return tr;
 }
 
+function onDragStart (e) {
+	const dt = e.dataTransfer;
+
+	dt.effectAllowed = "copy";
+
+	dt.setData("oid", this.dataset.oid);
+}
+
 function onSetMIB () {
 	const query = {
-		target: "mib",
-		mib: {
+		target: "enterprise",
+		enterprise: {
 			node: $.node,
 			oid: this.dataset.oid,
 			index: this.dataset.index || ""
@@ -200,7 +300,7 @@ function onSetMIB () {
 		}
 
 		query.command = "set";
-		query.mib.status = "add"
+		query.enterprise.status = "add"
 	} else if (this.classList.contains("add")) {
 		if (!confirm("Confirm.\n\n선택한 MIB 값 추가를 동기화에서 제외합니까?")) {
 			return;
@@ -213,58 +313,17 @@ function onSetMIB () {
 		}
 
 		query.command = "set";
-		query.mib.status = "remove"
+		query.enterprise.status = "remove"
 	}
 
 	$.request.query(query)
-	.then(mib => {
+	.then(enterprise => {
 		window.location.reload();
 	})
 	.catch(showMessage);
 }
 
-/** public **/
-function setMIB (oid, index) {
-	if (index && !index.split(".").some(n => !isNaN(n)) || isNaN(index)) {
-		return alert("Error.\n\n Index 값이 OID 형식에 맞지 않습니다.");
-	}
-
-	const mib = getMIB(oid);
-
-	if (index) {
-		if ($.mibData[oid]) {
-			return alert("Error.\n\n 상위 OID 값이 이미 존재합니다.");
-		}
-
-		oid = `${oid}.${index}`;
-	} else {
-		for (let key in $.mibData) {
-			if (key.indexOf(oid) !== -1) {
-				return alert("Error.\n\n 하위 OID 값이 이미 존재합니다.");
-			}
-		}
-	}
-	
-	if ($.mibData[oid]) {
-		return alert("Error.\n\n 같은 OID 값이 이미 존재합니다.");
-	}
-
-	mib.node = $.node;
-	mib.oid = oid;
-	mib.index = index;
-
-	$.request.query({
-		command: "add",
-		target: "mib",
-		mib : mib
-	})
-	.then(mib => {
-		window.location.reload();
-	})
-	.catch(showMessage);
-}
-
-function onSyncMIB() {
+function onSync() {
 	if (!confirm(`Confirm.\n\nMIB 정보 동기화를 실행합니까?`)) {
 		return;
 	}
@@ -273,8 +332,8 @@ function onSyncMIB() {
 
 	$.request.query({
 		command: "set",
-		target: "mib",
-		mib: {
+		target: "enterprise",
+		enterprise: {
 			node: $.node
 		}
 	})
@@ -292,11 +351,7 @@ function selectPEN(pen) {
 		df = document.createDocumentFragment(),
 		oid = `1.3.6.1.4.1.${pen}`;
 
-	Array.from($.cache.children).forEach(tr => {
-		if (tr.children[0].textContent.indexOf(oid) === 0) {
-			df.appendChild(tr);
-		}
-	});
+	Array.from($.cache.children).forEach(tr => tr.dataset.oid.indexOf(oid) === 0 && df.appendChild(tr));
 
 	Array.from(list.children).forEach(tr => $.cache.appendChild(tr));
 
@@ -310,6 +365,10 @@ function onSelectPEN () {
 function showMessage (xhr) {
     if (xhr instanceof XMLHttpRequest) {
         switch (xhr.status) {
+		case 401:
+			alert(ERROR_NOT_SUPPORT["kr"]);
+
+			break;	
         case 401:
             alert(NOTICE_SESS_EXPIRE["kr"]);
 
@@ -331,55 +390,65 @@ function showMessage (xhr) {
 	</head>
 	
 	<body class="loading">
-		<header>
-			<div>
-				<button type="button" id="reload" class="icon" title="새로고침">Reload</button>
-				<span>Select PEN</span>
-				<select id="pen"></select>
-			</div>
-			<div>
-				<button type="button" id="sync" class="icon" title="동기화" disabled>Sync</button>
-			</div>
-		</header>
-		<main class="from">
-			<table>
-				<colgroup>
-					<col width="400">
-					<col>
-					<col>
-				</colgroup>
-				<thead>
-					<tr>
-						<th>OID</th>
-						<th>Monitor</th>
-						<th>Match value or Unit size</th>
-					</tr>
-				</thead>
-				<tbody></tbody>
-			</table>
-		</main>
-		<main class="to">
-			<table>
-				<colgroup>
-					<col width="160">
-					<col width="400">
-					<col>
-					<col>
-					<col>
-				</colgroup>
-				<thead>
-					<tr>
-						<th>Status</th>
-						<th>OID</th>
-						<th>Index</th>
-						<th>Monitor</th>
-						<th>Match value or Unit size</th>
-					</tr>
-				</thead>
-				<tbody></tbody>
-			</table>
-		</main>
-
+		<div>
+			<header>
+				<div>
+					<button type="button" id="add" class="icon" title="새로고침">Add</button>
+					<span>Select PEN</span>
+					<select id="pen"></select>
+				</div>
+				<div>
+				</div>
+			</header>
+			<main class="from">
+				<table>
+					<colgroup>
+						<col width="50">
+						<col width="360">
+						<col width="200">
+						<col>
+						<col>
+					</colgroup>
+					<thead>
+						<tr>
+							<th></th>
+							<th>OID</th>
+							<th>Template</th>
+							<th>Type</th>
+							<th>Value</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</main>
+		</div>
+		<div>
+			<header>
+				<div>
+				</div>
+				<div>
+					<button type="button" id="reload" class="icon" title="새로고침">Reload</button>
+					<button type="button" id="sync" class="icon" title="동기화" disabled>Sync</button>
+				</div>
+			</header>
+			<main class="to">
+				<table>
+					<colgroup>
+						<col width="160">
+						<col width="360">
+						<col>
+					</colgroup>
+					<thead>
+						<tr>
+							<th>Status</th>
+							<th>OID</th>
+							<th>Index</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</main>
+		</div>
 		<iframe id="dialog" name="dialog"></iframe>
 		
 		<div class="loading mask"></div>
@@ -398,10 +467,11 @@ const
 	};
 
 document.getElementById("reload").onclick = e => window.location.reload();
+document.getElementById("add").onclick = e => showDialog(`/dialog/mib.html?pen=${$.pen}`);
 
 		</script>			
 		<script type="module">
-import {mibData} from "../js/mib.js";
+import {mibData} from "../js/enterprise.js";
 
 const
 	select = document.getElementById("pen"),
@@ -409,55 +479,102 @@ const
 	penToNull = new Map();
 let option;
 
-for (let oid in mibData) {
-	penToNull.set(oid.split("1.3.6.1.4.1.")[1].split(".")[0], null);
-
-	$.cache.appendChild(createItem(oid, mibData[oid]));
-}
-
-for (let pen of penToNull.keys()) {
-	df.appendChild(document.createElement("option")).text = pen;
-}
-
-select.appendChild(df);
-
-if ($.pen) {
-	select.value = $.pen;
-
-	selectPEN($.pen);
-} else {
-	select.selectedIndex = -1;
-}
-
-select.onchange = onSelectPEN;
-
-window.getMIB = oid => mibData[oid];
-		</script>
-        <script>
 $.request.query({
     command: "get",
     target: "mib",
 	node: $.node
-})
-.then(data => {
-	const df = document.createDocumentFragment();
+}).then(data => {
+	for (let oid in data) {
+		data[oid].selectable = true;
 
-	$.mibData = data;
+		mibData[oid] = data[oid];
+	}
+
+	for (let oid in mibData) {
+		penToNull.set(oid.split("1.3.6.1.4.1.")[1].split(".")[0], null);
+
+		$.cache.appendChild(createMIBItem(oid, mibData[oid]));
+	}
+
+	for (let pen of penToNull.keys()) {
+		df.appendChild(document.createElement("option")).text = pen;
+	}
+
+	if (!penToNull.has($.pen)) {
+		df.appendChild(document.createElement("option")).text = $.pen;
+	}
+
+	select.appendChild(df);
+
+	select.value = $.pen;
+	select.onchange = onSelectPEN;
+
+	selectPEN($.pen);
+
+	window.getMIB = oid => mibData[oid];
+}).catch(showMessage);
+
+		</script>
+        <script>
+
+$.request.query({
+	command: "get",
+	target: "enterprise",
+	enterprise: {
+		node: $.node
+	}
+}).then(data => {
+	const df = document.createDocumentFragment();
 
 	Object.keys(data)
 		.sort()
-		.forEach(oid => df.appendChild(createListItem(oid, data[oid])));
+		.forEach(oid => df.appendChild(createEnterpriseItem(oid, data[oid])));
 
 	document.body.querySelector("main.to tbody").appendChild(df);	
-})
-.then(() => {
+}).then(() => {
 	if ($.sync) {
 		const sync = document.getElementById("sync");
 
 		sync.disabled = false;
 
-		sync.onclick = onSyncMIB;
+		sync.onclick = onSync;
 	}
+
+	const to = document.querySelector("main.to");
+	let counter = 0;
+
+	to.addEventListener("dragenter", function (e) {
+		e.preventDefault();
+
+		counter++;
+
+		to.classList.add("drop");
+	});
+
+	
+	to.addEventListener("dragleave", function (e) {
+		e.preventDefault();
+
+		if (--counter === 0) {
+			to.classList.remove("drop");
+		}
+	});
+
+	to.addEventListener("dragover", function (e) {
+		e.preventDefault();
+
+		e.dataTransfer.dropEffect = "copy";
+	});
+
+	to.addEventListener("drop", function (e) {
+		e.stopPropagation();
+
+		counter = 0;
+
+		to.classList.remove("drop");
+
+		showDialog(`/dialog/enterprise.html?node=${$.node}&oid=${e.dataTransfer.getData("oid")}`);
+	});
 
 	document.body.classList.remove("loading");
 })

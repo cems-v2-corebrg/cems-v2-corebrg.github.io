@@ -27,6 +27,12 @@ const
     ERROR_CHART_NOSUP = {
         kr: "Error!\n\n차트를 제공하지 않습니다."
     },
+    ERROR_NOT_SUPPORT = {
+        kr: "Error!\n\n현재 버전에서 제공하지 않는 명령입니다."
+    },
+    ERROR_WRONG_ACCESS = {
+        kr: "Error!\n\n잘못된 접근 입니다."
+    },
     ERROR_RES_CODE = code => {
         return {
             kr: `Error!\n\n오류코드 ${code}.`

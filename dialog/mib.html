@@ -8,22 +8,97 @@
 @import "/css/dialog.css";
 @import "/css/fa.css";
 
-body:not(.match) tr.match,
-body:not(.trace) tr.trace {
+body:not(.value) tr.value,
+body.match [name=template] option:not(.match),
+body.trace [name=template] option:not(.trace) {
     display: none;
 }
         </style>
         <script>
 
 function onSubmit (e) {
-    document.body.classList.add("loading");
-
     e.preventDefault();
 
-    parent.setMIB($.oid, document.body.querySelector("form").elements["index"].value);
+    const
+        form = document.body.querySelector("form"),
+        oid = form.elements["oid"].value;
+    
+    if (oid && oid.split(".").some(n => isNaN(n))) {
+		return alert("Error.\n\n 값이 OID 형식에 맞지 않습니다.");
+	}
 
-    document.body.classList.remove("loading");
-};
+    document.body.classList.add("loading");
+
+    $.request.query({
+        target: "mib",
+        command: "set",
+        mib: {
+            oid: oid,
+            type: form.elements["type"].value || undefined,
+            value: form.elements["value"].value || undefined,
+            template: form.elements["template"].value,
+            option: ""
+        }
+    }).then(data => {
+        parent.closeDialog(true);
+    }).catch(showMessage);
+}
+
+function onReset (e) {
+    $.request.query({
+		command: "remove",
+		target: "mib",
+		mib : {
+			oid: $.oid
+		}
+	})
+	.then(enterprise => {
+		parent.closeDialog(true);
+	})
+	.catch(showMessage);
+}
+
+function onChangeType (e) {
+    selectType(this.value);
+}
+
+function selectType (type) {
+    const form = document.body.querySelector("form");
+
+    form.elements["template"].value = "";
+
+    if (type) {
+        const title = document.getElementById("title");
+
+        if (type === "match") {
+            title.textContent = "Match value";
+            title.title = "정상 상태의 값";
+        } else {
+            title.textContent = "Unit size";
+            title.title = "값의 단위"
+        }
+
+        form.elements["value"].setAttribute("required", true);
+
+        document.body.classList.add("value", type);
+
+        switch (type) {
+        case "match":
+            document.body.classList.remove("trace");
+
+            break;
+        case "trace":
+            document.body.classList.remove("match");
+            
+            break;
+        }
+        
+    } else {
+        form.elements["value"].removeAttribute("required");
+
+        document.body.classList.remove("value", "match", "trace");
+    }
+}
 
 function showMessage (xhr) {
     if (xhr instanceof XMLHttpRequest) {
@@ -56,39 +131,44 @@ function showMessage (xhr) {
             </h2>
             <form>
                 <table>
+                    <thead>
+                        <colgroup>
+                            <col width="100">
+                        </colgroup>
+                    </thead>
                     <tbody>
                         <tr>
                             <th title="OID">OID</th>
                             <td>
-                                <input type="text" name="oid" required disabled>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th title="Sub index">Index</th>
-                            <td>
-                                <input type="text" name="index" autocomplete="off">
+                                <input type="text" name="oid" required value="1.3.6.1.4.1">
                             </td>
                         </tr>
                         <tr>
                             <th title="모니터 방식">Type</th>
                             <td>
-                                <select name="type" required  disabled>
+                                <select name="type" required>
                                     <option value="match">Match</option>
                                     <option value="trace">Trace</option>
                                     <option value="" selected>None</option>
                                 </select>
                             </td>
                         </tr>
-                        <tr class="match">
-                            <th title="정상 값">Value</th>
+                        <tr class="value" dir="rtl">
+                            <th id="title"></th>
                             <td>
-                                <input type="text" name="value" required  disabled>
+                                <input type="text" name="value">
                             </td>
                         </tr>
-                        <tr class="trace">
-                            <th title="단위 값">Unit</th>
+                        <tr>
+                            <th title="템플릿">Template</th>
                             <td>
-                                <input type="text" name="unit" required  disabled>
+                                <select name="template" required>
+                                    <option class="match">fan</option>
+                                    <option class="trace">load</option>
+                                    <option class="match">power</option>
+                                    <option class="trace">temperature</option>
+                                    <option value="" selected>None</option>
+                                </select>
                             </td>
                         </tr>
                     </tbody>
@@ -110,42 +190,52 @@ const
     search = new URLSearchParams(window.location.search),
     $ = {
         request: new Request(),
-        oid: search.get("oid")
+        pen: search.get("pen"),
+        oid: search.get("oid"),
+        type: search.get("type"),
+        value: search.get("value"),
+        template: search.get("template")
     };
 
 if (top.account.level === 0) {
     const form = document.body.querySelector("form");
 
     form.onsubmit = onSubmit;
+    form.onreset = onReset;
     
     document.body.classList.add("root");
 }
 
-        </script>
-        <script type="module">
-import {mibData} from "../js/mib.js";
-
-const
-    mib = mibData[$.oid],
-    form = document.body.querySelector("form");
-
-form.elements["oid"].value = $.oid;
-
-if ("match" in mib) {
-    document.body.classList.add("match");
-
-    form.elements["type"].value = "match";
-    form.elements["value"].value = mib.match;
-} else if ("trace" in mib) {
-    document.body.classList.add("trace");
-
-    form.elements["type"].value = "trace";
-    form.elements["unit"].value = mib.trace;
-}
-
 document.getElementById("close").onclick = e => parent.closeDialog();
 
+const form = document.body.querySelector("form");
+
+form.elements["type"].onchange = onChangeType;
+
+if ($.oid) {
+    const oid = form.elements["oid"];
+
+    oid.value = $.oid;
+    oid.disabled = true;
+
+    if ($.type && $.value) {
+        selectType($.type);
+
+        form.elements["type"].value = $.type;
+        form.elements["value"].value = $.value;
+    }
+
+    form.elements["template"].value = $.template;
+
+    document.body.classList.add("edit");
+} else if ($.pen) {
+    form.elements["oid"].value = `1.3.6.1.4.1.${$.pen}.`;
+} else {
+    throw alert(ERROR_WRONG_ACCESS["kr"]);
+}
+
 document.body.classList.remove("loading");
+
         </script>
     </body>
 
