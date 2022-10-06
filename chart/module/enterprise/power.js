@@ -35,7 +35,7 @@ export default class Power extends Enterprise {
 
                 count++;
             } else {
-                container.classList.add("remove");
+                container.classList.remove("normal");
             }
         });
 

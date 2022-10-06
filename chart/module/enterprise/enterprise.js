@@ -2,11 +2,17 @@
 
 export default class Enterprise {
     #container;
+    #status;
+    #onselect;
     #mibData = new Map();
     #indexToMap = new Map();
 
-    constructor (container, mibData, template) {
-        this.#container = container;
+    constructor (container, mibData, template, onselect) {
+        this.#container = container.querySelector(".container");
+
+        if (container.classList.contains("status")) {
+            this.#status = container.classList;
+        }
 
         let mib;
         for (let oid in mibData) {
@@ -16,12 +22,14 @@ export default class Enterprise {
                 this.#mibData.set(oid, mib);
             }
         }
+
+        this.#onselect = onselect;
     }
 
-    parse (index, indexData, callback) {
+    parse (index, indexData) {
         for (let oid in indexData) {
             if (this.try(oid)) {
-                this.add(oid, index, callback);
+                this.add(oid, index, this.#onselect);
 
                 break;
             }
@@ -80,22 +88,20 @@ export default class Enterprise {
     }
 
     set status (status) {
-        const classList = this.#container.classList;
-
-        if (classList.contains("status")) {
+        if (this.#status) {
             switch (status) {
             case "normal":
-                classList.remove("shutdown", "critical");
+                this.#status.remove("shutdown", "critical");
                 
                 break;
             case "shutdown":
-                classList.add("shutdown");
-                classList.remove("critical");
+                this.#status.add("shutdown");
+                this.#status.remove("critical");
                 
                 break;
             case "critical":
-                classList.remove("shutdown");
-                classList.add("critical");
+                this.#status.remove("shutdown");
+                this.#status.add("critical");
 
                 break;
             }

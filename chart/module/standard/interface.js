@@ -3,16 +3,20 @@
 export default class Interface {
     
     #container;
+    #onselect;
+    #onerror
     #indexToMap = new Map();
     #prefix;
     #image;
 
-    constructor (container, image) {
+    constructor (container, image, onselect, onerror) {
         this.#container = container;
         this.#image = image;
+        this.#onselect = onselect;
+        this.#onerror = onerror;
     }
 
-    parse (index, indexData, onselect, onerror) {
+    parse (index, indexData) {
         
         const container = document.createElement("li");
         let bandwidth = 0, label = "", names = [];
@@ -49,7 +53,7 @@ export default class Interface {
         container.appendChild(document.createElement("label")).onclick = e => {
             e.stopPropagation();
             
-            onerror({
+            this.#onerror({
                 index: index,
                 title: names[0] || ""
             });
@@ -57,7 +61,7 @@ export default class Interface {
 
         container.classList.add("selectable");
 
-        container.onclick = e => onselect({
+        container.onclick = e => this.#onselect({
             index: index,
             oid: this.#prefix,
             max: bandwidth,

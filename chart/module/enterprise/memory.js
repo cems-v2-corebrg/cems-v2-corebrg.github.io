@@ -2,7 +2,7 @@
 
 import Enterprise from "./enterprise.js";
 
-export default class Memory {
+export default class Memory extends Enterprise {
     static COLOR_GREEN = "#00897b";
     static COLOR_ORANGE = "#f6bf26";
     static COLOR_RED = "#8e24aa";

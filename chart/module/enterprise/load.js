@@ -10,11 +10,11 @@ export default class Load extends Enterprise {
     static COLOR_NULL = "transparent";
     static COLOR_GAUGE = "#dddddd";
     
-    constructor (container, mibData) {
-        super(container, mibData, "load");
+    constructor (container, mibData, onselect) {
+        super(container, mibData, "load", onselect);
     }
 
-    add (oid, index, callback) {
+    add (oid, index, onselect) {
         if (!super.try(oid)) {
             return;
         }
@@ -43,8 +43,8 @@ export default class Load extends Enterprise {
             .set("index", index)
             .set("unit", unit));
 
-        if (callback) {
-            container.onclick = e => callback(super.getData(index));
+        if (onselect) {
+            container.onclick = e => onselect(super.getData(index));
 
             container.classList.add("selectable");
         }

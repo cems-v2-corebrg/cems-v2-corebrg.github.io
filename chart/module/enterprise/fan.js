@@ -4,7 +4,7 @@ import Enterprise from "./enterprise.js";
 
 export default class Fan extends Enterprise {
     constructor (container, mibData) {
-        super(container, mibData, "power");
+        super(container, mibData, "fan");
     }
 
     add (oid, index) {
@@ -35,7 +35,7 @@ export default class Fan extends Enterprise {
 
                 count++;
             } else {
-                container.classList.add("remove");
+                container.classList.remove("normal");
             }
         });
 

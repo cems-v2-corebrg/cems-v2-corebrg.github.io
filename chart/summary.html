@@ -308,26 +308,6 @@ section.enterprise.temperature .container li::before {
     transform: translateX(20px);
 }
 
-div.tbody {
-	text-align: initial;
-}
-
-.title {
-	padding: 0.5em 0;
-	border-bottom: 1px solid #ddd;
-	margin-bottom: 3px;
-}
-
-.title >li {
-	text-align: center;
-	font-weight: bold;
-	margin: 0.5em 0;
-}
-
-.title >li:not(:last-of-type) {
-	border-right: 1px solid #555;
-}
-
 section.information table {
 	border-collapse: collapse;
 	width: 100%; min-width: 300px;
@@ -399,7 +379,7 @@ body:not(.root) .root,
 body:not(.error) .error,
 body:not(.response) section.response,
 body:not(.response) section.rtt,
-body:not(.processor) #processor,
+body:not(.load) #processor,
 body:not(.storage) #storage,
 body:not(.memory) #memory,
 body:not(.interface) section.interface,
@@ -445,285 +425,6 @@ body.shutdown .status::after,
         <script src="/util/ethernet.js"></script>
         <script src="/js/import/chart.js"></script>
 		<script>
-
-function Processor() {
-    this.initialize(arguments);
-}
-
-{
-    const 
-        options = {
-            cutoutPercentage: 70,
-            circumference: Math.PI,
-            rotation: Math.PI *-1
-        },
-        COLOR_GREEN = "#00897b", //"#2FE3FE",
-        COLOR_ORANGE = "#f6bf26",//"#FE6A50"
-        COLOR_RED = "#8e24aa", //"#8900FF",
-        COLOR_NULL = "transparent",
-        COLOR_GAUGE = "#dddddd";
-
-    Processor.prototype = {
-        initialize: function (args) {
-            this.container = args[0];
-            this.indexToOID = new Map();
-
-            const
-                min = document.createElement("li"),
-                avg = document.createElement("li"),
-                max = document.createElement("li"),
-                df = document.createDocumentFragment();
-            
-            this.min = new Chart(min.appendChild(document.createElement("canvas")), {
-                type: "doughnut",
-                data: {
-                    datasets: [{
-                        data: [70, 20, 10],
-                        backgroundColor: [COLOR_GREEN, COLOR_ORANGE, COLOR_RED]
-                    }]
-                },
-                options: options
-            });
-            
-            this.avg = new Chart(avg.appendChild(document.createElement("canvas")), {
-                type: "doughnut",
-                data: {
-                    datasets: [{
-                        data: [70, 20, 10],
-                        backgroundColor: [COLOR_GREEN, COLOR_ORANGE, COLOR_RED]
-                    }]
-                },
-                options: options
-            });
-
-            this.max = new Chart(max.appendChild(document.createElement("canvas")), {
-                type: "doughnut",
-                data: {
-                    datasets: [{
-                        data: [70, 20, 10],
-                        backgroundColor: [COLOR_GREEN, COLOR_ORANGE, COLOR_RED],
-                        borderWidth: 0
-                    }]
-                },
-                options: options
-            });
-
-            df.appendChild(min);
-            df.appendChild(avg);
-            df.appendChild(max);
-
-            this.container.appendChild(df);
-        },
-        add: function (oid, index) {
-            this.indexToOID.set(index, oid);
-
-            this.container.onclick = e => onSelectResource({
-                chart: "/chart/processor.html",
-                oid: oid
-            });
-        },
-        set: function (index, value) {
-            const chart = this[index];
-
-            chart.config.data.datasets[1] = {
-                data: [value, 100 - value],
-                backgroundColor: [COLOR_GAUGE, COLOR_NULL]
-            };
-            
-            chart.config.label = `${value.toFixed(2)}%`;
-
-            chart.update();
-        },
-        update: function ({resourceData, criticalData}) {
-            if (this.indexToOID.size === 0) {
-                return;
-            }
-            
-            const
-                array = [],
-                classList = document.body.querySelector("section.processor.status").classList;
-
-            classList.remove("critical");
-
-            for (let [index, oid] of this.indexToOID) {
-                array.push(Number(resourceData[index][oid]));
-
-                if (criticalData[index]?.[oid] === false) {
-                    classList.add("critical");
-                }
-            }
-
-            this.set("max", Math.max.apply(undefined, array));
-            this.set("min", Math.min.apply(undefined, array));
-            this.set("avg", array.reduce((a, b) => a + b) / array.length);
-        }
-    };
-}
-
-function Response() {
-    this.initialize(arguments);
-}
-
-{
-    Response.prototype = {
-        initialize: function (args) {
-            this.container = args[0];
-            this.indexToContainer = new Map();
-        },
-        set: function (container, indexData) {
-            const rtt = indexData[ITAhM.snmp.oid.corebrg.responseTime];
-
-            container.querySelector("li.content").textContent = `${rtt}ms`;
-        },
-        update: function ({resourceData, criticalData}) {
-            const classList = document.body.querySelector(".rtt.status").classList;
-
-            classList.remove("shutdown", "critical");
-
-            for (let [index, container] of this.indexToContainer) {
-                this.set(container, resourceData[index]);
-
-                if (index in criticalData && ITAhM.snmp.oid.corebrg.responseTime in criticalData[index]) {
-                    classList.add("critical");
-                }
-            }
-        },
-        add: function (index, indexData) {
-            this.indexToContainer.set(index, this.container);
-        }
-    };
-}
-
-function Storage() {
-    this.initialize(arguments);
-}
-
-{
-    const
-        options = {
-            scales: {
-                xAxes: [{
-                    stacked: true,
-                    gridLines: {
-                        display: false
-                    },
-                    ticks: {
-                        fontColor: "#ffffff",
-                        callback: value => value.substr(0, 30)
-                    }
-                }],
-                yAxes: [{
-                    stacked: true,
-                    gridLines: {
-                        display: false
-                    },
-                    ticks: {
-                        display: false,
-                        max: 100,
-                        min: 0
-                    }
-                }]
-            },
-            layout: {
-                padding: {
-                    right: 20,
-                    left: 20
-                }
-            }
-        },
-        COLOR_GREEN = "#00897b",
-        COLOR_ORANGE = "#f6bf26",
-        COLOR_RED = "#8e24aa";
-
-    Storage.prototype = {
-        initialize: function (args) {
-            this.container = args[0];
-            this.indexToContainer = new Map();
-        },
-        add: function (index, indexData) {
-            const isValidData = ITAhM.snmp.oid.hrStorageSize in indexData
-                && ITAhM.snmp.oid.hrStorageAllocationUnits in indexData
-                && ITAhM.snmp.oid.hrStorageUsed in indexData;
-            
-            if (!isValidData) {
-                return;
-            }
-
-            const
-                storage = document.createElement("li"),
-                canvas = document.createElement("canvas"),
-                chart = new Chart(canvas, {
-                    type: 'bar',
-                    data: {
-                        labels: [indexData[ITAhM.snmp.oid.hrStorageDescr] || ""]
-                    },
-                    options: options
-                });
-
-            this.indexToContainer.set(index, {
-                status: storage,
-                chart: chart
-            });
-            
-            storage.classList.add("status", "selectable");
-            
-            if (ITAhM.snmp.oid.hrStorageUsed in indexData) {
-                storage.onclick = e => onSelectResource({
-                    chart: "/chart/storage.html",
-                    index: index,
-                    max: Number(indexData[ITAhM.snmp.oid.hrStorageSize]) * Number(indexData[ITAhM.snmp.oid.hrStorageAllocationUnits]),
-                    unit: indexData[ITAhM.snmp.oid.hrStorageAllocationUnits],
-                    title: indexData[ITAhM.snmp.oid.hrStorageDescr] || undefined
-                });
-            }
-
-            storage.appendChild(canvas);
-
-            this.container.appendChild(storage);
-        },
-        set: function (chart, indexData) {
-            const
-                used = Number(indexData[ITAhM.snmp.oid.hrStorageUsed]), // used
-                size = Number(indexData[ITAhM.snmp.oid.hrStorageSize]), // size
-                datasets = [{
-                    data: [0],
-                    backgroundColor: COLOR_GREEN
-                }, {
-                    data: [0],
-                    backgroundColor: COLOR_ORANGE
-                }, {
-                    data: [0],
-                    backgroundColor: COLOR_RED
-                }];
-            let value = (used / size *100).toFixed(2);
-
-            if (value > 70) {
-                datasets[0].data[0] = 70;
-
-                if (value > 90) {
-                    datasets[1].data[0] = 20;
-                    datasets[2].data[0] = value -90;
-                } else {
-                    datasets[1].data[0] = value -70;
-                }
-            } else {
-                datasets[0].data[0] = Math.round(value);
-            }
-
-            chart.config.label = `${value}%`;
-            chart.config.data.datasets = datasets;
-
-            chart.update();
-        },
-        update: function ({resourceData, criticalData}) {
-            for (let [index, container] of this.indexToContainer) {
-                container.status.classList[criticalData[index]?.[ITAhM.snmp.oid.hrStorageUsed] === false? "add": "remove"]("critical");
-
-                this.set(container.chart, resourceData[index]);
-            }
-        }
-    };
-}
 
 function initialize(node, iconData) {
     let indexData;
@@ -800,47 +501,12 @@ function initialize(node, iconData) {
             }
         })(indexData[ITAhM.snmp.oid.sysObjectID]);
 
-        //responseTime
-        if (ITAhM.snmp.oid.corebrg.responseTime in indexData) {
-            $.get("response").add(index, indexData);
-        }
-        
-        //스토리지, 물리 메모리
-        if (ITAhM.snmp.oid.hrStorageType in indexData) {
-            switch(indexData[ITAhM.snmp.oid.hrStorageType]) {
-            case ITAhM.snmp.oid.hrStorageRam:
-                document.body.classList.add("memory");
-
-                $.get("memory").add(index, indexData);
-
-                break;
-            case ITAhM.snmp.oid.hrStorageFixedDisk:
-                document.body.classList.add("storage");
-
-                $.get("storage").add(index, indexData);
-
-                break;
-            }
-        }
-        
-        //Processor
-        [
-            ITAhM.snmp.oid.hrProcessorLoad,
-        ].forEach(oid => {
-            if (oid in indexData) {
-                $.get("processor").add(oid, index);
-
-                document.body.classList.add("processor");
-            }
+        $.get("parser").forEach(resource => {
+            $.get(resource).parse(index, indexData);
         });
 
-        $.get("interface").parse(index, indexData, onSelectInterface, onSelectError);
-        $.get("enterprise_load").parse(index, indexData, onSelectLoad);
-        $.get("enterprise_temperature").parse(index, indexData, onSelectTemperature);
-        $.get("enterprise_power").parse(index, indexData);
-        $.get("enterprise_fan").parse(index, indexData);
-
         // Enterprise Memory
+        /*
         [
             ITAhM.snmp.oid.fortinet.fgSysMemUsage
         ].forEach(oid => {
@@ -849,18 +515,14 @@ function initialize(node, iconData) {
 
                 document.body.classList.add("enterprise_memory");
             }
-        });
+        });*/
     }
     
-    ["enterprise_load", "enterprise_temperature", "enterprise_power", "enterprise_fan"].forEach(resource => {
-        if ($.get(resource).size > 0) {
-            document.body.classList.add(resource);
+    $.get("parser").forEach(resource => {
+        if ($.get(resource).size === 0) {
+            document.body.classList.remove(resource);
         }
     });
-
-    if ($.get("interface").size === 0) {
-        document.body.classList.remove("interface");
-    }
 
     update(node);
 
@@ -888,8 +550,7 @@ function refresh() {
 }
 
 function update(node) {
-    ["response", "processor", "storage", "memory", "interface", "enterprise_fan", "enterprise_power", "enterprise_temperature", "enterprise_load", "enterprise_memory"]
-        .forEach(resource => $.get(resource).update({
+    $.get("parser").forEach(resource => $.get(resource).update({
             resourceData: node.resource,
             criticalData: node.critical,
             matchData: node.match
@@ -942,9 +603,21 @@ function onShowMIBDialog (e) {
     dialog.showModal();
 }
 
+function onSelectResponse (args) {
+    args.chart = "/chart/responseTime.html";
+
+    onSelectResource(args);
+}
+
 function onSelectInterface (args) {
     args.chart = "/chart/throughput.html";
     
+    onSelectResource(args);
+}
+
+function onSelectStorage (args) {
+    args.chart = "/chart/storage.html";
+
     onSelectResource(args);
 }
 
@@ -1017,7 +690,7 @@ function showMessage(xhr) {
 		</script>
 	</head>
 
-	<body class="loading interface">
+	<body class="loading interface response load storage memory enterprise_load enterprise_temperature enterprise_power enterprise_fan">
 		<article>
             <section id="enterprise">
                 <h2>정보 공급자</h2>
@@ -1098,7 +771,7 @@ function showMessage(xhr) {
 
             <section class="rtt status">
                 <h2>응답 시간</h2>
-                <ul id="rtt" class="container center selectable chart" style="--var-width: 160px">
+                <ul class="container center selectable chart" style="--var-width: 160px">
                     <li class="rotate"></li>
                     <li class="background" data-elapse="">&#xf2f2;</li>
                     <li class="content"></li>
@@ -1173,7 +846,7 @@ Chart.Chart.pluginService.register({
             switch(chart.config.type) {
             case "doughnut":
                 ctx.textBaseline = "bottom";
-                ctx.font = `16px "맑은 고딕", Tahoma`;
+                ctx.font = `20px "맑은 고딕", Tahoma`;
 
                 break;
             default:
@@ -1214,7 +887,11 @@ Chart.Chart.pluginService.register({
         <script src="/util/loader.js"></script>
 		<script type="module">
 import {mibData} from "../js/enterprise.js";
+import Response from "./module/standard/response.js";
+import Load from "./module/standard/load.js";
 import Interface from "./module/standard/interface.js";
+import Storage from "./module/standard/storage.js";
+import Memory from "./module/standard/memory.js";
 import * as Enterprise from "./module/enterprise/class.js";
 
 const
@@ -1229,7 +906,7 @@ window.$ = new Map();
 
 $.set("id", id);
 $.set("request", new Request());
-$.set("loader", new ImageLoader(onImageLoad));
+$.set("parser", ["response", "load", "storage", "memory", "interface", "enterprise_fan", "enterprise_power", "enterprise_temperature", "enterprise_load"/*, "enterprise_memory"*/]);
 
 if (top.account.level === 0) {
     document.getElementById("mib").onclick = onShowMIBDialog;
@@ -1237,7 +914,7 @@ if (top.account.level === 0) {
     document.body.classList.add("root");
 }
 
-document.getElementById("rtt").onclick = e => onSelectResource({
+document.body.querySelector("section.rtt .container").onclick = e => onSelectResource({
     chart: "/chart/responseTime.html",
     index: "0"
 });
@@ -1302,16 +979,16 @@ function onImageLoad() {
             resource: true
         });
     }).then(node => {
-        $.set("response", new Response(document.getElementById("rtt")));
-        $.set("processor", new Processor(document.body.querySelector("#processor .container")));
-        $.set("storage", new Storage(document.body.querySelector("#storage .container")));
-        $.set("memory", new Storage(document.body.querySelector("#memory .container")));
-        $.set("interface", new Interface(document.body.querySelector("section.interface .container"), this.map["/img/ethernet.png"]));
-        $.set("enterprise_fan", new Enterprise.Fan(document.body.querySelector("section.enterprise.fan .container"), mibData));
-        $.set("enterprise_power", new Enterprise.Power(document.body.querySelector("section.enterprise.power .container"), mibData));
-        $.set("enterprise_temperature", new Enterprise.Temperature(document.body.querySelector("section.enterprise.temperature .container"), mibData));
-        $.set("enterprise_load", new Enterprise.Load(document.body.querySelector("section.enterprise.load .container"), mibData));
-        $.set("enterprise_memory", new Enterprise.Memory(document.body.querySelector("section.enterprise.memory .container")));
+        $.set("response", new Response(document.body.querySelector("section.rtt"), onSelectResponse));
+        $.set("load", new Load(document.body.querySelector("#processor"), onSelectLoad));
+        $.set("storage", new Storage(document.body.querySelector("#storage"), onSelectStorage));
+        $.set("memory", new Memory(document.body.querySelector("#memory"), onSelectStorage));
+        $.set("interface", new Interface(document.body.querySelector("section.interface .container"), this.map["/img/ethernet.png"], onSelectInterface, onSelectError));
+        $.set("enterprise_fan", new Enterprise.Fan(document.body.querySelector("section.enterprise.fan"), mibData));
+        $.set("enterprise_power", new Enterprise.Power(document.body.querySelector("section.enterprise.power"), mibData));
+        $.set("enterprise_temperature", new Enterprise.Temperature(document.body.querySelector("section.enterprise.temperature"), mibData, onSelectTemperature));
+        $.set("enterprise_load", new Enterprise.Load(document.body.querySelector("section.enterprise.load"), mibData, onSelectLoad));
+        //$.set("enterprise_memory", new Enterprise.Memory(document.body.querySelector("section.enterprise.memory .container")));
 
         initialize(node, iconData);
     })
