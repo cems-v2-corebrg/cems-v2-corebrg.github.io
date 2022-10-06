@@ -6,6 +6,8 @@ export default class Interface {
     #onselect;
     #onerror
     #indexToMap = new Map();
+    #typeToArray = new Map();
+    #cache = document.createDocumentFragment();
     #prefix;
     #image;
 
@@ -43,6 +45,19 @@ export default class Interface {
         
         if (ITAhM.snmp.oid.ifHighSpeed in indexData) {
             bandwidth = Math.max(bandwidth, Number(indexData[ITAhM.snmp.oid.ifHighSpeed]) *1000000);
+        }
+
+        if (ITAhM.snmp.oid.ifType in indexData) {
+            const type = indexData[ITAhM.snmp.oid.ifType];
+            let array = this.#typeToArray.get(type);
+
+            if (!array) {
+                array = [];
+
+                this.#typeToArray.set(type, array);
+            }
+
+            array.push(container);
         }
 
         [ITAhM.snmp.oid.ifName, ITAhM.snmp.oid.ifDescr, ITAhM.snmp.oid.ifAlias]
@@ -118,6 +133,30 @@ export default class Interface {
             }
         }
         
+    }
+
+    forEach (forEach) {
+        const iterator = this.#typeToArray.keys();
+
+        for (let type=iterator.next(); !type.done; type=iterator.next()) {
+            forEach(type.value);
+        }
+    }
+
+    set type (type) {
+        const array = this.#typeToArray.get(type);
+
+        if (array) {
+            const cache = document.createDocumentFragment();
+
+            array.forEach(container => cache.appendChild(container));
+            
+            for (let container; container=this.#container.firstChild;) {
+                this.#cache.appendChild(container);
+            }
+
+            this.#container.appendChild(cache);
+        }
     }
 
     get size () {
