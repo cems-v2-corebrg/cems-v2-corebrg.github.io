@@ -8,10 +8,6 @@ export default class Power extends Enterprise {
     }
 
     add (oid, index) {
-        if (!super.try(oid)) {
-            return;
-        }
-        
         const container = document.createElement("li");
 
         super.setData(index, new Map()

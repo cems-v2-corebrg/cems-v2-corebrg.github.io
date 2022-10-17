@@ -2,51 +2,27 @@
 
 import Enterprise from "./enterprise.js";
 
-export default class Memory extends Enterprise {
+export default class Storage extends Enterprise {
+
     static COLOR_GREEN = "#00897b";
     static COLOR_ORANGE = "#f6bf26";
     static COLOR_RED = "#8e24aa";
-    
-    #container;
-    #mibData = new Map();
-    #indexToChart = new Map();
-    
-    constructor (container) {
-        this.#container = container;
+
+    constructor (container, onselect) {
+        super(container, mibData, "memory", onselect);
     }
 
-    add (oid, index, callback) {
+    add (oid, index, onselect) {
         const container = document.createElement("li");
-
-        if (callback) {
-            container.callback = e => callback({
-                chart: "/chart/memory.html",
-                oid: oid,
-                index: index,
-                unit: 1
-            });
-
-            container.classList.add("selectable");
-        }
-
-        container.classList.add("status");
-
-        this.#indexToChart.set(index, new Map()
+        
+        super.setData(index, new Map()
             .set("container", container)
+            .set("oid", oid)
+            .set("index", oid)
             .set("chart", new Chart(container.appendChild(document.createElement("canvas")), {
                 type: 'bar',
                 data: {
-                    labels: [""],
-                    datasets: [{
-                        data: [0],
-                        backgroundColor: Memory.COLOR_GREEN
-                    }, {
-                        data: [0],
-                        backgroundColor: Memory.COLOR_ORANGE
-                    }, {
-                        data: [0],
-                        backgroundColor: Memory.COLOR_RED
-                    }]
+                    labels: [indexData[ITAhM.snmp.oid.hrStorageDescr] || ""]
                 },
                 options: {
                     scales: {
@@ -79,42 +55,59 @@ export default class Memory extends Enterprise {
                         }
                     }
                 }
-            }))
-            .set("oid", oid));
+            })));
+        
+        if (onselect) {
+            container.onclick = e => onselect(super.getData(index));
 
-        this.#container.appendChild(container);
+            container.classList.add("selectable");
+        }
+
+        container.classList.add("status");
+
+        super.addContainer(container);
     }
 
     update ({resourceData, criticalData}) {
-        let chart, value, oid, datasets;
+        let indexData, chart, used, datasets;
 
-        for (let [index, map] of this.#indexToChart) {
+        super.forEach((index, map) => {
             oid = map.get("oid");
-            value = Number(resourceData[index][oid]);
             chart = map.get("chart");
+            
+            used = Number(resourceData[index][oid]);
 
-            datasets = chart.config.data.datasets;
+            datasets = [{
+                data: [0],
+                backgroundColor: Storage.COLOR_GREEN
+            }, {
+                data: [0],
+                backgroundColor: Storage.COLOR_ORANGE
+            }, {
+                data: [0],
+                backgroundColor: Storage.COLOR_RED
+            }];
 
-            if (value > 90) {
-                datasets[0].data[0] = 70;
-                datasets[1].data[0] = 20;
-                datasets[2].data[0] = value -90;
-            } else if (value > 70) {
-                datasets[0].data[0] = 70;
-                datasets[1].data[0] = value -70;
-                datasets[2].data[0] = 0;
-                
+            if (used <= 70) {
+                datasets[0].data[0] = Math.round(used);
             } else {
-                datasets[0].data[0] = value;
-                datasets[1].data[0] = 0;
-                datasets[2].data[0] = 0;
+                datasets[0].data[0] = 70;
+
+                if (used <= 90) {
+                    datasets[1].data[0] = used -70;
+                } else {
+                    datasets[1].data[0] = 20;
+                    datasets[2].data[0] = used -90;
+                }
             }
             
             chart.config.label = `${value.toFixed(2)}%`;
-            
+            chart.config.data.datasets = datasets;
+
             chart.update();
 
             map.get("container").classList[criticalData[index]?.[oid] === false? "add": "remove"]("critical");
-        }
+        });
+
     }
 }

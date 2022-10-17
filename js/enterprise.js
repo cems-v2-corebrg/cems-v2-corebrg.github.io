@@ -91,12 +91,12 @@ const
             template: "load",
             type: "trace",
             value: "1"
-        },
+        }/*,
         "1.3.6.1.4.1.12356.101.4.1.4": {
-            template: "mem",
+            template: "memory",
             type: "trace",
             value: "1"
-        }
+        }*/
     };
 
 export {mibData};

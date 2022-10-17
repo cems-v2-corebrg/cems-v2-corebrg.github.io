@@ -364,7 +364,7 @@ div.error::after {
     content: attr(data-code);
 }
 
-#mib::before {
+section.setting .container li::before {
     font: 4em "Font Awesome 5 Free";
     content: "\f013";
 }
@@ -509,18 +509,6 @@ function initialize(node, iconData) {
         $.get("parser").forEach(resource => {
             $.get(resource).parse(index, indexData);
         });
-
-        // Enterprise Memory
-        /*
-        [
-            ITAhM.snmp.oid.fortinet.fgSysMemUsage
-        ].forEach(oid => {
-            if (oid in indexData) {
-                $.get("enterprise_memory").add(oid, index, onSelectResource);
-
-                document.body.classList.add("enterprise_memory");
-            }
-        });*/
     }
     
     $.get("parser").forEach(resource => {
@@ -655,7 +643,7 @@ function onSelectError (args) {
 }
 
 function onSelectTemperature (args) {
-    args.chart = "/chart/temperature.html";
+    args.chart = "/chart/enterprise/temperature.html";
 
     onSelectResource(args);
 }
@@ -805,10 +793,10 @@ function showMessage(xhr) {
                 </ul>
             </section>
 
-            <section class="root">
+            <section class="setting root">
                 <h2>설정</h2>
                 <ul class="container selectable center" style="--var-width: 160px">
-                    <li id="mib"></li>
+                    <li></li>
                 </ul>
             </section>
 
@@ -937,7 +925,7 @@ $.set("request", new Request());
 $.set("parser", ["response", "load", "storage", "memory", "interface", "enterprise_fan", "enterprise_power", "enterprise_temperature", "enterprise_load"/*, "enterprise_memory"*/]);
 
 if (top.account.level === 0) {
-    document.getElementById("mib").onclick = onShowMIBDialog;
+    document.body.querySelector("section.setting").onclick = onShowMIBDialog;
     
     document.body.classList.add("root");
 }

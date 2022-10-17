@@ -15,10 +15,6 @@ export default class Load extends Enterprise {
     }
 
     add (oid, index, onselect) {
-        if (!super.try(oid)) {
-            return;
-        }
-
         const
             container = document.createElement("li"),
             unit = super.value(oid);
